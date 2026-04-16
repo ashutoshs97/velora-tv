@@ -155,7 +155,7 @@ export default function CarouselRow({
     <section className="relative">
       {/* Row header */}
       <div className="flex items-center gap-3 mb-4 px-1">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{title}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold font-display text-white tracking-tight">{title}</h2>
         {badge && (
           <span className="text-prime-blue text-xs font-bold px-2 py-0.5 bg-prime-blue/10 border border-prime-blue/20 rounded">
             {badge}
@@ -172,7 +172,7 @@ export default function CarouselRow({
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-30 w-10 h-10 rounded-full bg-black/80 backdrop-blur border border-white/15 text-white flex items-center justify-center shadow-xl hover:bg-prime-blue/80 hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white flex items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
           >
             <ChevronLeft size={20} />
           </button>
@@ -201,7 +201,7 @@ export default function CarouselRow({
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-30 w-10 h-10 rounded-full bg-black/80 backdrop-blur border border-white/15 text-white flex items-center justify-center shadow-xl hover:bg-prime-blue/80 hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white flex items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
           >
             <ChevronRight size={20} />
           </button>
@@ -209,11 +209,11 @@ export default function CarouselRow({
 
         {/* Left fade gradient */}
         {canScrollLeft && (
-          <div className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-prime-bg to-transparent pointer-events-none z-20" />
+          <div className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#080E14] to-transparent pointer-events-none z-20" />
         )}
         {/* Right fade gradient */}
         {canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-prime-bg to-transparent pointer-events-none z-20" />
+          <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-[#080E14] to-transparent pointer-events-none z-20" />
         )}
       </div>
     </section>
