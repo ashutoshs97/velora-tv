@@ -115,9 +115,6 @@ export default function Home() {
                   <span className="text-[17px] font-bold text-prime-subtext border-l border-white/20 pl-4">
                     {heroMovie.release_date?.substring(0, 4)}
                   </span>
-                  <span className="text-[14px] font-bold text-white bg-white/20 px-1.5 py-0.5 rounded shadow-sm opacity-90">
-                    4K UHD
-                  </span>
                   <div className="flex items-center gap-1 text-[17px] font-bold text-yellow-400 border-l border-white/20 pl-4">
                     <Award size={18} fill="currentColor" />
                     <span>{heroMovie.vote_average?.toFixed(1)}</span>

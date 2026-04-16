@@ -169,7 +169,6 @@ export default function Watch() {
                 {type === 'tv' && movie.number_of_seasons && (
                    <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">{movie.number_of_seasons} Seasons</span>
                 )}
-                <span className="text-[12px] font-bold text-white bg-white/20 px-1.5 py-0.5 rounded opacity-90">4K UHD</span>
               </div>
             </div>
             <div className="flex items-center gap-3">

@@ -35,16 +35,21 @@ export default function Navbar() {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between h-20">
           {/* Logo & Desktop Nav */}
-          <div className="flex items-center gap-10">
-            <Link to="/" className="flex items-center gap-2 group">
-              <span className="text-2xl font-black tracking-tight text-white flex items-center">
-                Vel{/* Custom play icon embedded in logo text */}
-                <div className="inline-flex w-5 h-5 mx-[2px] rounded-sm bg-prime-blue items-center justify-center -translate-y-0.5">
-                  <Play size={12} fill="#FFF" className="text-white ml-0.5" />
-                </div>
-                ra
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3">
+              <Link to="/" className="flex items-center gap-2 group">
+                <span className="text-2xl font-black tracking-tight text-white flex items-center">
+                  Vel{/* Custom play icon embedded in logo text */}
+                  <div className="inline-flex w-5 h-5 mx-[2px] rounded-sm bg-prime-blue items-center justify-center -translate-y-0.5">
+                    <Play size={12} fill="#FFF" className="text-white ml-0.5" />
+                  </div>
+                  ra
+                </span>
+              </Link>
+              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 uppercase mt-0.5">
+                Under Development
               </span>
-            </Link>
+            </div>
 
             <div className="hidden md:flex items-center gap-8 h-full">
               <Link
