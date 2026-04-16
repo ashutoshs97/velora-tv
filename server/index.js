@@ -11,16 +11,32 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-const allowedOrigins = ['http://localhost:5173', process.env.FRONTEND_URL].filter(Boolean);
-app.use(cors({ 
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+if (!process.env.FRONTEND_URL) {
+  console.warn('⚠️  FRONTEND_URL env variable is not set. Only localhost origins are allowed.');
+}
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (curl, health checks, same-origin SSR)
+    if (!origin) return callback(null, true);
+
+    if (
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes('*')
+    ) {
+      return callback(null, true);
     }
-  }, 
-  credentials: true 
+
+    console.error(`CORS blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
 }));
 app.use(express.json());
 
