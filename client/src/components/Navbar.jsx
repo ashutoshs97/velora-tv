@@ -47,7 +47,7 @@ export default function Navbar() {
                 </span>
               </Link>
               <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/20 uppercase mt-0.5 whitespace-nowrap">
-                Under Development
+                Beta
               </span>
             </div>
 
