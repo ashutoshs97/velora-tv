@@ -7,10 +7,10 @@ const SERVERS = [
   {
     id: 1,
     name: 'Server 1',
-    label: 'VidSrc PRO',
+    label: 'VidSrc TO',
     badge: '4K',
     recommended: true,
-    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidsrc.pro/embed/tv/${id}/${s}/${e}` : `https://vidsrc.pro/embed/movie/${id}`,
+    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidsrc.to/embed/tv/${id}/${s}/${e}` : `https://vidsrc.to/embed/movie/${id}`,
   },
   {
     id: 2,
@@ -18,7 +18,7 @@ const SERVERS = [
     label: 'VidBinge',
     badge: '4K',
     recommended: true,
-    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidbinge.dev/embed/tv/${id}/${s}/${e}` : `https://vidbinge.dev/embed/movie/${id}`,
+    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidbinge.com/embed/tv/${id}/${s}/${e}` : `https://vidbinge.com/embed/movie/${id}`,
   },
   {
     id: 3,
