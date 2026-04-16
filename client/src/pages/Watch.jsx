@@ -31,11 +31,11 @@ export default function Watch() {
         const data = res.data;
         setMovie(data);
 
-        // Save to watch history
+        // Save to watch history (fire and forget, do not block UI render)
         const t = data.title || data.name;
         const releaseYear = (data.release_date || data.first_air_date || '').substring(0, 4);
 
-        await addToHistory({
+        addToHistory({
           tmdbId: data.id,
           title: t,
           posterPath: data.poster_path, // Fallback if no backdrop on home
