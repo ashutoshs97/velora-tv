@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Star, Calendar, Clock, Globe, Tag, Users, CheckCircle2, Plus, Share2, ListVideo
@@ -75,7 +76,10 @@ export default function Watch() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center bg-black px-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4 }}
+        className="min-h-screen pt-24 flex items-center justify-center bg-black px-4"
+      >
         <div className="flex flex-col items-center gap-6 max-w-md text-center">
           <div className="w-12 h-12 border-2 border-prime-blue border-t-transparent rounded-full animate-spin" />
           {showColdStartWarning && (
@@ -88,20 +92,23 @@ export default function Watch() {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   if (error || !movie) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center bg-black">
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4 }}
+        className="min-h-screen pt-24 flex items-center justify-center bg-black"
+      >
         <div className="text-center space-y-4">
           <p className="text-red-400 text-lg font-bold">{error || 'Movie not found.'}</p>
           <Link to="/" className="btn-primary inline-flex text-sm">
             <ArrowLeft size={16} className="mr-2" /> Go Home
           </Link>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -115,7 +122,10 @@ export default function Watch() {
   const directorName = movie.credits?.crew?.find((c) => c.job === 'Director')?.name || movie.created_by?.[0]?.name || 'Unknown';
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.4, ease: "easeOut" }}
+      className="min-h-screen bg-black flex flex-col"
+    >
       {/* ── Top Area: The Player (Pitch Black Context) ── */}
       <div className="w-full relative z-10 pt-24 pb-8 bg-black">
         
@@ -281,6 +291,6 @@ export default function Watch() {
 
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

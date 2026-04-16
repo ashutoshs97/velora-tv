@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Share2, Award, CheckCircle2 } from 'lucide-react';
 import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory } from '../api';
@@ -77,10 +78,16 @@ export default function Home() {
   }, [loadHistory]);
 
   return (
-    <div className="min-h-screen pb-16">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, scale: 0.98 }} 
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="min-h-screen pb-16"
+    >
       {/* Prime-style Hero Billboard */}
       {heroMovie && (
-        <section className="relative w-full h-[85vh] min-h-[600px] overflow-hidden -mt-20">
+        <section className="relative w-full min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20">
           {/* Backdrop Image */}
           <div className="absolute inset-0 w-full h-full">
             <img
@@ -97,12 +104,12 @@ export default function Home() {
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#0F171E]/90 to-transparent pointer-events-none" />
 
           {/* Content Block (Bottom Left) */}
-          <div className="absolute inset-0 pt-32 pb-16 sm:pb-24 w-full z-10 flex flex-col justify-end">
+          <div className="relative z-10 w-full min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-40 pb-16 sm:pb-24">
             <div className="max-w-[1400px] mx-auto px-6 lg:px-12 w-full">
               <div className="w-full md:w-3/4 lg:w-[60%] animate-fade-up" style={{ animationDelay: '0.2s' }}>
                 
                 {/* Title */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-2 sm:line-clamp-3">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-3">
                   {heroMovie.title || heroMovie.name}
                 </h1>
 
@@ -185,6 +192,6 @@ export default function Home() {
         </section>
 
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -28,8 +28,8 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-[100] transition-colors duration-300 ${
-        scrolled ? 'bg-[#0F171E] backdrop-blur-md' : 'bg-transparent'
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
+        scrolled ? 'bg-black/60 backdrop-blur-2xl border-b border-white/10 shadow-2xl' : 'bg-transparent'
       }`}
     >
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">

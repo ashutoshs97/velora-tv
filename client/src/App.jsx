@@ -1,18 +1,23 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Watch from './pages/Watch';
 
 export default function App() {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen bg-prime-bg text-white">
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/watch/:id" element={<Watch />} />
-      </Routes>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/watch/:id" element={<Watch />} />
+        </Routes>
+      </AnimatePresence>
     </div>
   );
 }

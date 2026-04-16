@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Search, X, SlidersHorizontal, Film } from 'lucide-react';
 import { searchMovies } from '../api';
@@ -68,7 +69,10 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-16">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.4, ease: "easeOut" }}
+      className="min-h-screen pt-20 pb-16"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Search Header */}
         <div className="pt-8 mb-8">
@@ -138,6 +142,6 @@ export default function SearchPage() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
