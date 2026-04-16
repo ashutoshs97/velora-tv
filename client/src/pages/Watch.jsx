@@ -59,7 +59,7 @@ export default function Watch() {
           setSeason(firstRealSeason.season_number || 1);
           setEpisode(1);
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load movie details. Please try again.');
       } finally {
         setLoading(false);
@@ -67,7 +67,7 @@ export default function Watch() {
     };
     load();
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, type]);
 
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
 

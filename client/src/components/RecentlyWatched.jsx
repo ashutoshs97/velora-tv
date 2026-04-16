@@ -86,10 +86,7 @@ export default function RecentlyWatched({ history, onRefresh }) {
 
               {/* Progress Bar Mock */}
               <div className="absolute bottom-0 left-0 w-full h-[3px] bg-white/20">
-                <div 
-                  className="h-full bg-prime-blue" 
-                  style={{ width: `${Math.floor(Math.random() * 60) + 10}%` }} 
-                />
+                <div className="h-full bg-prime-blue" style={{ width: '40%' }} />
               </div>
 
               {/* Meta */}
