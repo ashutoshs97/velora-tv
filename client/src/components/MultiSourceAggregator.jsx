@@ -119,6 +119,17 @@ export default function MultiSourceAggregator({ tmdbId, type = 'movie', season =
           </button>
         </div>
 
+        {/* Known Issues Warning */}
+        <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 sm:p-4 flex gap-3 items-start">
+          <AlertCircle className="shrink-0 text-amber-500 mt-0.5" size={18} />
+          <div>
+            <p className="text-amber-500 text-sm font-semibold mb-1">Known Network Issues</p>
+            <p className="text-amber-500/80 text-xs sm:text-sm leading-relaxed">
+              We are currently experiencing temporary network blocks on several upstream video providers. Please use <strong>Server 3</strong> or <strong>Server 4</strong> for the most reliable playback while our engineering team pushes a fix.
+            </p>
+          </div>
+        </div>
+
         {/* 4×2 server grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {SERVERS.map((server, idx) => {
