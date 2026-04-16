@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Youtube } from 'lucide-react';
+import { X, Clapperboard } from 'lucide-react';
 
 export default function TrailerModal({ videoKey, title, onClose }) {
   // Close on Escape key
@@ -33,7 +33,7 @@ export default function TrailerModal({ videoKey, title, onClose }) {
         >
           {/* Header */}
           <div className="flex items-center gap-3 mb-3">
-            <Youtube size={20} className="text-red-500" />
+            <Clapperboard size={20} className="text-red-500" />
             <span className="text-white font-semibold text-sm line-clamp-1">{title} — Official Trailer</span>
             <button
               onClick={onClose}
