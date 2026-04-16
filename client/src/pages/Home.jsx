@@ -102,7 +102,7 @@ export default function Home() {
               <div className="w-full md:w-3/4 lg:w-[60%] animate-fade-up" style={{ animationDelay: '0.2s' }}>
                 
                 {/* Title */}
-                <h1 className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-white mb-5 leading-[1.05] tracking-[-0.03em] drop-shadow-2xl">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-2 sm:line-clamp-3 pt-24">
                   {heroMovie.title || heroMovie.name}
                 </h1>
 
