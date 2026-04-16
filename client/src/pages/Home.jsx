@@ -97,12 +97,12 @@ export default function Home() {
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#0F171E]/90 to-transparent pointer-events-none" />
 
           {/* Content Block (Bottom Left) */}
-          <div className="absolute bottom-16 sm:bottom-24 left-0 w-full z-10">
-            <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+          <div className="absolute inset-0 pt-32 pb-16 sm:pb-24 w-full z-10 flex flex-col justify-end">
+            <div className="max-w-[1400px] mx-auto px-6 lg:px-12 w-full">
               <div className="w-full md:w-3/4 lg:w-[60%] animate-fade-up" style={{ animationDelay: '0.2s' }}>
                 
                 {/* Title */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-2 sm:line-clamp-3 pt-24">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-2 sm:line-clamp-3">
                   {heroMovie.title || heroMovie.name}
                 </h1>
 
