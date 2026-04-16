@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Share2, Award, CheckCircle2 } from 'lucide-react';
 import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory } from '../api';
-import MovieGrid from '../components/MovieGrid';
+import CarouselRow from '../components/CarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
 
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
@@ -165,31 +165,38 @@ export default function Home() {
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
 
-        {/* Trending Swimlane */}
-        <section className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
-          <div className="flex items-center gap-3 mb-5">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Prime Movies</h2>
-            <span className="text-prime-blue text-xs font-bold px-2 py-0.5 bg-prime-blue/10 border border-prime-blue/20 rounded">Top Tier</span>
-            <span className="text-prime-subtext text-sm ml-auto font-semibold hover:text-white cursor-pointer transition-colors hidden sm:block">View all ›</span>
-          </div>
-          <MovieGrid movies={trending} loading={loadingTrending} />
-        </section>
+        {/* Trending Swimlane — Ranked + Poster */}
+        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+          <CarouselRow
+            title="Top 10 Movies"
+            badge="Trending"
+            movies={trending}
+            loading={loadingTrending}
+            ranked
+            usePoster
+          />
+        </div>
 
-        {/* Top Rated Swimlane */}
-        <section className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <div className="flex items-center gap-3 mb-5">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Critically Acclaimed</h2>
-          </div>
-          <MovieGrid movies={topRated} loading={loadingTopRated} />
-        </section>
+        {/* Top Rated Swimlane — Backdrop style */}
+        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+          <CarouselRow
+            title="Critically Acclaimed"
+            badge="Top Rated"
+            movies={topRated}
+            loading={loadingTopRated}
+          />
+        </div>
 
-        {/* Binge-Worthy TV Shows Swimlane */}
-        <section className="mb-24 animate-fade-up" style={{ animationDelay: '0.6s' }}>
-          <div className="flex items-center gap-3 mb-5">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Binge-Worthy TV Shows</h2>
-          </div>
-          <MovieGrid movies={trendingTV} loading={loadingTrendingTV} />
-        </section>
+        {/* Binge-Worthy TV Shows Swimlane — Poster */}
+        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.6s' }}>
+          <CarouselRow
+            title="Binge-Worthy TV Shows"
+            badge="Series"
+            movies={trendingTV}
+            loading={loadingTrendingTV}
+            usePoster
+        />
+        </div>
 
       </div>
     </motion.div>
