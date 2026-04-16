@@ -152,9 +152,15 @@
   }
 
   .movie-card-meta {
-    @apply absolute inset-x-0 bottom-0
-           bg-gradient-to-t from-[#080E14]/98 via-[#080E14]/75 to-transparent
-           p-3 pt-10 opacity-0 transition-opacity duration-300 pointer-events-none;
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    background-image: linear-gradient(to top, rgba(8,14,20,0.98), rgba(8,14,20,0.75) 60%, transparent);
+    padding: 0.75rem;
+    padding-top: 2.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
   }
 
   .movie-card-container:hover .movie-card-meta {
