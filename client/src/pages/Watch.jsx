@@ -61,11 +61,32 @@ export default function Watch() {
     window.scrollTo(0, 0);
   }, [id]);
 
+  const [showColdStartWarning, setShowColdStartWarning] = useState(false);
+
+  useEffect(() => {
+    let warningTimer;
+    if (loading) {
+      warningTimer = setTimeout(() => setShowColdStartWarning(true), 3000);
+    } else {
+      setShowColdStartWarning(false);
+    }
+    return () => clearTimeout(warningTimer);
+  }, [loading]);
+
   if (loading) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center bg-black">
-        <div className="flex flex-col items-center gap-4">
+      <div className="min-h-screen pt-24 flex items-center justify-center bg-black px-4">
+        <div className="flex flex-col items-center gap-6 max-w-md text-center">
           <div className="w-12 h-12 border-2 border-prime-blue border-t-transparent rounded-full animate-spin" />
+          {showColdStartWarning && (
+            <div className="animate-fade-up">
+              <p className="text-prime-blue font-bold tracking-wide mb-2">Waking up the Database Server...</p>
+              <p className="text-white/60 text-sm leading-relaxed">
+                As a free-tier Render deployment, the backend spins down after inactivity. 
+                Please pardon this ~50 second cold start delay. It will be lightning fast once awake!
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
