@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Play, Plus, Share2, Award, CheckCircle2 } from 'lucide-react';
-import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory, fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar } from '../api';
+import { Play, Plus, Share2, Award, CheckCircle2, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory, fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
 
@@ -43,6 +43,14 @@ export default function Home() {
   const [loadingMood, setLoadingMood] = useState(false);
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
   const [becauseTitle, setBecauseTitle] = useState('');
+
+  // ── Autoplay trailer state ──────────────────────────────────────────────
+  const [trailerKey, setTrailerKey] = useState(null);
+  const [trailerActive, setTrailerActive] = useState(false);
+  const [trailerMuted, setTrailerMuted] = useState(true);
+  const [trailerEnded, setTrailerEnded] = useState(false);
+  const trailerTimerRef = useRef(null);
+  const trailerIframeRef = useRef(null);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -139,6 +147,40 @@ export default function Home() {
       .catch(() => {});
   }, [history]);
 
+  // ── Fetch trailer key when heroMovie changes ────────────────────────────
+  useEffect(() => {
+    // Reset trailer state on hero change
+    setTrailerKey(null);
+    setTrailerActive(false);
+    setTrailerEnded(false);
+    setTrailerMuted(true);
+    clearTimeout(trailerTimerRef.current);
+
+    if (!heroMovie) return;
+
+    // Fetch detail to get video list
+    fetchMovieDetail(heroMovie.id)
+      .then((res) => {
+        const videos = res.data?.videos?.results || [];
+        const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
+          || videos.find(v => v.site === 'YouTube');
+        if (trailer?.key) {
+          setTrailerKey(trailer.key);
+          // Show backdrop image first for 5s, then activate trailer
+          trailerTimerRef.current = setTimeout(() => setTrailerActive(true), 5000);
+        }
+      })
+      .catch(() => {});
+
+    return () => clearTimeout(trailerTimerRef.current);
+  }, [heroMovie]);
+
+  const replayTrailer = () => {
+    setTrailerEnded(false);
+    setTrailerActive(false);
+    setTimeout(() => setTrailerActive(true), 100);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 15 }} 
@@ -150,28 +192,65 @@ export default function Home() {
       {/* Prime-style Hero Billboard */}
       {heroMovie && (
         <section className="relative w-full min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20">
-          {/* Backdrop Image */}
-          <div className="absolute inset-0 w-full h-full">
-            <img
-              src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
-              alt={heroMovie.title}
-              className="w-full h-full object-cover object-top opacity-80"
-              style={{ objectPosition: '50% 15%' }}
-            />
-          </div>
+          {/* ── Backdrop Image (always rendered, fades under trailer) ── */}
+          <AnimatePresence>
+            {(!trailerActive || trailerEnded) && (
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.2 }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <img
+                  src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
+                  alt={heroMovie.title}
+                  className="w-full h-full object-cover object-top opacity-80"
+                  style={{ objectPosition: '50% 15%' }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Prime Gradients (Crucial for text readability) */}
-          <div className="absolute inset-0 bg-hero-gradient-x opacity-90" />
-          <div className="absolute inset-0 bg-hero-gradient-y" />
-          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#0F171E]/90 to-transparent pointer-events-none" />
+          {/* ── YouTube Autoplay Trailer ── */}
+          <AnimatePresence>
+            {trailerActive && trailerKey && !trailerEnded && (
+              <motion.div
+                key="trailer"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5 }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <iframe
+                  ref={trailerIframeRef}
+                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${trailerMuted ? 1 : 0}&controls=0&loop=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1`}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  className="w-full h-full"
+                  style={{ border: 'none', pointerEvents: 'none' }}
+                  title="Hero Trailer"
+                />
+                {/* Wide-screen letterbox crop — scale up to hide black bars */}
+                <div className="absolute inset-0" style={{ transform: 'scale(1.18)', background: 'transparent' }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Content Block (Bottom Left) */}
+          {/* Gradients */}
+          <div className="absolute inset-0 bg-hero-gradient-x opacity-90 z-[1] pointer-events-none" />
+          <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
+
+          {/* ── Content Block ── */}
           <div className="relative z-10 w-full min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-40 pb-16 sm:pb-24">
             <div className="max-w-[1400px] mx-auto px-6 lg:px-12 w-full">
               <div className="w-full md:w-3/4 lg:w-[60%] animate-fade-up" style={{ animationDelay: '0.2s' }}>
-                
+
                 {/* Title */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-3">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-3 font-display">
                   {heroMovie.title || heroMovie.name}
                 </h1>
 
@@ -190,13 +269,24 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Synopsis */}
-                <p className="text-lg text-white/90 line-clamp-3 mb-8 max-w-2xl font-medium leading-relaxed drop-shadow-md">
-                  {heroMovie.overview}
-                </p>
+                {/* Synopsis — hide when trailer is playing (Netflix pattern) */}
+                <AnimatePresence>
+                  {(!trailerActive || trailerEnded) && (
+                    <motion.p
+                      key="synopsis"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.5 }}
+                      className="text-lg text-white/90 line-clamp-3 mb-8 max-w-2xl font-medium leading-relaxed drop-shadow-md"
+                    >
+                      {heroMovie.overview}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
 
                 {/* Action Row */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-wrap">
                   <Link
                     to={`/watch/${heroMovie.id}?type=${heroMovie.media_type || heroMovie.type || (heroMovie.name ? 'tv' : 'movie')}`}
                     id="hero-watch-btn"
@@ -212,10 +302,48 @@ export default function Home() {
                     <Share2 size={24} className="-ml-0.5" />
                   </button>
                 </div>
-
               </div>
             </div>
           </div>
+
+          {/* ── Trailer controls (bottom-right) ── */}
+          {trailerKey && (
+            <div className="absolute bottom-24 right-6 lg:right-12 z-20 flex items-center gap-3">
+              {/* Replay button — only when trailer ended */}
+              <AnimatePresence>
+                {trailerEnded && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={replayTrailer}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all"
+                  >
+                    <RotateCcw size={14} />
+                    Replay
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              {/* Mute/Unmute — only when trailer is playing */}
+              {trailerActive && !trailerEnded && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={() => {
+                    setTrailerMuted(m => !m);
+                    // Reload iframe with new mute setting
+                    setTrailerActive(false);
+                    setTimeout(() => setTrailerActive(true), 50);
+                  }}
+                  title={trailerMuted ? 'Unmute' : 'Mute'}
+                  className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/25 text-white flex items-center justify-center hover:bg-white/20 transition-all"
+                >
+                  {trailerMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </motion.button>
+              )}
+            </div>
+          )}
         </section>
       )}
 
