@@ -7,34 +7,34 @@ const SERVERS = [
   {
     id: 1,
     name: 'Server 1',
-    label: 'VidSrc RIP',
-    badge: '4K',
+    label: 'VidLink API',
+    badge: 'HD',
     recommended: true,
-    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidsrc.rip/embed/tv/${id}/${s}/${e}` : `https://vidsrc.rip/embed/movie/${id}`,
+    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidlink.pro/tv/${id}/${s}/${e}` : `https://vidlink.pro/movie/${id}`,
   },
   {
     id: 2,
     name: 'Server 2',
-    label: 'Embed SU',
-    badge: '4K',
+    label: 'VidSrc CC',
+    badge: 'HD',
     recommended: true,
-    getUrl: (id, type, s, e) => type === 'tv' ? `https://embed.su/embed/tv/${id}/${s}/${e}` : `https://embed.su/embed/movie/${id}`,
+    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidsrc.cc/v3/embed/tv/${id}/${s}/${e}` : `https://vidsrc.cc/v3/embed/movie/${id}`,
   },
   {
     id: 3,
     name: 'Server 3',
-    label: 'VidLink API',
-    badge: 'HD',
+    label: 'VidSrc RIP',
+    badge: '4K',
     recommended: false,
-    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidlink.pro/tv/${id}/${s}/${e}` : `https://vidlink.pro/movie/${id}`,
+    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidsrc.rip/embed/tv/${id}/${s}/${e}` : `https://vidsrc.rip/embed/movie/${id}`,
   },
   {
     id: 4,
     name: 'Server 4',
-    label: 'VidSrc CC',
-    badge: 'HD',
+    label: 'Embed SU',
+    badge: '4K',
     recommended: false,
-    getUrl: (id, type, s, e) => type === 'tv' ? `https://vidsrc.cc/v3/embed/tv/${id}/${s}/${e}` : `https://vidsrc.cc/v3/embed/movie/${id}`,
+    getUrl: (id, type, s, e) => type === 'tv' ? `https://embed.su/embed/tv/${id}/${s}/${e}` : `https://embed.su/embed/movie/${id}`,
   },
   {
     id: 5,
@@ -123,9 +123,9 @@ export default function MultiSourceAggregator({ tmdbId, type = 'movie', season =
         <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 sm:p-4 flex gap-3 items-start">
           <AlertCircle className="shrink-0 text-amber-500 mt-0.5" size={18} />
           <div>
-            <p className="text-amber-500 text-sm font-semibold mb-1">Known Network Issues</p>
+            <p className="text-amber-500 text-sm font-semibold mb-1">Network Route Updated</p>
             <p className="text-amber-500/80 text-xs sm:text-sm leading-relaxed">
-              We are currently experiencing temporary network blocks on several upstream video providers. Please use <strong>Server 3</strong> or <strong>Server 4</strong> for the most reliable playback while our engineering team pushes a fix.
+              We have permanently promoted our most stable backup APIs to <strong>Server 1</strong> and <strong>Server 2</strong> to bypass recent Geo-blocks. If these encounter heavy traffic, please select an alternative server from the grid.
             </p>
           </div>
         </div>
