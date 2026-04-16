@@ -81,6 +81,22 @@ export default function Watch() {
     return () => clearTimeout(warningTimer);
   }, [loading]);
 
+  // Share card: copy deep link to clipboard
+  const handleShare = useCallback(() => {
+    const url = `${window.location.origin}/watch/${id}?type=${type}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }, [id, type]);
+
+  // Load similar and recommended (must be before early returns - Rules of Hooks)
+  useEffect(() => {
+    if (!id) return;
+    fetchSimilar(id, type).then(r => setSimilar(r.data.results || [])).catch(() => {});
+    fetchRecommendations(id, type).then(r => setRecommended(r.data.results || [])).catch(() => {});
+  }, [id, type]);
+
   if (loading) {
     return (
       <motion.div 
@@ -128,21 +144,6 @@ export default function Watch() {
   const year = (movie.release_date || movie.first_air_date)?.substring(0, 4);
   const directorName = movie.credits?.crew?.find((c) => c.job === 'Director')?.name || movie.created_by?.[0]?.name || 'Unknown';
 
-  // Share card: copy deep link to clipboard
-  const handleShare = useCallback(() => {
-    const url = `${window.location.origin}/watch/${id}?type=${type}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
-  }, [id, type]);
-
-  // Load similar and recommended
-  useEffect(() => {
-    if (!id) return;
-    fetchSimilar(id, type).then(r => setSimilar(r.data.results || [])).catch(() => {});
-    fetchRecommendations(id, type).then(r => setRecommended(r.data.results || [])).catch(() => {});
-  }, [id, type]);
 
   const trailerKey = movie?.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key
     || movie?.videos?.results?.[0]?.key;
