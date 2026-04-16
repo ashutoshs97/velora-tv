@@ -7,13 +7,29 @@ const router = express.Router();
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
 
+const filterUnreleased = (results) => {
+  if (!Array.isArray(results)) return results;
+  const now = new Date();
+  return results.filter(item => {
+    const dateStr = item.release_date || item.first_air_date;
+    if (!dateStr) return true;
+    return new Date(dateStr) <= now;
+  });
+};
+
 const tmdbFetch = async (path, params = {}) => {
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set('api_key', API_KEY);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`TMDB error: ${res.status} ${res.statusText}`);
-  return res.json();
+  const data = await res.json();
+  
+  // Conditionally strip unreleased items from any lists
+  if (data.results) {
+    data.results = filterUnreleased(data.results);
+  }
+  return data;
 };
 
 // GET /api/movies/trending
