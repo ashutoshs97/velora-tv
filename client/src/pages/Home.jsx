@@ -2,9 +2,25 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Share2, Award, CheckCircle2 } from 'lucide-react';
-import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory } from '../api';
+import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory, fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
+
+const GENRES = [
+  { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' }, { id: 18, label: 'Drama' },
+  { id: 27, label: 'Horror' }, { id: 878, label: 'Sci-Fi' }, { id: 10749, label: 'Romance' },
+  { id: 16, label: 'Animation' }, { id: 99, label: 'Documentary' }, { id: 53, label: 'Thriller' },
+  { id: 10751, label: 'Family' },
+];
+
+const MOODS = [
+  { key: 'action', emoji: '💥', label: 'Adrenaline Rush' },
+  { key: 'comedy', emoji: '😂', label: 'Feel-Good Vibes' },
+  { key: 'horror', emoji: '👻', label: 'Late Night Scare' },
+  { key: 'romance', emoji: '💕', label: 'Date Night' },
+  { key: 'scifi', emoji: '🚀', label: 'Mind-Bending' },
+  { key: 'animated', emoji: '✨', label: 'Family Fun' },
+];
 
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 
@@ -17,6 +33,16 @@ export default function Home() {
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTrendingTV, setLoadingTrendingTV] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
+  const [newReleases, setNewReleases] = useState([]);
+  const [loadingNew, setLoadingNew] = useState(true);
+  const [genreMovies, setGenreMovies] = useState([]);
+  const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
+  const [loadingGenre, setLoadingGenre] = useState(false);
+  const [moodMovies, setMoodMovies] = useState([]);
+  const [selectedMood, setSelectedMood] = useState(MOODS[0]);
+  const [loadingMood, setLoadingMood] = useState(false);
+  const [becauseYouWatched, setBecauseYouWatched] = useState([]);
+  const [becauseTitle, setBecauseTitle] = useState('');
 
   const loadHistory = useCallback(async () => {
     try {
@@ -71,11 +97,47 @@ export default function Home() {
       }
     };
 
+    const loadNewReleases = async () => {
+      try {
+        const res = await fetchNewReleases();
+        setNewReleases(res.data.results || []);
+      } finally { setLoadingNew(false); }
+    };
+
     loadTrending();
     loadTrendingTV();
     loadTopRated();
+    loadNewReleases();
     loadHistory();
   }, [loadHistory]);
+
+  // Load genre movies whenever selectedGenre changes
+  useEffect(() => {
+    setLoadingGenre(true);
+    fetchByGenre(selectedGenre.id)
+      .then(res => setGenreMovies(res.data.results || []))
+      .catch(() => {})
+      .finally(() => setLoadingGenre(false));
+  }, [selectedGenre]);
+
+  // Load mood movies whenever selectedMood changes
+  useEffect(() => {
+    setLoadingMood(true);
+    fetchByMood(selectedMood.key)
+      .then(res => setMoodMovies(res.data.results || []))
+      .catch(() => {})
+      .finally(() => setLoadingMood(false));
+  }, [selectedMood]);
+
+  // "Because you watched X" — fetch similar to most recently watched item
+  useEffect(() => {
+    if (!history || history.length === 0) return;
+    const latest = history[0];
+    setBecauseTitle(latest.title);
+    fetchSimilar(latest.tmdbId, latest.type || 'movie')
+      .then(res => setBecauseYouWatched(res.data.results || []))
+      .catch(() => {});
+  }, [history]);
 
   return (
     <motion.div 
@@ -188,14 +250,92 @@ export default function Home() {
         </div>
 
         {/* Binge-Worthy TV Shows Swimlane — Poster */}
-        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.6s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
           <CarouselRow
             title="Binge-Worthy TV Shows"
             badge="Series"
             movies={trendingTV}
             loading={loadingTrendingTV}
             usePoster
-        />
+          />
+        </div>
+
+        {/* New Releases This Week */}
+        <div className="animate-fade-up" style={{ animationDelay: '0.7s' }}>
+          <CarouselRow
+            title="Fresh Drops"
+            badge="New This Month"
+            movies={newReleases}
+            loading={loadingNew}
+          />
+        </div>
+
+        {/* Because You Watched */}
+        {becauseYouWatched.length > 0 && (
+          <div className="animate-fade-up" style={{ animationDelay: '0.75s' }}>
+            <CarouselRow
+              title={`Because You Watched "${becauseTitle}"`}
+              movies={becauseYouWatched}
+              usePoster
+            />
+          </div>
+        )}
+
+        {/* Genre Filter Carousel */}
+        <div className="animate-fade-up" style={{ animationDelay: '0.8s' }}>
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Browse by Genre</h2>
+          </div>
+          {/* Genre pill selector */}
+          <div className="flex gap-2 flex-wrap mb-5">
+            {GENRES.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => setSelectedGenre(g)}
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
+                  selectedGenre.id === g.id
+                    ? 'bg-prime-blue text-white border-prime-blue shadow-lg shadow-prime-blue/30'
+                    : 'bg-white/5 text-prime-subtext border-white/10 hover:border-white/30 hover:text-white'
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+          <CarouselRow
+            title=""
+            movies={genreMovies}
+            loading={loadingGenre}
+          />
+        </div>
+
+        {/* Mood-Based Collections */}
+        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.85s' }}>
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">What's Your Mood?</h2>
+          </div>
+          {/* Mood pill selector */}
+          <div className="flex gap-3 flex-wrap mb-5">
+            {MOODS.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setSelectedMood(m)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border ${
+                  selectedMood.key === m.key
+                    ? 'bg-prime-blue/20 text-prime-blue border-prime-blue/50 shadow-lg shadow-prime-blue/20'
+                    : 'bg-white/5 text-prime-subtext border-white/10 hover:border-white/30 hover:text-white'
+                }`}
+              >
+                <span>{m.emoji}</span>
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <CarouselRow
+            title=""
+            movies={moodMovies}
+            loading={loadingMood}
+          />
         </div>
 
       </div>

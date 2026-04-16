@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, Star, Calendar, Clock, Globe, Tag, Users, CheckCircle2, Plus, Share2, ListVideo
+  ArrowLeft, Star, Calendar, Clock, Globe, Tag, Users, CheckCircle2, Plus, Share2, ListVideo, Play as PlayIcon, Check
 } from 'lucide-react';
-import { fetchMovieDetail, fetchTVDetail, addToHistory } from '../api';
+import { fetchMovieDetail, fetchTVDetail, addToHistory, fetchSimilar, fetchRecommendations } from '../api';
 import MultiSourceAggregator from '../components/MultiSourceAggregator';
+import TrailerModal from '../components/TrailerModal';
+import AmbientBackground from '../components/AmbientBackground';
+import CarouselRow from '../components/CarouselRow';
 
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
@@ -22,6 +25,10 @@ export default function Watch() {
   const [activeTab, setActiveTab] = useState('details');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [similar, setSimilar] = useState([]);
+  const [recommended, setRecommended] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -121,11 +128,43 @@ export default function Watch() {
   const year = (movie.release_date || movie.first_air_date)?.substring(0, 4);
   const directorName = movie.credits?.crew?.find((c) => c.job === 'Director')?.name || movie.created_by?.[0]?.name || 'Unknown';
 
+  // Share card: copy deep link to clipboard
+  const handleShare = useCallback(() => {
+    const url = `${window.location.origin}/watch/${id}?type=${type}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }, [id, type]);
+
+  // Load similar and recommended
+  useEffect(() => {
+    if (!id) return;
+    fetchSimilar(id, type).then(r => setSimilar(r.data.results || [])).catch(() => {});
+    fetchRecommendations(id, type).then(r => setRecommended(r.data.results || [])).catch(() => {});
+  }, [id, type]);
+
+  const trailerKey = movie?.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key
+    || movie?.videos?.results?.[0]?.key;
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.4, ease: "easeOut" }}
       className="min-h-screen bg-black flex flex-col"
     >
+      {/* Ambient Glow */}
+      <div className="relative">
+        <AmbientBackground posterPath={movie?.poster_path} />
+      </div>
+
+      {/* Trailer Modal */}
+      {showTrailer && trailerKey && (
+        <TrailerModal
+          videoKey={trailerKey}
+          title={movie?.title || movie?.name}
+          onClose={() => setShowTrailer(false)}
+        />
+      )}
       {/* ── Top Area: The Player (Pitch Black Context) ── */}
       <div className="w-full relative z-10 pt-24 pb-8 bg-black">
         
@@ -202,9 +241,23 @@ export default function Watch() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {trailerKey && (
+                <button
+                  onClick={() => setShowTrailer(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-red-600/80 border border-white/15 hover:border-red-500 text-white text-sm font-bold transition-all duration-200"
+                >
+                  <PlayIcon size={16} fill="currentColor" /> Watch Trailer
+                </button>
+              )}
               <button title="Watchlist" className="btn-secondary !p-4"><Plus size={20} /></button>
-              <button title="Share" className="btn-secondary !p-4"><Share2 size={20} className="-ml-0.5" /></button>
+              <button
+                onClick={handleShare}
+                title="Share"
+                className={`btn-secondary !p-4 transition-all ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
+              >
+                {copied ? <Check size={20} className="text-green-400" /> : <Share2 size={20} className="-ml-0.5" />}
+              </button>
             </div>
           </div>
 
@@ -290,6 +343,18 @@ export default function Watch() {
           </div>
 
         </div>
+        {/* Similar & Recommended Carousels */}
+        {similar.length > 0 && (
+          <div className="mt-10">
+            <CarouselRow title="More Like This" movies={similar} usePoster />
+          </div>
+        )}
+        {recommended.length > 0 && (
+          <div className="mt-10 mb-16">
+            <CarouselRow title="Recommended For You" badge="Curated" movies={recommended} />
+          </div>
+        )}
+
       </div>
     </motion.div>
   );
