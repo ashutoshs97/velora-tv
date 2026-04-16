@@ -11,15 +11,19 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+// Support comma-separated ALLOWED_ORIGINS, e.g. "https://veloratv.in,https://veloratv.netlify.app"
+const extraOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   process.env.FRONTEND_URL,
+  ...extraOrigins,
 ].filter(Boolean);
 
-if (!process.env.FRONTEND_URL) {
-  console.warn('⚠️  FRONTEND_URL env variable is not set. Only localhost origins are allowed.');
-}
+console.log('✅ Allowed CORS origins:', allowedOrigins);
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -33,7 +37,7 @@ app.use(cors({
       return callback(null, true);
     }
 
-    console.error(`CORS blocked origin: ${origin}`);
+    console.error(`🚫 CORS blocked origin: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
