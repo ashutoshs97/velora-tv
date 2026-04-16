@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Play, Plus, Share2, Award, CheckCircle2, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Play, Plus, Share2, Award, CheckCircle2, Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory, fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
@@ -29,7 +29,14 @@ export default function Home() {
   const [trendingTV, setTrendingTV] = useState([]);
   const [topRated, setTopRated] = useState([]);
   const [history, setHistory] = useState([]);
-  const [heroMovie, setHeroMovie] = useState(null);
+
+  // ── Hero slider state ──────────────────────────────────────
+  const [heroMovies, setHeroMovies] = useState([]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [heroDirection, setHeroDirection] = useState(1); // 1=right, -1=left
+  const autoAdvanceRef = useRef(null);
+  const heroMovie = heroMovies[heroIndex] || null;
+
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTrendingTV, setLoadingTrendingTV] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
@@ -44,7 +51,7 @@ export default function Home() {
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
   const [becauseTitle, setBecauseTitle] = useState('');
 
-  // ── Autoplay trailer state ──────────────────────────────────────────────
+  // ── Autoplay trailer state ──────────────────────────────────────
   const [trailerKey, setTrailerKey] = useState(null);
   const [trailerActive, setTrailerActive] = useState(false);
   const [trailerMuted, setTrailerMuted] = useState(true);
@@ -67,21 +74,12 @@ export default function Home() {
         const res = await fetchTrending();
         const movies = res.data.results || [];
         setTrending(movies);
-        // Pick a hero movie with a backdrop that scores high
-        const candidates = movies.filter((m) => m.backdrop_path && m.vote_average > 7);
-        if (candidates.length) {
-          // pick a random top one
-          const randomIdx = Math.floor(Math.random() * Math.min(candidates.length, 5));
-          setHeroMovie(candidates[randomIdx]);
-        } else {
-          // Fallback to ANY movie with a backdrop
-          const anyWithBackdrop = movies.find(m => m.backdrop_path);
-          if (anyWithBackdrop) {
-            setHeroMovie(anyWithBackdrop);
-          } else if (movies.length) {
-            setHeroMovie(movies[0]);
-          }
-        }
+        // Build ordered hero candidates (backdrop + good rating)
+        const candidates = movies
+          .filter(m => m.backdrop_path && m.vote_average > 6.5)
+          .slice(0, 7);
+        setHeroMovies(candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5));
+        setHeroIndex(0);
       } finally {
         setLoadingTrending(false);
       }
@@ -147,6 +145,34 @@ export default function Home() {
       .catch(() => {});
   }, [history]);
 
+  // ── Slider navigation helpers ────────────────────────────────────
+  const goToSlide = useCallback((idx, dir = 1) => {
+    setHeroDirection(dir);
+    setHeroIndex(idx);
+  }, []);
+
+  const nextSlide = useCallback(() => {
+    if (!heroMovies.length) return;
+    const next = (heroIndex + 1) % heroMovies.length;
+    goToSlide(next, 1);
+  }, [heroIndex, heroMovies.length, goToSlide]);
+
+  const prevSlide = useCallback(() => {
+    if (!heroMovies.length) return;
+    const prev = (heroIndex - 1 + heroMovies.length) % heroMovies.length;
+    goToSlide(prev, -1);
+  }, [heroIndex, heroMovies.length, goToSlide]);
+
+  // ── Auto-advance every 10s (paused when trailer is active) ─────────────
+  useEffect(() => {
+    if (trailerActive && !trailerEnded) {
+      clearInterval(autoAdvanceRef.current);
+      return;
+    }
+    autoAdvanceRef.current = setInterval(nextSlide, 10000);
+    return () => clearInterval(autoAdvanceRef.current);
+  }, [nextSlide, trailerActive, trailerEnded]);
+
   // ── Fetch trailer key when heroMovie changes ────────────────────────────
   useEffect(() => {
     // Reset trailer state on hero change
@@ -190,22 +216,29 @@ export default function Home() {
       className="min-h-screen pb-16"
     >
       {/* Prime-style Hero Billboard */}
-      {heroMovie && (
+      {heroMovies.length > 0 && heroMovie && (
         <section className="relative w-full min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20">
-          {/* ── Backdrop Image (always rendered, fades under trailer) ── */}
-          <AnimatePresence>
+
+          {/* ── Slide background ── */}
+          <AnimatePresence initial={false} custom={heroDirection}>
             {(!trailerActive || trailerEnded) && (
               <motion.div
-                key="backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.2 }}
+                key={`bg-${heroIndex}`}
+                custom={heroDirection}
+                variants={{
+                  enter: (d) => ({ x: d > 0 ? '6%' : '-6%', opacity: 0 }),
+                  center: { x: 0, opacity: 1 },
+                  exit: (d) => ({ x: d > 0 ? '-4%' : '4%', opacity: 0 }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.85, ease: [0.32, 0.72, 0, 1] }}
                 className="absolute inset-0 w-full h-full"
               >
                 <img
                   src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
-                  alt={heroMovie.title}
+                  alt={heroMovie.title || heroMovie.name}
                   className="w-full h-full object-cover object-top opacity-80"
                   style={{ objectPosition: '50% 15%' }}
                 />
@@ -218,9 +251,7 @@ export default function Home() {
             {trailerActive && trailerKey && !trailerEnded && (
               <motion.div
                 key="trailer"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 1.5 }}
                 className="absolute inset-0 w-full h-full"
               >
@@ -233,8 +264,6 @@ export default function Home() {
                   style={{ border: 'none', pointerEvents: 'none' }}
                   title="Hero Trailer"
                 />
-                {/* Wide-screen letterbox crop — scale up to hide black bars */}
-                <div className="absolute inset-0" style={{ transform: 'scale(1.18)', background: 'transparent' }} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -244,106 +273,141 @@ export default function Home() {
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          {/* ── Content Block ── */}
-          <div className="relative z-10 w-full min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-40 pb-16 sm:pb-24">
+          {/* ── Content Block (slides with each hero) ── */}
+          <div className="relative z-10 w-full min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-40 pb-20 sm:pb-28">
             <div className="max-w-[1400px] mx-auto px-6 lg:px-12 w-full">
-              <div className="w-full md:w-3/4 lg:w-[60%] animate-fade-up" style={{ animationDelay: '0.2s' }}>
+              <AnimatePresence initial={false} custom={heroDirection} mode="wait">
+                <motion.div
+                  key={`content-${heroIndex}`}
+                  custom={heroDirection}
+                  variants={{
+                    enter: (d) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
+                    center: { x: 0, opacity: 1 },
+                    exit: (d) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
+                  }}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+                  className="w-full md:w-3/4 lg:w-[58%]"
+                >
+                  {/* Title */}
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-4 leading-[1.05] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display">
+                    {heroMovie.title || heroMovie.name}
+                  </h1>
 
-                {/* Title */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-5 leading-[1.1] tracking-[-0.02em] drop-shadow-2xl line-clamp-3 font-display">
-                  {heroMovie.title || heroMovie.name}
-                </h1>
-
-                {/* Metadata Row */}
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-7">
-                  <span className="flex items-center gap-1.5 text-[14px] font-bold text-prime-blue bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg">
-                    <CheckCircle2 size={16} />
-                    Included with Velora
-                  </span>
-                  <span className="text-[17px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                    {heroMovie.release_date?.substring(0, 4)}
-                  </span>
-                  <div className="flex items-center gap-1 text-[17px] font-bold text-yellow-400 border-l border-white/20 pl-4">
-                    <Award size={18} fill="currentColor" />
-                    <span>{heroMovie.vote_average?.toFixed(1)}</span>
+                  {/* Metadata */}
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold text-prime-blue bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
+                      <CheckCircle2 size={14} /> Included with Velora
+                    </span>
+                    <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                      {(heroMovie.release_date || heroMovie.first_air_date)?.substring(0, 4)}
+                    </span>
+                    <div className="flex items-center gap-1 text-[15px] font-bold text-yellow-400 border-l border-white/20 pl-4">
+                      <Award size={16} fill="currentColor" />
+                      <span>{heroMovie.vote_average?.toFixed(1)}</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Synopsis — hide when trailer is playing (Netflix pattern) */}
-                <AnimatePresence>
-                  {(!trailerActive || trailerEnded) && (
-                    <motion.p
-                      key="synopsis"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.5 }}
-                      className="text-lg text-white/90 line-clamp-3 mb-8 max-w-2xl font-medium leading-relaxed drop-shadow-md"
+                  {/* Synopsis — hides during trailer */}
+                  <AnimatePresence>
+                    {(!trailerActive || trailerEnded) && (
+                      <motion.p
+                        key="synopsis"
+                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.4 }}
+                        className="text-base text-white/85 line-clamp-3 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
+                      >
+                        {heroMovie.overview}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  {/* CTA Buttons */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Link
+                      to={`/watch/${heroMovie.id}?type=${heroMovie.media_type || heroMovie.type || (heroMovie.name ? 'tv' : 'movie')}`}
+                      id="hero-watch-btn"
+                      className="btn-primary text-base hover:scale-105"
                     >
-                      {heroMovie.overview}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-
-                {/* Action Row */}
-                <div className="flex items-center gap-4 flex-wrap">
-                  <Link
-                    to={`/watch/${heroMovie.id}?type=${heroMovie.media_type || heroMovie.type || (heroMovie.name ? 'tv' : 'movie')}`}
-                    id="hero-watch-btn"
-                    className="btn-primary text-xl scale-100 hover:scale-105"
-                  >
-                    <Play size={24} fill="#000" className="mr-2" />
-                    Play
-                  </Link>
-                  <button title="Add to Watchlist" className="btn-secondary">
-                    <Plus size={24} />
-                  </button>
-                  <button title="Share" className="btn-secondary">
-                    <Share2 size={24} className="-ml-0.5" />
-                  </button>
-                </div>
-              </div>
+                      <Play size={20} fill="#000" className="mr-1.5" /> Play
+                    </Link>
+                    <button title="Add to Watchlist" className="btn-secondary"><Plus size={22} /></button>
+                    <button title="Share" className="btn-secondary"><Share2 size={22} className="-ml-0.5" /></button>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* ── Trailer controls (bottom-right) ── */}
-          {trailerKey && (
-            <div className="absolute bottom-24 right-6 lg:right-12 z-20 flex items-center gap-3">
-              {/* Replay button — only when trailer ended */}
-              <AnimatePresence>
-                {trailerEnded && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={replayTrailer}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-all"
-                  >
-                    <RotateCcw size={14} />
-                    Replay
-                  </motion.button>
-                )}
-              </AnimatePresence>
+          {/* ── Slider nav: arrows + dots ── */}
+          <div className="absolute bottom-6 left-0 right-0 z-20">
+            <div className="max-w-[1400px] mx-auto px-6 lg:px-12 flex items-center justify-between">
 
-              {/* Mute/Unmute — only when trailer is playing */}
-              {trailerActive && !trailerEnded && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => {
-                    setTrailerMuted(m => !m);
-                    // Reload iframe with new mute setting
-                    setTrailerActive(false);
-                    setTimeout(() => setTrailerActive(true), 50);
-                  }}
-                  title={trailerMuted ? 'Unmute' : 'Mute'}
-                  className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/25 text-white flex items-center justify-center hover:bg-white/20 transition-all"
+              {/* dot indicators */}
+              <div className="flex items-center gap-2">
+                {heroMovies.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => goToSlide(i, i > heroIndex ? 1 : -1)}
+                    className="group relative h-[3px] rounded-full overflow-hidden transition-all duration-300"
+                    style={{ width: i === heroIndex ? 28 : 10 }}
+                  >
+                    {/* track */}
+                    <span className="absolute inset-0 bg-white/25 rounded-full" />
+                    {/* active fill */}
+                    {i === heroIndex && (
+                      <motion.span
+                        key={heroIndex}
+                        className="absolute inset-0 bg-white rounded-full origin-left"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 10, ease: 'linear' }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* right-side: prev/next + trailer controls */}
+              <div className="flex items-center gap-2">
+                {/* Trailer mute toggle */}
+                {trailerKey && trailerActive && !trailerEnded && (
+                  <button
+                    onClick={() => { setTrailerMuted(m => !m); setTrailerActive(false); setTimeout(() => setTrailerActive(true), 50); }}
+                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                  >
+                    {trailerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                  </button>
+                )}
+                {trailerKey && trailerEnded && (
+                  <button
+                    onClick={replayTrailer}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs font-semibold hover:bg-white/20 transition-all"
+                  >
+                    <RotateCcw size={12} /> Replay
+                  </button>
+                )}
+
+                {/* Prev */}
+                <button
+                  onClick={prevSlide}
+                  className="w-9 h-9 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
                 >
-                  {trailerMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </motion.button>
-              )}
+                  <ChevronLeft size={18} />
+                </button>
+
+                {/* Next */}
+                <button
+                  onClick={nextSlide}
+                  className="w-9 h-9 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             </div>
-          )}
+          </div>
         </section>
       )}
 
