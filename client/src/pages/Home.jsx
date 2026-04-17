@@ -394,7 +394,7 @@ export default function Home() {
                   <img
                     src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
                     alt={heroMovie.title || heroMovie.name || 'Featured movie'}
-                    className="w-full h-full object-cover object-top opacity-80"
+                    className="w-full h-full object-cover object-top opacity-80 scale-[1.05] sm:scale-[1.08]"
                     style={{ objectPosition: '50% 15%' }}
                     onError={() => setHeroImgError(true)}
                   />
@@ -523,18 +523,21 @@ export default function Home() {
           </div>
 
           {/* Slider nav: arrows + dots */}
-          <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
+          <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20 pointer-events-none">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
+
+              {/* Empty placeholder to keep flex distribution intact on the left */}
+              <div className="w-10 hidden sm:block" />
 
               {/* Dot indicators */}
-              <div className="flex items-center gap-2">
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
                 {heroMovies.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => goToSlide(i, i > heroIndex ? 1 : -1)}
                     aria-label={`Go to slide ${i + 1}`}
-                    className="group relative h-[3px] rounded-full overflow-hidden transition-all duration-300"
-                    style={{ width: i === heroIndex ? 28 : 10 }}
+                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300 shadow-sm pointer-events-auto"
+                    style={{ width: i === heroIndex ? 36 : 14 }}
                   >
                     <span className="absolute inset-0 bg-white/25 rounded-full" />
                     {i === heroIndex && (
@@ -551,13 +554,13 @@ export default function Home() {
               </div>
 
               {/* Right side controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pointer-events-auto">
                 {/* Mute toggle */}
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
                     onClick={toggleMute}
                     aria-label={trailerMuted ? 'Unmute trailer' : 'Mute trailer'}
-                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
                   >
                     {trailerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                   </button>
