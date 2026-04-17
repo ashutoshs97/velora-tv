@@ -216,57 +216,14 @@ export default function Navbar() {
 
           {/* Search */}
           <div className="flex items-center">
-            <form onSubmit={handleSearch} className="flex flex-row-reverse items-center justify-start gap-0">
-              {/* Expandable input */}
-              <div 
-                className={`flex items-center overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                  searchFocused || query ? 'w-48 sm:w-64 opacity-100 ml-3' : 'w-0 opacity-0 ml-0 pointer-events-none'
-                }`}
-              >
-                <div className="relative w-full">
-                  {!query && !searchFocused && (
-                    <span className="hint-fade pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/50 truncate">
-                      {SEARCH_HINTS[hintIndex]}
-                    </span>
-                  )}
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={handleQueryChange}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setSearchFocused(false)}
-                    placeholder=""
-                    maxLength={MAX_QUERY_LENGTH}
-                    className="w-full bg-black/40 text-white text-sm pl-4 pr-8 py-2 rounded-full outline-none border border-white/10 focus:border-white/30 transition-colors"
-                  />
-                  {query && (
-                    <button
-                      type="button"
-                      onClick={() => setQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Search Icon visible independently */}
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchFocused(true);
-                  setTimeout(() => inputRef.current?.focus(), 100);
-                }}
-                className={`p-2.5 rounded-full transition-colors flex-shrink-0
-                  ${searchFocused || query ? 'bg-transparent text-white' : 'text-prime-subtext hover:text-white'}
-                `}
-                aria-label="Search"
-              >
-                <Search size={22} strokeWidth={2.5} />
-              </button>
-            </form>
+            <Link
+              to="/search"
+              onClick={() => setMenuOpen(false)}
+              className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
+              aria-label="Search"
+            >
+              <Search size={22} strokeWidth={2.5} />
+            </Link>
           </div>
         </div>
       </nav>
