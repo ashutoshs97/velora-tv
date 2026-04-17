@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Play, Plus, Share2, Award, CheckCircle2,
-  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight
+  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check
 } from 'lucide-react';
 import {
   fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory,
@@ -77,6 +77,9 @@ export default function Home() {
   const replayTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
 
+  // ── Share state ───────────────────────────────────────────────────────
+  const [copied, setCopied] = useState(false);
+
   // ── Filter/selection states ───────────────────────────────────────────
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
@@ -86,6 +89,44 @@ export default function Home() {
     () => heroMovies[heroIndex] || null,
     [heroMovies, heroIndex]
   );
+
+  // ── Share handler ─────────────────────────────────────────────────────
+  const handleShare = useCallback(() => {
+    if (!heroMovie) return;
+    const url = `${window.location.origin}/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`;
+
+    const copyFallback = () => {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch {
+        // silent fallback
+      }
+    };
+
+    if (navigator.share) {
+      navigator.share({
+        title: heroMovie.title || heroMovie.name || 'Velora',
+        text: 'Check out this awesome movie on Velora!',
+        url
+      }).catch(() => {});
+    } else if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }).catch(copyFallback);
+    } else {
+      copyFallback();
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }, [heroMovie]);
 
   // ── History loader ────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
@@ -465,10 +506,14 @@ export default function Home() {
                       <Plus size={22} />
                     </button>
                     <button
+                      onClick={handleShare}
                       title="Share"
-                      className="btn-secondary"
+                      className={`btn-secondary transition-all ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
                     >
-                      <Share2 size={22} className="-ml-0.5" />
+                      {copied 
+                        ? <Check size={22} className="text-green-400 -ml-0.5" />
+                        : <Share2 size={22} className="-ml-0.5" />
+                      }
                     </button>
                   </div>
                 </motion.div>
