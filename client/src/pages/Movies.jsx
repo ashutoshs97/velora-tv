@@ -32,6 +32,23 @@ const MOODS = [
 
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 
+const A24_MOVIES = [
+  { id: 545611, title: "Everything Everywhere All at Once", poster_path: "/u68AjlvlutfEIcpmbYpKcdi09ut.jpg", backdrop_path: "/ss0Os3uWJfQAENILHZUdX8Tt1OC.jpg", vote_average: 7.72, release_date: "2022-03-24", media_type: "movie" },
+  { id: 376867, title: "Moonlight", poster_path: "/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg", backdrop_path: "/jm1oD3eB08LImSwL1LrzF9AJQ5b.jpg", vote_average: 7.4, release_date: "2016-10-21", media_type: "movie" },
+  { id: 503919, title: "The Lighthouse", poster_path: "/f1tIYarTbkBdIT1aW0gzelDwknv.jpg", backdrop_path: "/sYLzRuEcwSz0L1Z92wQNrETHU9O.jpg", vote_average: 7.477, release_date: "2019-10-18", media_type: "movie" },
+  { id: 473033, title: "Uncut Gems", poster_path: "/6XN1vxHc7kUSqNWtaQKN45J5x2v.jpg", backdrop_path: "/eGljNfNCrPhFYG2RXXmmE0OKu5.jpg", vote_average: 7.162, release_date: "2019-08-30", media_type: "movie" },
+  { id: 785084, title: "The Whale", poster_path: "/jQ0gylJMxWSL490sy0RrPj1Lj7e.jpg", backdrop_path: "/46FRuCeAn6TrS4F1P4F9zhyCpyo.jpg", vote_average: 7.775, release_date: "2022-12-09", media_type: "movie" },
+  { id: 929590, title: "Civil War", poster_path: "/sh7Rg8Er3tFcN9BpKIPOMvALgZd.jpg", backdrop_path: "/en3GU5uGkKaYmSyetHV4csHHiH3.jpg", vote_average: 6.857, release_date: "2024-04-10", media_type: "movie" },
+  { id: 760104, title: "X", poster_path: "/lopZSVtXzhFY603E9OqF7O1YKsh.jpg", backdrop_path: "/70Rm9ItxKuEKN8iu6rNjfwAYUCJ.jpg", vote_average: 6.72, release_date: "2022-03-17", media_type: "movie" },
+  { id: 1138194, title: "Heretic", poster_path: "/fr96XzlzsONrQrGfdLMiwtQjott.jpg", backdrop_path: "/ag66gJCiZ06q1GSJuQlhGLi3Udx.jpg", vote_average: 6.979, release_date: "2024-10-31", media_type: "movie" },
+  { id: 467244, title: "The Zone of Interest", poster_path: "/hUu9zyZmDd8VZegKi1iK1Vk0RYS.jpg", backdrop_path: "/pnTSOKcYnvdpQNQElAtJM1rWOxH.jpg", vote_average: 7.012, release_date: "2023-12-15", media_type: "movie" },
+  { id: 949423, title: "Pearl", poster_path: "/z5uIG81pXyHKg7cUFIu84Wjn4NS.jpg", backdrop_path: "/8rmx3Wh6fQdSL2nzTmdFn9thcK8.jpg", vote_average: 7.233, release_date: "2022-09-16", media_type: "movie" },
+  { id: 666277, title: "Past Lives", poster_path: "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg", backdrop_path: "/7HR38hMBl23lf38MAN63y4pKsHz.jpg", vote_average: 7.714, release_date: "2023-06-02", media_type: "movie" },
+  { id: 559907, title: "The Green Knight", poster_path: "/if4hw3Ou5Sav9Em7WWHj66mnywp.jpg", backdrop_path: "/kIQc0kkqIYTo65x5XjlKgqdDQ6a.jpg", vote_average: 6.604, release_date: "2021-07-29", media_type: "movie" },
+  { id: 437586, title: "mid90s", poster_path: "/9Tw0Y3DK5kGIU9X1yw3Q9gCkOlb.jpg", backdrop_path: "/BOeORWljjIPGuCwUgLls24ctF3.jpg", vote_average: 7.473, release_date: "2018-10-19", media_type: "movie" },
+  { id: 489925, title: "Eighth Grade", poster_path: "/xTa9cLhGHfQ7084UvoPQ2bBXKqd.jpg", backdrop_path: "/nDfZN2q1IPGaLiwAgr9sU209MU5.jpg", vote_average: 7.2, release_date: "2018-01-19", media_type: "movie" },
+];
+
 // ── Safe media type helper ────────────────────────────────────────────────
 function getSafeType(movie) {
   if (!movie) return 'movie';
@@ -211,6 +228,15 @@ export default function Movies() {
             loading={loadingTrending}
             ranked
             usePoster
+          />
+        </div>
+
+        <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
+          <PrimeCarouselRow
+            title="A24 Films"
+            badge="Studio"
+            movies={A24_MOVIES}
+            loading={false}
           />
         </div>
 
