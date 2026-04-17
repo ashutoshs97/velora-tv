@@ -49,6 +49,40 @@ const A24_MOVIES = [
   { id: 489925, title: "Eighth Grade", poster_path: "/xTa9cLhGHfQ7084UvoPQ2bBXKqd.jpg", backdrop_path: "/nDfZN2q1IPGaLiwAgr9sU209MU5.jpg", vote_average: 7.2, release_date: "2018-01-19", media_type: "movie" },
 ];
 
+const NEON_MOVIES = [
+  { id: 792307, title: "Poor Things", poster_path: "/kCGlIMHnOm8JPXSmcaY6LJ1kCuQ.jpg", backdrop_path: "/m5ZsfKcxMDk5s7nEzQ1ntAIfOzX.jpg", vote_average: 7.8, release_date: "2023-12-08", media_type: "movie" },
+  { id: 667216, title: "Infinity Pool", poster_path: "/cQKyNm0Nz6KWiDBQF9w4aZAmOfC.jpg", backdrop_path: "/1xhcEecvRJXQ2OAVO7l9btlrN6D.jpg", vote_average: 6.1, release_date: "2023-01-27", media_type: "movie" },
+  { id: 869291, title: "Cuckoo", poster_path: "/4bGP5cnSZbfBJfIidZNSEIKnav7.jpg", backdrop_path: "/1eoCL8fPUZKlho03XVeNzZ3nlds.jpg", vote_average: 5.7, release_date: "2024-02-16", media_type: "movie" },
+  { id: 1024773, title: "It Lives Inside", poster_path: "/73gIfV8gDwkVgUrFDzt4TfZC9Zc.jpg", backdrop_path: "/dp0rdbGSbZTyWumnbWspXQp87hA.jpg", vote_average: 5.683, release_date: "2023-09-06", media_type: "movie" },
+];
+
+const IRANIAN_MOVIES = [
+  { id: 60243, title: "A Separation", poster_path: "/xQadpnoLokxzN3hRpCPbBGpxsiz.jpg", backdrop_path: "/kcXBa2ru0PXcGI8U3JiInsG6FRR.jpg", vote_average: 7.899, release_date: "2011-02-15", media_type: "movie" },
+  { id: 21334, title: "Children of Heaven", poster_path: "/jWqh1CJWAEcxckMRrf6ARhIEh0R.jpg", backdrop_path: "/9W250lyDDC3P9AgW5ZKGRj7R2Pv.jpg", vote_average: 7.9, release_date: "1997-08-01", media_type: "movie" },
+  { id: 30017, title: "Close-Up", poster_path: "/m9HG2N9ZKCmNN9qOHJTNyy18wn3.jpg", backdrop_path: "/3t1qZqP1e17wQshpPKSqII1OogM.jpg", vote_average: 7.941, release_date: "1990-05-09", media_type: "movie" },
+  { id: 49964, title: "Where Is The Friend's House?", poster_path: "/2rTW4s1kgvoqVs0Kv8ARle1SrkF.jpg", backdrop_path: "/ylBiGZhgBsly0frseG2PvqoYM4o.jpg", vote_average: 7.9, release_date: "1987-07-01", media_type: "movie" },
+  { id: 30020, title: "Taste of Cherry", poster_path: "/u6GYH4HyR0BVwpqFuTOc2g4KB1L.jpg", backdrop_path: "/44SNTCSZTdbF5bzgUy4IfPV3DUq.jpg", vote_average: 7.683, release_date: "1997-09-28", media_type: "movie" },
+  { id: 375315, title: "The Salesman", poster_path: "/x4PIuYU5ZMMXiTrheNR8vCTYPBf.jpg", backdrop_path: "/woSmQgo1wxE4WRVXWHrmgv3jy2O.jpg", vote_average: 7.3, release_date: "2016-06-24", media_type: "movie" },
+  { id: 37181, title: "About Elly", poster_path: "/ctLrMQrg3kss2JO7OIr7RVdN5an.jpg", backdrop_path: "/3loY85G8vB0OcpleFFezf4kSDsy.jpg", vote_average: 7.467, release_date: "2009-06-06", media_type: "movie" },
+  { id: 889699, title: "Holy Spider", poster_path: "/6ObJ4x7m1F5QRY06WzOxNJQHwGb.jpg", backdrop_path: "/fx6c2UuNnXPwuRvu4tGaJJJITT6.jpg", vote_average: 7.276, release_date: "2022-07-13", media_type: "movie" },
+  { id: 672208, title: "A Hero", poster_path: "/5VBPRWW13OJoiLA6suLofnjLKou.jpg", backdrop_path: "/rXRf5Okqg0FzDpmZkt4wly2asB2.jpg", vote_average: 7.31, release_date: "2021-12-15", media_type: "movie" },
+  { id: 320006, title: "Taxi", poster_path: "/lY2RW6pxRYyPmrgUF0rjqbeAnTu.jpg", backdrop_path: "/677ohgE1vEEMSIHZILT19z4rf58.jpg", vote_average: 7.043, release_date: "2015-04-15", media_type: "movie" },
+  { id: 375012, title: "Under the Shadow", poster_path: "/3hxT9XviA3VzUtelHBk2xA6I9FY.jpg", backdrop_path: "/keX3XBX34vUDDULvcohfzPXIU8T.jpg", vote_average: 6.486, release_date: "2016-09-30", media_type: "movie" },
+  { id: 47104, title: "Through the Olive Trees", poster_path: "/xcwCF0YTyAOMrVLgXHjvPP0gGbh.jpg", backdrop_path: "/4BIIX7qiKYYJSm4cWTB2dHfCwZE.jpg", vote_average: 7.441, release_date: "1995-01-25", media_type: "movie" },
+  { id: 583794, title: "Law of Tehran", poster_path: "/ujNhy2Vu7S1FHuwePMIYMkIbGTj.jpg", backdrop_path: "/ubn9Em9G2aFNtogNGCR6IoDBqM.jpg", vote_average: 7.176, release_date: "2019-03-17", media_type: "movie" },
+];
+
+const FOCUS_MOVIES = [
+  { id: 76203, title: "12 Years a Slave", poster_path: "/xdANQijuNrJaw1HA61rDccME4Tm.jpg", backdrop_path: "/4Bb1kMIfrT2tYRZ9M6Jhqy6gkeF.jpg", vote_average: 7.933, release_date: "2013-10-18", media_type: "movie" },
+  { id: 281957, title: "The Revenant", poster_path: "/ji3ecJphATlVgWNY0B0RVXZizdf.jpg", backdrop_path: "/mNQtUJv1F3u0uSKILFrGjIHqkxx.jpg", vote_average: 7.54, release_date: "2015-12-25", media_type: "movie" },
+  { id: 194662, title: "Birdman", poster_path: "/rHUg2AuIuLSIYMYFgavVwqt1jtc.jpg", backdrop_path: "/s0OrExdg7i3RLR7oqzHRk4q2kL4.jpg", vote_average: 7.444, release_date: "2014-10-17", media_type: "movie" },
+  { id: 639933, title: "The Northman", poster_path: "/aSSJMnHknzKjlZ6zybwD7eyJ4Po.jpg", backdrop_path: "/fMiEp00v8gGWEceL4QeLu6H6z69.jpg", vote_average: 7.033, release_date: "2022-04-07", media_type: "movie" },
+  { id: 1813, title: "The Devil's Advocate", poster_path: "/5ZzBGpxy55OQzHxKVY11IpY6a0o.jpg", backdrop_path: "/2Y6Q7eYDXoolcHjYCAyJQlE2CVT.jpg", vote_average: 7.469, release_date: "1997-10-17", media_type: "movie" },
+  { id: 9509, title: "Man on Fire", poster_path: "/grCGLCcTHv9TChibzOwzUpykcjB.jpg", backdrop_path: "/6c7j7MQCczzNVvcrNEiXbs8Kt2p.jpg", vote_average: 7.458, release_date: "2004-04-23", media_type: "movie" },
+  { id: 43347, title: "Love & Other Drugs", poster_path: "/wZLM2uKJRYNchLmiCIjosX0rXy8.jpg", backdrop_path: "/fGBJEfGjHmhg7nLAT0Jkcv9qV5e.jpg", vote_average: 7.038, release_date: "2010-11-22", media_type: "movie" },
+  { id: 340837, title: "A Cure for Wellness", poster_path: "/8QWJtne0pTsNoJ86KE993aQYTLW.jpg", backdrop_path: "/uXx9wjfJEzLlfqB8GW67SYBrhVT.jpg", vote_average: 6.351, release_date: "2017-02-15", media_type: "movie" },
+];
+
 // ── Safe media type helper ────────────────────────────────────────────────
 function getSafeType(movie) {
   if (!movie) return 'movie';
@@ -236,6 +270,33 @@ export default function Movies() {
             title="A24 Films"
             badge="Studio"
             movies={A24_MOVIES}
+            loading={false}
+          />
+        </div>
+
+        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+          <PrimeCarouselRow
+            title="Neon Films"
+            badge="Studio"
+            movies={NEON_MOVIES}
+            loading={false}
+          />
+        </div>
+
+        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+          <PrimeCarouselRow
+            title="Iranian Cinema"
+            badge="World Cinema"
+            movies={IRANIAN_MOVIES}
+            loading={false}
+          />
+        </div>
+
+        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
+          <PrimeCarouselRow
+            title="Focus Features"
+            badge="Studio"
+            movies={FOCUS_MOVIES}
             loading={false}
           />
         </div>
