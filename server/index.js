@@ -30,12 +30,15 @@ app.use(cors({
     // Allow requests with no origin (curl, health checks, same-origin SSR)
     if (!origin) return callback(null, true);
 
-    if (
-      allowedOrigins.includes(origin) ||
-      allowedOrigins.includes('*')
-    ) {
-      return callback(null, true);
-    }
+    // Normalise: strip www. so veloratv.in covers www.veloratv.in too
+    const normalise = (o) => o.replace(/^(https?:\/\/)www\./, '$1');
+    const normOrigin = normalise(origin);
+
+    const allowed =
+      allowedOrigins.includes('*') ||
+      allowedOrigins.some(o => normalise(o) === normOrigin);
+
+    if (allowed) return callback(null, true);
 
     console.error(`🚫 CORS blocked origin: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
