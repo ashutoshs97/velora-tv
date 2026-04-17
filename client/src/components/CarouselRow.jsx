@@ -77,50 +77,55 @@ function CarouselCard({ movie, rank, usePoster = false }) {
     >
       {rank && <RankBadge rank={rank} />}
 
-      <Link to={watchLink} className="block relative rounded-lg overflow-hidden cursor-pointer">
-        <div className={`relative overflow-hidden rounded-lg ${usePoster ? 'aspect-[2/3]' : 'aspect-video'}`}>
+      <Link to={watchLink} className="block relative cursor-pointer group">
+        <div className={`relative overflow-hidden rounded-lg shadow-lg shadow-black/20 ${usePoster ? 'aspect-[2/3]' : 'aspect-video'}`}>
           {/* Image */}
           <img
             src={imgSrc}
             alt={title}
             loading="lazy"
-            width={usePoster ? 342 : 780}   // ← prevents layout shift
-            height={usePoster ? 513 : 439}  // ← prevents layout shift
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            onError={() => setImgError(true)} // ← local state fallback
+            width={usePoster ? 342 : 780}
+            height={usePoster ? 513 : 439}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={() => setImgError(true)}
           />
 
-          {/* Dark vignette */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+          {/* Dark vignette removed as we use labels below now, keep light overlay on hover */}
+          <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
 
-          {/* Rating chip */}
-          {rating && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-[11px] font-bold text-yellow-400">
-              <Star size={10} fill="currentColor" />
-              {rating}
+          {/* Simple play icon on top right instead of full bottom layout */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="bg-prime-blue text-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform">
+              <Play size={12} fill="currentColor" />
             </div>
-          )}
-
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-prime-blue/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
-
-          {/* Play button on hover */}
-          <div className="absolute inset-0 flex flex-col justify-end p-3 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="bg-white text-black rounded-full p-1.5 shadow-lg shadow-black/40 flex-shrink-0">
-                <Play size={14} fill="#000" />
-              </div>
-              <span className="text-white text-xs font-bold tracking-wide drop-shadow truncate">
-                {title}
-              </span>
-            </div>
-            {year && (
-              <span className="text-white/60 text-[10px] font-medium ml-8">{year}</span>
-            )}
           </div>
 
           {/* Blue glow border on hover */}
           <div className="absolute inset-0 rounded-lg ring-0 ring-prime-blue/60 group-hover:ring-2 transition-all duration-300 pointer-events-none" />
+        </div>
+
+        {/* Labels below the poster */}
+        <div className="mt-2.5 px-0.5">
+          <h3 className="text-white text-[13px] sm:text-sm font-bold truncate group-hover:text-prime-blue transition-colors duration-200">
+            {title}
+          </h3>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-prime-subtext font-medium truncate">
+            {rating && (
+              <>
+                <span className="flex items-center gap-0.5 text-red-500 font-bold">
+                  <Star size={10} fill="currentColor" /> {rating}
+                </span>
+                <span className="text-white/20">·</span>
+              </>
+            )}
+            {year && (
+              <>
+                <span>{year}</span>
+                <span className="text-white/20">·</span>
+              </>
+            )}
+            <span className="capitalize">{mediaType === 'tv' ? 'TV Show' : mediaType}</span>
+          </div>
         </div>
       </Link>
     </div>
@@ -134,12 +139,16 @@ function CarouselSkeleton({ usePoster, count = 8 }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className={`flex-shrink-0 rounded-lg skeleton ${
-            usePoster
-              ? 'w-36 sm:w-44 md:w-48 aspect-[2/3]'
-              : 'w-60 sm:w-72 md:w-80 aspect-video'
+          className={`flex-shrink-0 ${
+            usePoster ? 'w-36 sm:w-44 md:w-48' : 'w-60 sm:w-72 md:w-80'
           }`}
-        />
+        >
+          <div className={`rounded-lg skeleton ${usePoster ? 'aspect-[2/3]' : 'aspect-video'}`} />
+          <div className="mt-3 space-y-2 px-0.5">
+            <div className="h-3.5 skeleton rounded w-3/4" />
+            <div className="h-2.5 skeleton rounded w-1/2" />
+          </div>
+        </div>
       ))}
     </div>
   );
