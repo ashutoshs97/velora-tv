@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Share2, Award, CheckCircle2, Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
-import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory, fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail } from '../api';
+import { fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
 
@@ -40,8 +40,7 @@ export default function Home() {
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTrendingTV, setLoadingTrendingTV] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
-  const [newReleases, setNewReleases] = useState([]);
-  const [loadingNew, setLoadingNew] = useState(true);
+
   const [genreMovies, setGenreMovies] = useState([]);
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [loadingGenre, setLoadingGenre] = useState(false);
@@ -103,17 +102,9 @@ export default function Home() {
       }
     };
 
-    const loadNewReleases = async () => {
-      try {
-        const res = await fetchNewReleases();
-        setNewReleases(res.data.results || []);
-      } finally { setLoadingNew(false); }
-    };
-
     loadTrending();
     loadTrendingTV();
     loadTopRated();
-    loadNewReleases();
     loadHistory();
   }, [loadHistory]);
 
@@ -411,126 +402,128 @@ export default function Home() {
         </section>
       )}
 
-      {/* Swimlanes (Content) */}
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 -mt-16 relative z-20 space-y-14">
-        
-        {/* Recently Watched overrides the container to look native to Prime */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-          <RecentlyWatched history={history} onRefresh={loadHistory} />
-        </div>
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* Swimlanes                                                         */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <div className="relative z-20 -mt-16 pb-24">
 
-        {/* Trending Swimlane — Ranked + Poster */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
-          <CarouselRow
-            title="Top 10 Movies"
-            badge="Trending"
-            movies={trending}
-            loading={loadingTrending}
-            ranked
-            usePoster
-          />
-        </div>
+        {/* ── Ambient orb 1 (top) ── */}
+        <div className="pointer-events-none absolute top-0 left-1/4 w-[600px] h-[400px] rounded-full opacity-20"
+          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.18) 0%, transparent 70%)', filter: 'blur(60px)' }} />
 
-        {/* Top Rated Swimlane — Backdrop style */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <CarouselRow
-            title="Critically Acclaimed"
-            badge="Top Rated"
-            movies={topRated}
-            loading={loadingTopRated}
-          />
-        </div>
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12 space-y-16">
 
-        {/* Binge-Worthy TV Shows Swimlane — Poster */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
-          <CarouselRow
-            title="Binge-Worthy TV Shows"
-            badge="Series"
-            movies={trendingTV}
-            loading={loadingTrendingTV}
-            usePoster
-          />
-        </div>
-
-        {/* New Releases This Week */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.7s' }}>
-          <CarouselRow
-            title="Fresh Drops"
-            badge="New This Month"
-            movies={newReleases}
-            loading={loadingNew}
-          />
-        </div>
-
-        {/* Because You Watched */}
-        {becauseYouWatched.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '0.75s' }}>
-            <CarouselRow
-              title={`Because You Watched "${becauseTitle}"`}
-              movies={becauseYouWatched}
-              usePoster
-            />
+          {/* ── Continue Watching ── */}
+          <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+            <RecentlyWatched history={history} onRefresh={loadHistory} />
           </div>
-        )}
 
-        {/* Genre Filter Carousel */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.8s' }}>
-          <div className="flex items-center gap-3 mb-4 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Browse by Genre</h2>
+          {/* ── Top 10 ── */}
+          <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+            <SectionHeader title="Top 10 Today" badge="🔥 Trending" accent="blue" />
+            <CarouselRow title="" badge="" movies={trending} loading={loadingTrending} ranked usePoster />
           </div>
-          {/* Genre pill selector */}
-          <div className="flex gap-2 flex-wrap mb-5">
-            {GENRES.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => setSelectedGenre(g)}
-                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
-                  selectedGenre.id === g.id
-                    ? 'bg-prime-blue text-white border-prime-blue shadow-lg shadow-prime-blue/30'
-                    : 'bg-white/5 text-prime-subtext border-white/10 hover:border-white/30 hover:text-white'
-                }`}
-              >
-                {g.label}
-              </button>
-            ))}
+
+          {/* ── Ambient orb 2 (mid) ── */}
+          <div className="pointer-events-none absolute left-3/4 w-[500px] h-[400px] rounded-full opacity-10"
+            style={{ background: 'radial-gradient(ellipse, rgba(124,58,237,0.3) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+
+          {/* ── Critically Acclaimed ── */}
+          <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
+            <SectionHeader title="Critically Acclaimed" badge="⭐ Top Rated" accent="gold" />
+            <CarouselRow title="" badge="" movies={topRated} loading={loadingTopRated} />
           </div>
-          <CarouselRow
-            title=""
-            movies={genreMovies}
-            loading={loadingGenre}
-          />
+
+          {/* ── Binge-Worthy TV ── */}
+          <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+            <SectionHeader title="Binge-Worthy Series" badge="📺 TV Shows" accent="purple" />
+            <CarouselRow title="" badge="" movies={trendingTV} loading={loadingTrendingTV} usePoster />
+          </div>
+
+          {/* ── Because You Watched ── */}
+          {becauseYouWatched.length > 0 && (
+            <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+              <SectionHeader title={`Because You Watched`} sub={`"${becauseTitle}"`} accent="blue" />
+              <CarouselRow title="" badge="" movies={becauseYouWatched} usePoster />
+            </div>
+          )}
+
+          {/* ── Browse by Genre ── */}
+          <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+            {/* Header */}
+            <SectionHeader title="Browse by Genre" accent="blue" />
+
+            {/* Genre pill row */}
+            <div className="flex gap-2 flex-wrap mb-6">
+              {GENRES.map((g) => {
+                const active = selectedGenre.id === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setSelectedGenre(g)}
+                    className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border select-none overflow-hidden ${
+                      active
+                        ? 'text-white border-transparent'
+                        : 'bg-white/[0.04] text-prime-subtext border-white/8 hover:border-prime-blue/40 hover:text-white hover:bg-prime-blue/8'
+                    }`}
+                    style={active ? {
+                      background: 'linear-gradient(135deg, #00B4FF 0%, #0070CC 100%)',
+                      boxShadow: '0 0 16px rgba(0,180,255,0.4), 0 2px 8px rgba(0,0,0,0.4)'
+                    } : {}}
+                  >
+                    {active && (
+                      <span className="absolute inset-0 bg-white/10 rounded-full" style={{
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%)'
+                      }} />
+                    )}
+                    <span className="relative">{g.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <CarouselRow title="" badge="" movies={genreMovies} loading={loadingGenre} />
+          </div>
+
+          {/* ── Mood Collections ── */}
+          <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
+            <SectionHeader title="What's Your Mood?" accent="purple" />
+
+            {/* Mood pill row */}
+            <div className="flex gap-2 flex-wrap mb-6">
+              {MOODS.map((mood) => {
+                const active = selectedMood.key === mood.key;
+                return (
+                  <button
+                    key={mood.key}
+                    onClick={() => setSelectedMood(mood)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border select-none ${
+                      active
+                        ? 'text-white border-transparent shadow-lg'
+                        : 'bg-white/[0.04] text-prime-subtext border-white/8 hover:border-white/20 hover:text-white hover:bg-white/8'
+                    }`}
+                    style={active ? {
+                      background: 'linear-gradient(135deg, rgba(124,58,237,0.8) 0%, rgba(0,100,200,0.6) 100%)',
+                      boxShadow: '0 0 20px rgba(124,58,237,0.35)'
+                    } : {}}
+                  >
+                    <span className="text-base leading-none">{mood.emoji}</span>
+                    <span>{mood.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <CarouselRow title="" badge="" movies={moodMovies} loading={loadingMood} />
+          </div>
+
         </div>
 
-        {/* Mood-Based Collections */}
-        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.85s' }}>
-          <div className="flex items-center gap-3 mb-4 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">What's Your Mood?</h2>
-          </div>
-          {/* Mood pill selector */}
-          <div className="flex gap-3 flex-wrap mb-5">
-            {MOODS.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setSelectedMood(m)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border ${
-                  selectedMood.key === m.key
-                    ? 'bg-prime-blue/20 text-prime-blue border-prime-blue/50 shadow-lg shadow-prime-blue/20'
-                    : 'bg-white/5 text-prime-subtext border-white/10 hover:border-white/30 hover:text-white'
-                }`}
-              >
-                <span>{m.emoji}</span>
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <CarouselRow
-            title=""
-            movies={moodMovies}
-            loading={loadingMood}
-          />
-        </div>
-
+        {/* ── Bottom ambient glow ── */}
+        <div className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
+          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
+
     </motion.div>
   );
 }

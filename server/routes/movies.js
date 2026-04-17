@@ -126,22 +126,7 @@ const MOOD_GENRES = {
   documentary:[99],
 };
 
-// GET /api/movies/new-releases
-router.get('/new-releases', async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const data = await tmdbFetch('/discover/movie', {
-      'primary_release_date.gte': monthAgo,
-      'primary_release_date.lte': today,
-      sort_by: 'popularity.desc',
-      'vote_count.gte': 50,
-    });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
 
 // GET /api/movies/genre/:id
 router.get('/genre/:id', async (req, res) => {
