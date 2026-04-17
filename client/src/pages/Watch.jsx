@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, Star, Calendar, Clock, Globe, Tag, Users, CheckCircle2, Plus, Share2, ListVideo, Play as PlayIcon, Check
+  ArrowLeft, Star, Plus, Share2, ListVideo, Play as PlayIcon, Check, CheckCircle2
 } from 'lucide-react';
 import { fetchMovieDetail, fetchTVDetail, addToHistory, fetchSimilar, fetchRecommendations } from '../api';
 import MultiSourceAggregator from '../components/MultiSourceAggregator';
@@ -10,15 +10,20 @@ import TrailerModal from '../components/TrailerModal';
 import AmbientBackground from '../components/AmbientBackground';
 import CarouselRow from '../components/CarouselRow';
 
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+
+// ── Validate type param — only allow known values ─────────────────────────
+function getSafeType(raw) {
+  return raw === 'tv' ? 'tv' : 'movie';
+}
 
 export default function Watch() {
   const { id } = useParams();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const type = searchParams.get('type') || 'movie';
+  const type = getSafeType(searchParams.get('type'));
 
+  // ── All useState hooks together at top (Rules of Hooks) ───────────────
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,48 +34,60 @@ export default function Watch() {
   const [copied, setCopied] = useState(false);
   const [similar, setSimilar] = useState([]);
   const [recommended, setRecommended] = useState([]);
+  const [showColdStartWarning, setShowColdStartWarning] = useState(false); // ← MOVED UP
 
+  // ── All useEffect hooks together after useState ────────────────────────
+
+  // Load movie/TV details
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = type === 'tv' ? await fetchTVDetail(id) : await fetchMovieDetail(id);
+        const res = type === 'tv'
+          ? await fetchTVDetail(id)
+          : await fetchMovieDetail(id);
+
+        if (cancelled) return; // Component unmounted — skip state updates
+
         const data = res.data;
         setMovie(data);
 
-        // Save to watch history (fire and forget, do not block UI render)
+        // Save to watch history — fire and forget
         const t = data.title || data.name;
         const releaseYear = (data.release_date || data.first_air_date || '').substring(0, 4);
-
         addToHistory({
           tmdbId: data.id,
           title: t,
-          posterPath: data.poster_path, // Fallback if no backdrop on home
+          posterPath: data.poster_path,
           backdropPath: data.backdrop_path,
           year: releaseYear,
           rating: data.vote_average,
           overview: data.overview,
         }).catch(() => {});
 
-        // Default to season 1, episode 1 if it has seasons
-        if (type === 'tv' && data.seasons && data.seasons.length > 0) {
+        // Default season/episode for TV
+        if (type === 'tv' && data.seasons?.length > 0) {
           const firstRealSeason = data.seasons.find(s => s.season_number > 0) || data.seasons[0];
           setSeason(firstRealSeason.season_number || 1);
           setEpisode(1);
         }
       } catch {
-        setError('Failed to load movie details. Please try again.');
+        if (!cancelled) setError('Failed to load details. Please try again.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     load();
     window.scrollTo(0, 0);
+
+    return () => { cancelled = true; }; // Cleanup on unmount
   }, [id, type]);
 
-  const [showColdStartWarning, setShowColdStartWarning] = useState(false);
-
+  // Cold start warning timer
   useEffect(() => {
     let warningTimer;
     if (loading) {
@@ -81,35 +98,99 @@ export default function Watch() {
     return () => clearTimeout(warningTimer);
   }, [loading]);
 
-  // Share card: copy deep link to clipboard
-  const handleShare = useCallback(() => {
-    const url = `${window.location.origin}/watch/${id}?type=${type}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
-  }, [id, type]);
-
-  // Load similar and recommended (must be before early returns - Rules of Hooks)
+  // Load similar and recommended
   useEffect(() => {
     if (!id) return;
-    fetchSimilar(id, type).then(r => setSimilar(r.data.results || [])).catch(() => {});
-    fetchRecommendations(id, type).then(r => setRecommended(r.data.results || [])).catch(() => {});
+    let cancelled = false;
+
+    fetchSimilar(id, type)
+      .then(r => { if (!cancelled) setSimilar(r.data?.results || []); })
+      .catch(() => {});
+
+    fetchRecommendations(id, type)
+      .then(r => { if (!cancelled) setRecommended(r.data?.results || []); })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
   }, [id, type]);
 
+  // ── useCallback hooks ─────────────────────────────────────────────────
+
+  // Share handler with fallback for browsers that don't support clipboard API
+  const handleShare = useCallback(() => {
+    const url = `${window.location.origin}/watch/${id}?type=${type}`;
+
+    // Modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          setCopied(true);
+          const timer = setTimeout(() => setCopied(false), 2500);
+          return () => clearTimeout(timer);
+        })
+        .catch(() => {
+          // Fallback — create temp input
+          fallbackCopy(url);
+        });
+    } else {
+      // Fallback for HTTP or older browsers
+      fallbackCopy(url);
+    }
+  }, [id, type]);
+
+  // ── useMemo hooks — avoid recalculating on every render ───────────────
+  const cast = useMemo(() => movie?.credits?.cast?.slice(0, 15) || [], [movie]);
+
+  const genres = useMemo(
+    () => movie?.genres?.map(g => g.name).join(', ') || '',
+    [movie]
+  );
+
+  const runtime = useMemo(() => {
+    const runtimeMin = movie?.runtime || movie?.episode_run_time?.[0];
+    if (!runtimeMin) return null;
+    return `${Math.floor(runtimeMin / 60)}h ${runtimeMin % 60}m`;
+  }, [movie]);
+
+  const year = useMemo(
+    () => (movie?.release_date || movie?.first_air_date)?.substring(0, 4) || '',
+    [movie]
+  );
+
+  const directorName = useMemo(
+    () => movie?.credits?.crew?.find(c => c.job === 'Director')?.name
+      || movie?.created_by?.[0]?.name
+      || 'Unknown',
+    [movie]
+  );
+
+  const trailerKey = useMemo(() => {
+    const key = movie?.videos?.results?.find(
+      v => v.type === 'Trailer' && v.site === 'YouTube'
+    )?.key || movie?.videos?.results?.[0]?.key;
+    // Validate key is a non-empty string
+    return typeof key === 'string' && key.trim().length > 0 ? key : null;
+  }, [movie]);
+
+  // ── Loading state ─────────────────────────────────────────────────────
   if (loading) {
     return (
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4 }}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ duration: 0.4 }}
         className="min-h-screen pt-24 flex items-center justify-center bg-black px-4"
       >
         <div className="flex flex-col items-center gap-6 max-w-md text-center">
           <div className="w-12 h-12 border-2 border-prime-blue border-t-transparent rounded-full animate-spin" />
           {showColdStartWarning && (
             <div className="animate-fade-up">
-              <p className="text-prime-blue font-bold tracking-wide mb-2">Waking up the Database Server...</p>
+              <p className="text-prime-blue font-bold tracking-wide mb-2">
+                Waking up the Database Server...
+              </p>
               <p className="text-white/60 text-sm leading-relaxed">
-                As a free-tier Render deployment, the backend spins down after inactivity. 
+                As a free-tier Render deployment, the backend spins down after inactivity.
                 Please pardon this ~50 second cold start delay. It will be lightning fast once awake!
               </p>
             </div>
@@ -119,11 +200,15 @@ export default function Watch() {
     );
   }
 
+  // ── Error state ───────────────────────────────────────────────────────
   if (error || !movie) {
     return (
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.4 }}
-        className="min-h-screen pt-24 flex items-center justify-center bg-black"
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ duration: 0.4 }}
+        className="min-h-screen pt-24 flex items-center justify-center bg-black px-4"
       >
         <div className="text-center space-y-4">
           <p className="text-red-400 text-lg font-bold">{error || 'Movie not found.'}</p>
@@ -135,22 +220,13 @@ export default function Watch() {
     );
   }
 
-  const cast = movie.credits?.cast?.slice(0, 15) || [];
-  const genres = movie.genres?.map((g) => g.name).join(', ');
-  const runtimeMin = movie.runtime || (movie.episode_run_time && movie.episode_run_time[0]);
-  const runtime = runtimeMin
-    ? `${Math.floor(runtimeMin / 60)}h ${runtimeMin % 60}m`
-    : null;
-  const year = (movie.release_date || movie.first_air_date)?.substring(0, 4);
-  const directorName = movie.credits?.crew?.find((c) => c.job === 'Director')?.name || movie.created_by?.[0]?.name || 'Unknown';
-
-
-  const trailerKey = movie?.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key
-    || movie?.videos?.results?.[0]?.key;
-
+  // ── Main render ───────────────────────────────────────────────────────
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.4, ease: "easeOut" }}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen bg-black flex flex-col"
     >
       {/* Ambient Glow */}
@@ -166,10 +242,11 @@ export default function Watch() {
           onClose={() => setShowTrailer(false)}
         />
       )}
-      {/* ── Top Area: The Player (Pitch Black Context) ── */}
+
+      {/* ── Top Area: Player ── */}
       <div className="w-full relative z-10 pt-24 pb-8 bg-black">
-        
         <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-8">
+
           {/* Back button */}
           <div className="mb-4">
             <Link
@@ -180,36 +257,47 @@ export default function Watch() {
               <span className="text-sm font-bold tracking-wide uppercase">Back to Browse</span>
             </Link>
           </div>
-          
+
           <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
-          
+
           {/* TV Season/Episode Selectors */}
-          {type === 'tv' && movie && movie.seasons && (
+          {type === 'tv' && movie?.seasons && (
             <div className="mt-8 bg-[#1A242F] border border-white/10 rounded-xl p-4 flex flex-wrap items-center gap-6">
               <div className="flex items-center gap-2 text-prime-blue">
                 <ListVideo size={20} />
                 <span className="font-bold text-white tracking-wide uppercase text-sm">Episodes</span>
               </div>
-              <div className="flex items-center gap-3">
-                <select 
-                  className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer"
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Season select */}
+                <select
+                  className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer appearance-none"
                   value={season}
                   onChange={(e) => {
                     setSeason(Number(e.target.value));
                     setEpisode(1);
                   }}
                 >
-                  {movie.seasons.filter(s => s.season_number > 0).map(s => (
-                    <option key={s.id} value={s.season_number}>Season {s.season_number}</option>
-                  ))}
+                  {movie.seasons
+                    .filter(s => s.season_number > 0)
+                    .map(s => (
+                      <option key={s.id} value={s.season_number}>
+                        Season {s.season_number}
+                      </option>
+                    ))}
                 </select>
-                <select 
-                  className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer"
+
+                {/* Episode select */}
+                <select
+                  className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer appearance-none"
                   value={episode}
                   onChange={(e) => setEpisode(Number(e.target.value))}
                 >
                   {Array.from(
-                    { length: movie.seasons.find(s => s.season_number === season)?.episode_count || 24 },
+                    {
+                      length: movie.seasons.find(
+                        s => s.season_number === season
+                      )?.episode_count || 1  // ← Changed from 24 to 1 (safer default)
+                    },
                     (_, i) => (
                       <option key={i + 1} value={i + 1}>Episode {i + 1}</option>
                     )
@@ -221,27 +309,39 @@ export default function Watch() {
         </div>
       </div>
 
-      {/* ── Bottom Area: X-Ray Tabbed Interface ── */}
+      {/* ── Bottom Area: Details ── */}
       <div className="flex-1 bg-prime-bg relative z-20">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12 py-10">
-          
-          {/* Movie core header info */}
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-10">
+
+          {/* Movie header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-            <div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black text-white mb-3 break-words">
                 {movie.title || movie.name}
               </h1>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <span className="flex items-center gap-1 text-[13px] font-bold text-prime-blue">
                   <CheckCircle2 size={14} /> Included with Velora
                 </span>
-                <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">{year}</span>
-                {runtime && <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">{runtime}</span>}
+                {year && (
+                  <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                    {year}
+                  </span>
+                )}
+                {runtime && (
+                  <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                    {runtime}
+                  </span>
+                )}
                 {type === 'tv' && movie.number_of_seasons && (
-                   <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">{movie.number_of_seasons} Seasons</span>
+                  <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                    {movie.number_of_seasons} Seasons
+                  </span>
                 )}
               </div>
             </div>
+
+            {/* Action buttons */}
             <div className="flex items-center gap-3 flex-wrap">
               {trailerKey && (
                 <button
@@ -251,24 +351,29 @@ export default function Watch() {
                   <PlayIcon size={16} fill="currentColor" /> Watch Trailer
                 </button>
               )}
-              <button title="Watchlist" className="btn-secondary !p-4"><Plus size={20} /></button>
+              <button title="Watchlist" className="btn-secondary !p-4">
+                <Plus size={20} />
+              </button>
               <button
                 onClick={handleShare}
                 title="Share"
                 className={`btn-secondary !p-4 transition-all ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
               >
-                {copied ? <Check size={20} className="text-green-400" /> : <Share2 size={20} className="-ml-0.5" />}
+                {copied
+                  ? <Check size={20} className="text-green-400" />
+                  : <Share2 size={20} className="-ml-0.5" />
+                }
               </button>
             </div>
           </div>
 
-          {/* Tabs Navigation */}
-          <div className="flex items-center gap-8 border-b border-white/10 mb-8">
+          {/* Tabs */}
+          <div className="flex items-center gap-6 sm:gap-8 border-b border-white/10 mb-8 overflow-x-auto">
             {['details', 'cast'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors relative ${
+                className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors relative whitespace-nowrap ${
                   activeTab === tab ? 'text-white' : 'text-prime-subtext hover:text-white'
                 }`}
               >
@@ -285,23 +390,31 @@ export default function Watch() {
             {activeTab === 'details' && (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10 animate-fade-in">
                 <div className="lg:col-span-2">
-                  {movie.tagline && <p className="text-white/60 italic mb-4 font-medium">"{movie.tagline}"</p>}
-                  <p className="text-lg text-white/90 leading-relaxed font-medium">
-                    {movie.overview}
+                  {movie.tagline && (
+                    <p className="text-white/60 italic mb-4 font-medium">"{movie.tagline}"</p>
+                  )}
+                  <p className="text-base sm:text-lg text-white/90 leading-relaxed font-medium">
+                    {movie.overview || 'No overview available.'}
                   </p>
                 </div>
                 <div className="space-y-4 border-l border-white/10 pl-6 lg:pl-10">
                   <div>
-                    <span className="text-sm text-prime-subtext block mb-1">{type === 'tv' ? 'Creator' : 'Director'}</span>
+                    <span className="text-sm text-prime-subtext block mb-1">
+                      {type === 'tv' ? 'Creator' : 'Director'}
+                    </span>
                     <span className="text-white font-medium">{directorName}</span>
                   </div>
-                  <div>
-                    <span className="text-sm text-prime-subtext block mb-1">Genres</span>
-                    <span className="text-white font-medium">{genres}</span>
-                  </div>
+                  {genres && (
+                    <div>
+                      <span className="text-sm text-prime-subtext block mb-1">Genres</span>
+                      <span className="text-white font-medium">{genres}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-sm text-prime-subtext block mb-1">Original Language</span>
-                    <span className="text-white font-medium uppercase">{movie.original_language}</span>
+                    <span className="text-white font-medium uppercase">
+                      {movie.original_language || 'N/A'}
+                    </span>
                   </div>
                   {movie.vote_average > 0 && (
                     <div>
@@ -317,34 +430,51 @@ export default function Watch() {
             )}
 
             {activeTab === 'cast' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 animate-fade-in">
-                {cast.map((person) => (
-                  <div key={person.id} className="flex flex-col items-center text-center group cursor-pointer">
-                    <div className="w-28 h-28 rounded-full overflow-hidden mb-3 bg-prime-surface border-[3px] border-transparent group-hover:border-prime-blue transition-colors shadow-xl">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4 sm:gap-6 animate-fade-in">
+                {cast.length > 0 ? cast.map((person) => (
+                  <div
+                    key={person.id}
+                    className="flex flex-col items-center text-center group cursor-pointer"
+                  >
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden mb-2 sm:mb-3 bg-prime-surface border-[3px] border-transparent group-hover:border-prime-blue transition-colors shadow-xl flex-shrink-0">
                       {person.profile_path ? (
                         <img
                           src={`${PROFILE_BASE}${person.profile_path}`}
-                          alt={person.name}
+                          alt={person.name || 'Cast member'}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-prime-subtext text-2xl font-bold bg-[#252E39]">
-                          {person.name[0]}
-                        </div>
-                      )}
+                      ) : null}
+                      <div
+                        className="w-full h-full items-center justify-center text-prime-subtext text-xl font-bold bg-[#252E39]"
+                        style={{ display: person.profile_path ? 'none' : 'flex' }}
+                      >
+                        {person.name?.[0] ?? '?'}
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-white leading-tight mb-1">{person.name}</span>
-                    <span className="text-xs text-prime-subtext">{person.character}</span>
+                    <span className="text-xs sm:text-sm font-bold text-white leading-tight mb-1 line-clamp-2">
+                      {person.name || 'Unknown'}
+                    </span>
+                    <span className="text-[10px] sm:text-xs text-prime-subtext line-clamp-1">
+                      {person.character || ''}
+                    </span>
                   </div>
-                ))}
-                {cast.length === 0 && <p className="text-prime-subtext">No cast information available.</p>}
+                )) : (
+                  <p className="text-prime-subtext col-span-full">
+                    No cast information available.
+                  </p>
+                )}
               </div>
             )}
           </div>
-
         </div>
-        {/* Similar & Recommended Carousels */}
+
+      {/* Similar & Recommended */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
         {similar.length > 0 && (
           <div className="mt-10">
             <CarouselRow title="More Like This" movies={similar} usePoster />
@@ -355,8 +485,24 @@ export default function Watch() {
             <CarouselRow title="Recommended For You" badge="Curated" movies={recommended} />
           </div>
         )}
-
+      </div>
       </div>
     </motion.div>
   );
+}
+
+// ── Fallback copy for browsers without clipboard API ──────────────────────
+function fallbackCopy(text) {
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  } catch {
+    // Silent fail — copy not supported
+  }
 }

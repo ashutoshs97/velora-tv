@@ -9,7 +9,7 @@ export const fetchTrending = () => api.get('/movies/trending');
 export const fetchTrendingTV = () => api.get('/movies/trending-tv');
 export const fetchPopular = () => api.get('/movies/popular');
 export const fetchTopRated = () => api.get('/movies/top-rated');
-export const fetchNewReleases = () => api.get('/movies/new-releases');
+
 export const fetchByGenre = (genreId) => api.get(`/movies/genre/${genreId}`);
 export const fetchByMood = (mood) => api.get(`/movies/mood/${mood}`);
 export const fetchSimilar = (id, type = 'movie') => api.get(`/movies/${id}/similar`, { params: { type } });
