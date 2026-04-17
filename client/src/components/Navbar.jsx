@@ -149,6 +149,18 @@ export default function Navbar() {
         }
       `}</style>
 
+      {/* Desktop Logo (Floating off to the left) */}
+      <div className="fixed top-6 left-8 z-[100] hidden md:block transition-transform duration-500 hover:scale-105">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)] overflow-hidden">
+            <span className="text-black font-black text-lg tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
+          </div>
+          <span className="text-lg font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
+            ELORA
+          </span>
+        </Link>
+      </div>
+
       <nav
         className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-out w-[95%] max-w-fit rounded-full hidden md:block select-none ${
           scrolled ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10' : 'nav-pill-bg border border-transparent shadow-lg'
@@ -253,8 +265,13 @@ export default function Navbar() {
         }`}
       >
         <div className="flex items-center justify-between h-[68px] px-5">
-          <Link to="/" className="text-xl font-black text-white font-display uppercase tracking-wider">
-            Velora
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.15)] overflow-hidden">
+              <span className="text-black font-black text-base tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
+            </div>
+            <span className="text-base font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
+              ELORA
+            </span>
           </Link>
           <button
             className="text-white p-2"
