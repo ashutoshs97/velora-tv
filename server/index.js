@@ -11,12 +11,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-// Support comma-separated ALLOWED_ORIGINS, e.g. "https://veloratv.in,https://veloratv.netlify.app"
+// Hard-coded production origins (always allowed regardless of env vars)
+const PRODUCTION_ORIGINS = [
+  'https://veloratv.in',
+  'https://www.veloratv.in',
+  'https://velora-tv-3os2.vercel.app',
+];
+
+// Support comma-separated ALLOWED_ORIGINS env var for extra origins
 const extraOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : [];
 
 const allowedOrigins = [
+  ...PRODUCTION_ORIGINS,
   'http://localhost:5173',
   'http://localhost:3000',
   process.env.FRONTEND_URL,
