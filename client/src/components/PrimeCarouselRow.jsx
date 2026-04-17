@@ -100,6 +100,7 @@ function PrimeCard({ movie, isHovered, onHover, onLeave }) {
 export default function PrimeCarouselRow({ title, badge, movies, loading, titleLink }) {
   const rowRef = useRef(null);
   const [hoveredId, setHoveredId] = useState(null);
+  const [expanded, setExpanded] = useState(false);
 
   const scroll = (direction) => {
     if (rowRef.current) {
@@ -138,23 +139,33 @@ export default function PrimeCarouselRow({ title, badge, movies, loading, titleL
                   <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
                 </a>
               ) : (
-                <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
+                <button
+                  onClick={() => setExpanded(e => !e)}
+                  aria-label={expanded ? 'Collapse section' : 'Expand section'}
+                  className="focus:outline-none"
+                >
+                  <ChevronRight
+                    size={22}
+                    className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-all duration-300"
+                    style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                  />
+                </button>
               )}
             </h2>
           </div>
         </div>
       )}
 
-      <div className="relative -ml-4 sm:-ml-6 lg:-ml-12 pl-4 sm:pl-6 lg:pl-12">
+      {/* Expanded Grid View */}
+      {expanded ? (
         <div
-          ref={rowRef}
-          className="flex gap-3 sm:gap-4 overflow-x-auto pb-8 pt-4 hide-scrollbar snap-x snap-mandatory pr-12"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="grid gap-3 sm:gap-4"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
         >
           {movies.map((movie) => (
-            <div key={movie.id} className="snap-start pt-2">
-              <PrimeCard 
-                movie={movie} 
+            <div key={movie.id} className="snap-start">
+              <PrimeCard
+                movie={movie}
                 isHovered={hoveredId === movie.id}
                 onHover={() => setHoveredId(movie.id)}
                 onLeave={() => setHoveredId(null)}
@@ -162,25 +173,45 @@ export default function PrimeCarouselRow({ title, badge, movies, loading, titleL
             </div>
           ))}
         </div>
+      ) : (
+        /* Carousel View */
+        <div className="relative -ml-4 sm:-ml-6 lg:-ml-12 pl-4 sm:pl-6 lg:pl-12">
+          <div
+            ref={rowRef}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-8 pt-4 hide-scrollbar snap-x snap-mandatory pr-12"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {movies.map((movie) => (
+              <div key={movie.id} className="snap-start pt-2">
+                <PrimeCard
+                  movie={movie}
+                  isHovered={hoveredId === movie.id}
+                  onHover={() => setHoveredId(movie.id)}
+                  onLeave={() => setHoveredId(null)}
+                />
+              </div>
+            ))}
+          </div>
 
-        {/* Navigation Arrows */}
-        <div className="hidden sm:block">
-          <button
-            onClick={() => scroll(-1)}
-            className="absolute left-0 top-[45%] -translate-y-1/2 w-10 h-16 bg-black/60 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center hover:bg-black/80 hover:w-12 transition-all z-40 rounded-r-xl"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <button
-            onClick={() => scroll(1)}
-            className="absolute right-0 top-[45%] -translate-y-1/2 w-10 h-16 bg-black/60 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center hover:bg-black/80 hover:w-12 transition-all z-40 rounded-l-xl"
-            aria-label="Scroll right"
-          >
-            <ChevronRight size={24} />
-          </button>
+          {/* Navigation Arrows */}
+          <div className="hidden sm:block">
+            <button
+              onClick={() => scroll(-1)}
+              className="absolute left-0 top-[45%] -translate-y-1/2 w-10 h-16 bg-black/60 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center hover:bg-black/80 hover:w-12 transition-all z-40 rounded-r-xl"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={() => scroll(1)}
+              className="absolute right-0 top-[45%] -translate-y-1/2 w-10 h-16 bg-black/60 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center hover:bg-black/80 hover:w-12 transition-all z-40 rounded-l-xl"
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
