@@ -128,14 +128,16 @@ export default function PrimeCarouselRow({ title, badge, movies, loading }) {
 
   return (
     <section className="relative group">
-      <div className="flex items-end justify-between mb-4 sm:mb-5 pr-4 sm:pr-0">
-        <div className="flex items-center gap-3">
-          <h2 className="section-title text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center">
-            {title}
-            <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
-          </h2>
+      {title && (
+        <div className="flex items-end justify-between mb-4 sm:mb-5 pr-4 sm:pr-0">
+          <div className="flex items-center gap-3">
+            <h2 className="section-title text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center">
+              {title}
+              <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
+            </h2>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="relative -ml-4 sm:-ml-6 lg:-ml-12 pl-4 sm:pl-6 lg:pl-12">
         <div

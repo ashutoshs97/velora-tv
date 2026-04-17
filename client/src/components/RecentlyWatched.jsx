@@ -36,10 +36,10 @@ export default function RecentlyWatched({ history, onRefresh }) {
         </div>
       </div>
 
-      <div className="relative -mx-2 sm:-mx-4 lg:-mx-12 px-2 sm:px-4 lg:px-12">
+      <div className="relative flex -mx-4 sm:-mx-6 lg:-mx-12">
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto pb-4 pt-2 -mt-2 scrollbar-none snap-x snap-mandatory"
+          className="flex gap-4 overflow-x-auto px-4 sm:px-6 lg:px-12 pb-8 pt-6 -my-4 scrollbar-none snap-x snap-mandatory w-full"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {history.map((item) => (
