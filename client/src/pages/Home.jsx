@@ -160,6 +160,7 @@ export default function Home() {
     loadTrending();
     loadTrendingTV();
     loadTopRated();
+    loadNewReleases();
     loadHistory();
 
     return () => { cancelled = true; };
@@ -661,7 +662,11 @@ export default function Home() {
               </button>
             ))}
           </div>
-
+          <CarouselRow
+            title=""
+            movies={moodMovies}
+            loading={loadingMood}
+          />
         </div>
 
         {/* ── Bottom ambient glow ── */}
