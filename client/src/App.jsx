@@ -5,6 +5,8 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import Watch from './pages/Watch';
 import Person from './pages/Person';
+import Movies from './pages/Movies';
+import Shows from './pages/Shows';
 
 export default function App() {
   const location = useLocation();
@@ -16,6 +18,8 @@ export default function App() {
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<Home />} />
+            <Route path="/movies" element={<Movies />} />
+            <Route path="/shows" element={<Shows />} />
             <Route path="/search" element={<Search />} />
             <Route path="/watch/:id" element={<Watch />} />
             <Route path="/person/:id" element={<Person />} />

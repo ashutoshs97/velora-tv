@@ -143,6 +143,16 @@ router.get('/popular', async (req, res) => {
   }
 });
 
+// GET /api/movies/popular-tv
+router.get('/popular-tv', async (req, res) => {
+  try {
+    const data = await tmdbFetch('/tv/popular');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/movies/top-rated
 router.get('/top-rated', async (req, res) => {
   try {
@@ -152,6 +162,27 @@ router.get('/top-rated', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// GET /api/movies/top-rated-tv
+router.get('/top-rated-tv', async (req, res) => {
+  try {
+    const data = await tmdbFetch('/tv/top_rated');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/movies/on-air-tv
+router.get('/on-air-tv', async (req, res) => {
+  try {
+    const data = await tmdbFetch('/tv/on_the_air');
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // GET /api/movies/new-releases ← was getting blocked by /:id before
 router.get('/new-releases', async (req, res) => {

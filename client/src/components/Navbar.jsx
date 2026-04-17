@@ -13,8 +13,8 @@ const SEARCH_HINTS = [
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
-  { to: '#movies', label: 'Movies' },
-  { to: '#shows', label: 'Shows' },
+  { to: '/movies', label: 'Movies' },
+  { to: '/shows', label: 'Shows' },
 ];
 
 const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
