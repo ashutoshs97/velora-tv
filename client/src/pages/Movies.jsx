@@ -60,6 +60,9 @@ export default function Movies() {
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [loadingMood, setLoadingMood] = useState(false);
 
+  // ── Filter/selection states ───────────────────────────────────────────
+  const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
+  const [selectedMood, setSelectedMood] = useState(MOODS[0]);
 
 
   // ── History loader ────────────────────────────────────────────────────

@@ -60,6 +60,9 @@ export default function Shows() {
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [loadingMood, setLoadingMood] = useState(false);
 
+  // ── Filter/selection states ───────────────────────────────────────────
+  const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
+  const [selectedMood, setSelectedMood] = useState(MOODS[0]);
 
 
   // ── History loader ────────────────────────────────────────────────────
@@ -73,14 +76,9 @@ export default function Shows() {
     }
   }, []);
 
-  // ── Initial data load ─────────────────────────────────────────────────
+  // ── Initial data load ────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
-
-    const loadPopular = async () => {
-      } catch {
-      }
-    };
 
     const loadTrending = async () => {
       try {
@@ -117,7 +115,6 @@ export default function Shows() {
       }
     };
 
-    loadPopular();
     loadTrending();
     loadTopRated();
     loadNewReleases();
