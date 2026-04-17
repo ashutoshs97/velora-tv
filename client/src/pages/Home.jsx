@@ -455,7 +455,7 @@ export default function Home() {
                   className="w-full md:w-3/4 lg:w-[58%]"
                 >
                   {/* Title */}
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.05] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.15] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
                     {heroMovie.title || heroMovie.name || 'Untitled'}
                   </h1>
 
