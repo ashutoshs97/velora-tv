@@ -773,6 +773,7 @@ export default function Home() {
             badge="Letterboxd Favorites"
             movies={AUTHORS_CHOICE}
             loading={false}
+            titleLink="https://letterboxd.com/ashutoshs97/likes/films/by/popular/"
           />
         </div>
 

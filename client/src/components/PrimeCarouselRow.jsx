@@ -97,7 +97,7 @@ function PrimeCard({ movie, isHovered, onHover, onLeave }) {
   );
 }
 
-export default function PrimeCarouselRow({ title, badge, movies, loading }) {
+export default function PrimeCarouselRow({ title, badge, movies, loading, titleLink }) {
   const rowRef = useRef(null);
   const [hoveredId, setHoveredId] = useState(null);
 
@@ -133,7 +133,13 @@ export default function PrimeCarouselRow({ title, badge, movies, loading }) {
           <div className="flex items-center gap-3">
             <h2 className="section-title text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center">
               {title}
-              <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
+              {titleLink ? (
+                <a href={titleLink} target="_blank" rel="noopener noreferrer" aria-label="View full list">
+                  <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
+                </a>
+              ) : (
+                <ChevronRight size={22} className="ml-1 text-prime-subtext hover:text-white cursor-pointer transition-colors" />
+              )}
             </h2>
           </div>
         </div>
