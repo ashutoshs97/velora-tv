@@ -638,7 +638,7 @@ export default function Home() {
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: '0.7s' }}>
-          <CarouselRow
+          <PrimeCarouselRow
             title="Fresh Drops"
             badge="New This Month"
             movies={newReleases}
@@ -684,7 +684,7 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <CarouselRow
+          <PrimeCarouselRow
             title=""
             movies={genreMovies}
             loading={loadingGenre}
@@ -720,7 +720,7 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <CarouselRow
+          <PrimeCarouselRow
             title=""
             movies={moodMovies}
             loading={loadingMood}
