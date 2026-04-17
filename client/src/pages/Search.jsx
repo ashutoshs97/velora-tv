@@ -45,6 +45,7 @@ const cardVariants = {
 function ResultCard({ movie, index }) {
   const [imgError, setImgError] = useState(false);
 
+  const mediaType = getSafeType(movie);
   const id = movie.tmdbId || movie.id;
   const isPerson = mediaType === 'person';
   const watchLink = id 
@@ -62,6 +63,7 @@ function ResultCard({ movie, index }) {
 
   const img = imgError || !rawImg ? PLACEHOLDER_SVG : rawImg;
   const isTv = mediaType === 'tv';
+  const rating = movie.vote_average ? Number(movie.vote_average).toFixed(1) : null;
 
   return (
     <motion.div
