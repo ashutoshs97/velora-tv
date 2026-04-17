@@ -4,7 +4,9 @@ import { ChevronLeft, ChevronRight, X, Play } from 'lucide-react';
 import { deleteHistoryItem } from '../api';
 
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
-const PLACEHOLDER = 'https://via.placeholder.com/780x439/1A242F/8197A4?text=Velora';
+
+// ── Local SVG placeholder — no third party dependency ────────────────────
+const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='439' viewBox='0 0 780 439'%3E%3Crect width='780' height='439' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
 
 export default function RecentlyWatched({ history, onRefresh }) {
   const scrollRef = useRef(null);
@@ -60,11 +62,16 @@ export default function RecentlyWatched({ history, onRefresh }) {
           >
             <div className="movie-card-inner">
               <img
-                src={item.backdropPath ? `${BACKDROP_BASE}${item.backdropPath}` : PLACEHOLDER}
+                src={item.backdropPath ? `${BACKDROP_BASE}${item.backdropPath}` : PLACEHOLDER_SVG}
                 alt={item.title}
                 className="w-full h-full object-cover"
                 loading="lazy"
-                onError={(e) => { e.target.src = PLACEHOLDER; }}
+                onError={(e) => { 
+                  // Prevent infinite loops if SVG somehow fails
+                  if (e.target.src !== PLACEHOLDER_SVG) {
+                    e.target.src = PLACEHOLDER_SVG; 
+                  }
+                }}
               />
 
               {/* Delete button (persistent top right) */}
