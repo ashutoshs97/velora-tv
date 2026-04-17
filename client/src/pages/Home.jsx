@@ -10,6 +10,7 @@ import {
   fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail
 } from '../api';
 import CarouselRow from '../components/CarouselRow';
+import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
 
 const GENRES = [
@@ -618,7 +619,7 @@ export default function Home() {
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <CarouselRow
+          <PrimeCarouselRow
             title="Critically Acclaimed"
             badge="Top Rated"
             movies={topRated}
