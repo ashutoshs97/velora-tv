@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, X, Menu, Play } from 'lucide-react';
 
-// Placeholder text that cycles in the search bar
 const SEARCH_HINTS = [
   'Search "Inception"…',
   'Search "The Boys"…',
@@ -17,55 +16,109 @@ const NAV_LINKS = [
   { to: '/search', label: 'Find' },
 ];
 
+const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
+
 export default function Navbar() {
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-
-  // Cycling placeholder
   const [hintIndex, setHintIndex] = useState(0);
   const [hintVisible, setHintVisible] = useState(true);
 
   const navigate = useNavigate();
   const location = useLocation();
   const inputRef = useRef(null);
+  const hintTimerRef = useRef(null); // ← track setTimeout for cleanup
+  const scrollTimerRef = useRef(null); // ← throttle scroll
 
-  /* ── Scroll shadow ── */
+  // ── Close menu on route change ────────────────────────────────────────
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  // ── Throttled scroll listener ─────────────────────────────────────────
+  useEffect(() => {
+    const onScroll = () => {
+      if (scrollTimerRef.current) return;
+      scrollTimerRef.current = setTimeout(() => {
+        setScrolled(window.scrollY > 20);
+        scrollTimerRef.current = null;
+      }, 80);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      clearTimeout(scrollTimerRef.current);
+    };
   }, []);
 
-  /* ── Cycling placeholder (only when input is empty & not focused) ── */
+  // ── Cycling placeholder ───────────────────────────────────────────────
   useEffect(() => {
     if (query || searchFocused) return;
+
     const interval = setInterval(() => {
-      // Fade out → swap text → fade in
       setHintVisible(false);
-      setTimeout(() => {
+      hintTimerRef.current = setTimeout(() => {
         setHintIndex((i) => (i + 1) % SEARCH_HINTS.length);
         setHintVisible(true);
       }, 350);
     }, 3000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(hintTimerRef.current); // ← clean up inner setTimeout
+    };
   }, [query, searchFocused]);
 
-  const handleSearch = (e) => {
+  // ── Close menu on outside click ───────────────────────────────────────
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('nav')) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [menuOpen]);
+
+  // ── Cleanup all timers on unmount ─────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      clearTimeout(hintTimerRef.current);
+      clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
+
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
-    if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    const trimmed = query.trim();
+    if (trimmed) {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
       setQuery('');
+      setMenuOpen(false);
       inputRef.current?.blur();
     }
-  };
+  }, [query, navigate]);
 
-  const isActive = (path) => location.pathname === path;
+  const handleQueryChange = useCallback((e) => {
+    // Enforce max length
+    const val = e.target.value;
+    if (val.length <= MAX_QUERY_LENGTH) {
+      setQuery(val);
+    }
+  }, []);
+
+  const isActive = useCallback(
+    (path) => location.pathname === path,
+    [location.pathname]
+  );
 
   return (
     <>
-      {/* ── Keyframes injected inline (no CSS file change needed) ── */}
       <style>{`
         @keyframes betaShimmer {
           0%   { background-position: -200% center; }
@@ -87,25 +140,21 @@ export default function Navbar() {
           transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
         }
         .nav-link:hover .nav-underline { transform: scaleX(1); }
-        .hint-fade {
-          transition: opacity 0.3s ease;
-        }
+        .hint-fade { transition: opacity 0.3s ease; }
       `}</style>
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
-          scrolled
-            ? 'bg-[#080E14]/85 backdrop-blur-2xl border-b border-white/[0.06] shadow-navbar'
-            : 'bg-gradient-to-b from-black/70 to-transparent'
-        }`}
+      className={`fixed top-0 left-0 right-0 z-[100] transition-[background-color,backdrop-filter,box-shadow] duration-500 ${
+      scrolled
+      ? 'bg-[#080E14]/85 backdrop-blur-2xl border-b border-white/[0.05] shadow-navbar'
+      : 'bg-gradient-to-b from-black/70 to-transparent border-b-0'
+      }`}
       >
         <div className="max-w-[1400px] mx-auto px-5 lg:px-10">
           <div className="flex items-center justify-between h-[68px]">
 
-            {/* ── Logo + Nav links ── */}
+            {/* Logo + Nav links */}
             <div className="flex items-center gap-8">
-
-              {/* Logo */}
               <Link to="/" className="flex items-center gap-2.5 group">
                 <div className="relative flex items-center gap-[3px]">
                   <span className="text-[22px] font-black tracking-[-0.03em] text-white font-display leading-none">
@@ -118,8 +167,6 @@ export default function Navbar() {
                     ra
                   </span>
                 </div>
-
-                {/* ── Frosted Glass Beta Pill ── */}
                 <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-[3px] rounded-full
                                  text-[9px] font-black tracking-[0.1em] text-amber-400 uppercase
                                  border border-amber-400/30 backdrop-blur-md beta-pill
@@ -128,7 +175,7 @@ export default function Navbar() {
                 </span>
               </Link>
 
-              {/* ── Desktop nav links with hover slide-up underline ── */}
+              {/* Desktop nav links */}
               <div className="hidden md:flex items-center gap-1 h-full">
                 {NAV_LINKS.map(({ to, label }) => {
                   const active = isActive(to);
@@ -138,15 +185,15 @@ export default function Navbar() {
                       to={to}
                       className={`nav-link relative px-3.5 py-2 text-[15px] font-semibold rounded-lg
                                   transition-colors duration-200 select-none overflow-hidden
-                                  ${active ? 'text-white' : 'text-prime-subtext hover:text-white hover:bg-white/5'}`}
+                                  ${active
+                                    ? 'text-white'
+                                    : 'text-prime-subtext hover:text-white hover:bg-white/5'
+                                  }`}
                     >
                       {label}
-
-                      {/* Hover slide-up underline (always rendered, CSS toggles it) */}
                       <span className={`nav-underline absolute bottom-1 left-3.5 right-3.5 h-[2px] rounded-full
-                                        ${active ? 'bg-prime-blue' : 'bg-white/40'}`} />
-
-                      {/* Active neon glow indicator */}
+                                        ${active ? 'bg-prime-blue' : 'bg-white/40'}`}
+                      />
                       {active && (
                         <span
                           className="absolute bottom-1 left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-full bg-prime-blue"
@@ -159,14 +206,12 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* ── Search bar ── */}
+            {/* Desktop search */}
             <div className="hidden md:flex items-center gap-4">
               <form onSubmit={handleSearch}>
-                <div
-                  className={`relative flex items-center transition-all duration-300 ${
-                    searchFocused ? 'w-72' : 'w-60'
-                  }`}
-                >
+                <div className={`relative flex items-center transition-all duration-300 ${
+                  searchFocused ? 'w-72' : 'w-60'
+                }`}>
                   <Search
                     size={15}
                     className={`absolute left-3 z-10 transition-colors duration-200 flex-shrink-0 ${
@@ -174,7 +219,7 @@ export default function Navbar() {
                     }`}
                   />
 
-                  {/* Cycling placeholder rendered as an overlay (not native placeholder) */}
+                  {/* Cycling placeholder */}
                   {!query && !searchFocused && (
                     <span
                       className="hint-fade pointer-events-none absolute left-9 right-8 text-sm text-prime-subtext/50 truncate"
@@ -188,10 +233,11 @@ export default function Navbar() {
                     ref={inputRef}
                     type="text"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={handleQueryChange}
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
                     placeholder=""
+                    maxLength={MAX_QUERY_LENGTH}
                     className={`w-full text-white text-sm pl-9 pr-8 py-2.5 rounded-xl
                                outline-none transition-all duration-300
                                ${searchFocused
@@ -204,6 +250,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => setQuery('')}
+                      aria-label="Clear search"
                       className="absolute right-2.5 text-prime-subtext hover:text-white transition-colors z-10"
                     >
                       <X size={14} />
@@ -213,31 +260,45 @@ export default function Navbar() {
               </form>
             </div>
 
-            {/* ── Mobile hamburger ── */}
+            {/* Mobile hamburger */}
             <button
               className="md:hidden text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/8 transition-all"
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
             >
               {menuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
 
-          {/* ── Mobile dropdown ── */}
+          {/* Mobile dropdown */}
           {menuOpen && (
             <div className="md:hidden glass-card mb-3 overflow-hidden">
               <form onSubmit={handleSearch} className="p-4 border-b border-white/6">
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-prime-subtext" />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search movies, shows…"
-                    className="w-full bg-white/5 border border-white/8 text-white text-sm
-                               placeholder:text-prime-subtext rounded-xl pl-9 pr-4 py-3 outline-none
-                               focus:border-prime-blue/40 transition-colors"
-                  />
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-prime-subtext"
+                    />
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={handleQueryChange}
+                      placeholder="Search movies, shows…"
+                      maxLength={MAX_QUERY_LENGTH}
+                      className="w-full bg-white/5 border border-white/8 text-white text-sm
+                                 placeholder:text-prime-subtext rounded-xl pl-9 pr-4 py-3
+                                 outline-none focus:border-prime-blue/40 transition-colors"
+                    />
+                  </div>
+                  {/* Explicit submit button for mobile keyboards */}
+                  <button
+                    type="submit"
+                    className="flex-shrink-0 bg-prime-blue text-white px-4 py-3 rounded-xl text-sm font-semibold"
+                  >
+                    Go
+                  </button>
                 </div>
               </form>
               <div className="p-2">
