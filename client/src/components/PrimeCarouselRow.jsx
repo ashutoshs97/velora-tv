@@ -92,11 +92,6 @@ function PrimeCard({ movie, isHovered, onHover, onLeave }) {
           )}
         </div>
 
-        {/* Top-left "Amazon Prime" style tag */}
-        <div className={`absolute top-2 left-2 px-2 py-0.5 bg-prime-blue text-white text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded shadow-md transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
-          Top Rated
-        </div>
-
       </Link>
     </div>
   );
