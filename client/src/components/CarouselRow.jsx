@@ -73,35 +73,37 @@ function CarouselCard({ movie, rank, usePoster = false }) {
     <div
       className={`carousel-card group relative flex-shrink-0 ${
         usePoster ? 'w-36 sm:w-44 md:w-48' : 'w-60 sm:w-72 md:w-80'
-      } ${rank ? 'ml-8 sm:ml-10' : ''}`}
+      } ${rank ? 'ml-6 sm:ml-8' : ''}`}
     >
-      {rank && <RankBadge rank={rank} />}
-
       <Link to={watchLink} className="block relative cursor-pointer group">
-        <div className={`relative overflow-hidden rounded-lg shadow-lg shadow-black/20 ${usePoster ? 'aspect-[2/3]' : 'aspect-video'}`}>
-          {/* Image */}
-          <img
-            src={imgSrc}
-            alt={title}
-            loading="lazy"
-            width={usePoster ? 342 : 780}
-            height={usePoster ? 513 : 439}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            onError={() => setImgError(true)}
-          />
+        
+        <div className="relative">
+          {rank && <RankBadge rank={rank} />}
+          <div className={`relative overflow-hidden rounded-lg shadow-lg shadow-black/20 ${usePoster ? 'aspect-[2/3]' : 'aspect-video'}`}>
+            {/* Image */}
+            <img
+              src={imgSrc}
+              alt={title}
+              loading="lazy"
+              width={usePoster ? 342 : 780}
+              height={usePoster ? 513 : 439}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={() => setImgError(true)}
+            />
 
-          {/* Dark vignette removed as we use labels below now, keep light overlay on hover */}
-          <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
+            {/* Dark vignette removed as we use labels below now, keep light overlay on hover */}
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
 
-          {/* Simple play icon on top right instead of full bottom layout */}
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="bg-prime-blue text-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform">
-              <Play size={12} fill="currentColor" />
+            {/* Simple play icon on top right instead of full bottom layout */}
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="bg-prime-blue text-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform">
+                <Play size={12} fill="currentColor" />
+              </div>
             </div>
-          </div>
 
-          {/* Blue glow border on hover */}
-          <div className="absolute inset-0 rounded-lg ring-0 ring-prime-blue/60 group-hover:ring-2 transition-all duration-300 pointer-events-none" />
+            {/* Blue glow border on hover */}
+            <div className="absolute inset-0 rounded-lg ring-0 ring-prime-blue/60 group-hover:ring-2 transition-all duration-300 pointer-events-none" />
+          </div>
         </div>
 
         {/* Labels below the poster */}
@@ -112,7 +114,7 @@ function CarouselCard({ movie, rank, usePoster = false }) {
           <div className="flex items-center gap-1.5 mt-1 text-[11px] text-prime-subtext font-medium truncate">
             {rating && (
               <>
-                <span className="flex items-center gap-0.5 text-red-500 font-bold">
+                <span className="flex items-center gap-0.5 text-prime-blue font-bold">
                   <Star size={10} fill="currentColor" /> {rating}
                 </span>
                 <span className="text-white/20">·</span>
