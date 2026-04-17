@@ -119,10 +119,11 @@ export default function Watch() {
   // Share handler with fallback for browsers that don't support clipboard API
   const handleShare = useCallback(() => {
     const url = `${window.location.origin}/watch/${id}?type=${type}`;
+    const textToShare = `Check out "${movie?.title || movie?.name || 'this'}" on Velora! 🍿\n\n${url}`;
 
     // Modern clipboard API
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(url)
+      navigator.clipboard.writeText(textToShare)
         .then(() => {
           setCopied(true);
           const timer = setTimeout(() => setCopied(false), 2500);
@@ -130,13 +131,13 @@ export default function Watch() {
         })
         .catch(() => {
           // Fallback — create temp input
-          fallbackCopy(url);
+          fallbackCopy(textToShare);
         });
     } else {
       // Fallback for HTTP or older browsers
-      fallbackCopy(url);
+      fallbackCopy(textToShare);
     }
-  }, [id, type]);
+  }, [id, type, movie]);
 
   // ── useMemo hooks — avoid recalculating on every render ───────────────
   const cast = useMemo(() => movie?.credits?.cast?.slice(0, 15) || [], [movie]);

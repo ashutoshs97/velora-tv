@@ -94,11 +94,12 @@ export default function Home() {
   const handleShare = useCallback(() => {
     if (!heroMovie) return;
     const url = `${window.location.origin}/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`;
+    const textToShare = `Check out "${heroMovie.title || heroMovie.name}" on Velora! 🍿\n\n${url}`;
 
     const copyFallback = () => {
       try {
         const textarea = document.createElement('textarea');
-        textarea.value = url;
+        textarea.value = textToShare;
         textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
         document.body.appendChild(textarea);
         textarea.focus();
@@ -117,7 +118,7 @@ export default function Home() {
         url
       }).catch(() => {});
     } else if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(url).then(() => {
+      navigator.clipboard.writeText(textToShare).then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       }).catch(copyFallback);
