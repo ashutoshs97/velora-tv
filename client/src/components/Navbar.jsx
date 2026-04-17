@@ -149,23 +149,28 @@ export default function Navbar() {
         }
       `}</style>
 
-      {/* Desktop Logo (Floating off to the left) */}
-      <div className="fixed top-6 left-8 z-[100] hidden md:block transition-transform duration-500 hover:scale-105">
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)] overflow-hidden">
-            <span className="text-black font-black text-lg tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
+      {/* Desktop Header Container */}
+      <header className="fixed top-0 left-0 right-0 z-[100] pt-6 pointer-events-none hidden md:block transition-all duration-500">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
+          
+          {/* Logo */}
+          <div className="pointer-events-auto transition-transform duration-500 hover:scale-105">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)] overflow-hidden">
+                <span className="text-black font-black text-lg tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
+              </div>
+              <span className="text-lg font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
+                ELORA
+              </span>
+            </Link>
           </div>
-          <span className="text-lg font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
-            ELORA
-          </span>
-        </Link>
-      </div>
 
-      <nav
-        className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-out w-[95%] max-w-fit rounded-full hidden md:block select-none ${
-          scrolled ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10' : 'nav-pill-bg border border-transparent shadow-lg'
-        }`}
-      >
+          {/* Navigation Pill */}
+          <nav
+            className={`pointer-events-auto transition-all duration-500 ease-out max-w-fit rounded-full select-none ${
+              scrolled ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10' : 'nav-pill-bg border border-transparent shadow-lg'
+            }`}
+          >
         <div className="flex items-center px-3 py-2 gap-2 sm:gap-6">
           {/* Desktop nav links */}
           <div className="flex items-center gap-1 sm:gap-2">
@@ -255,6 +260,8 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+        </div>
+      </header>
 
       {/* Mobile Navbar */}
       <nav
