@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, X, Menu, Play } from 'lucide-react';
+import { Search, X, Menu, Home } from 'lucide-react';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -12,8 +12,9 @@ const SEARCH_HINTS = [
 ];
 
 const NAV_LINKS = [
-  { to: '/', label: 'Home' },
-  { to: '/search', label: 'Find' },
+  { to: '/', label: 'Home', icon: Home },
+  { to: '#movies', label: 'Movies' },
+  { to: '#shows', label: 'Shows' },
 ];
 
 const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
@@ -141,94 +142,66 @@ export default function Navbar() {
         }
         .nav-link:hover .nav-underline { transform: scaleX(1); }
         .hint-fade { transition: opacity 0.3s ease; }
+        .nav-pill-bg {
+          background: rgba(40, 35, 30, 0.4);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+        }
       `}</style>
 
       <nav
-      className={`fixed top-0 left-0 right-0 z-[100] transition-[background-color,backdrop-filter,box-shadow] duration-500 ${
-      scrolled
-      ? 'bg-[#080E14]/85 backdrop-blur-2xl border-b border-white/[0.05] shadow-navbar'
-      : 'bg-gradient-to-b from-black/70 to-transparent border-b-0'
-      }`}
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-out w-[95%] max-w-fit rounded-full hidden md:block select-none ${
+          scrolled ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10' : 'nav-pill-bg border border-transparent shadow-lg'
+        }`}
       >
-        <div className="max-w-[1400px] mx-auto px-5 lg:px-10">
-          <div className="flex items-center justify-between h-[68px]">
+        <div className="flex items-center px-3 py-2 gap-2 sm:gap-6">
+          {/* Desktop nav links */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {NAV_LINKS.map(({ to, label, icon: Icon }) => {
+              const active = isActive(to) || label === 'Home'; // Fallback highlight Home for now
+              
+              if (active && label === 'Home') {
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] shadow-lg shadow-white/10 transition-transform hover:scale-105"
+                  >
+                    {Icon && <Icon size={18} strokeWidth={2.5} />}
+                    <span>{label}</span>
+                  </Link>
+                );
+              }
 
-            {/* Logo + Nav links */}
-            <div className="flex items-center gap-8">
-              <Link to="/" className="flex items-center gap-2.5 group">
-                <div className="relative flex items-center gap-[3px]">
-                  <span className="text-[22px] font-black tracking-[-0.03em] text-white font-display leading-none">
-                    Vel
-                  </span>
-                  <div className="inline-flex w-[22px] h-[22px] rounded-md bg-prime-blue items-center justify-center shadow-glow-sm group-hover:shadow-glow-blue transition-all duration-300 -translate-y-[1px] animate-pulse-blue">
-                    <Play size={11} fill="#fff" className="ml-[2px]" />
-                  </div>
-                  <span className="text-[22px] font-black tracking-[-0.03em] text-white font-display leading-none">
-                    ra
-                  </span>
-                </div>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-[3px] rounded-full
-                                 text-[9px] font-black tracking-[0.1em] text-amber-400 uppercase
-                                 border border-amber-400/30 backdrop-blur-md beta-pill
-                                 shadow-[0_0_8px_rgba(251,191,36,0.15)] mt-[1px]">
-                  Beta
-                </span>
-              </Link>
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={(e) => { if (to.startsWith('#')) e.preventDefault(); }}
+                  className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full
+                             transition-colors duration-200 text-prime-subtext hover:text-white"
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
 
-              {/* Desktop nav links */}
-              <div className="hidden md:flex items-center gap-1 h-full">
-                {NAV_LINKS.map(({ to, label }) => {
-                  const active = isActive(to);
-                  return (
-                    <Link
-                      key={to}
-                      to={to}
-                      className={`nav-link relative px-3.5 py-2 text-[15px] font-semibold rounded-lg
-                                  transition-colors duration-200 select-none overflow-hidden
-                                  ${active
-                                    ? 'text-white'
-                                    : 'text-prime-subtext hover:text-white hover:bg-white/5'
-                                  }`}
-                    >
-                      {label}
-                      <span className={`nav-underline absolute bottom-1 left-3.5 right-3.5 h-[2px] rounded-full
-                                        ${active ? 'bg-prime-blue' : 'bg-white/40'}`}
-                      />
-                      {active && (
-                        <span
-                          className="absolute bottom-1 left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-full bg-prime-blue"
-                          style={{ filter: 'blur(3px)', opacity: 0.8 }}
-                        />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Desktop search */}
-            <div className="hidden md:flex items-center gap-4">
-              <form onSubmit={handleSearch}>
-                <div className={`relative flex items-center transition-all duration-300 ${
-                  searchFocused ? 'w-72' : 'w-60'
-                }`}>
-                  <Search
-                    size={15}
-                    className={`absolute left-3 z-10 transition-colors duration-200 flex-shrink-0 ${
-                      searchFocused ? 'text-prime-blue' : 'text-prime-subtext'
-                    }`}
-                  />
-
-                  {/* Cycling placeholder */}
+          {/* Search */}
+          <div className="flex items-center">
+            <form onSubmit={handleSearch} className="flex flex-row-reverse items-center justify-start gap-0">
+              {/* Expandable input */}
+              <div 
+                className={`flex items-center overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                  searchFocused || query ? 'w-48 sm:w-64 opacity-100 ml-3' : 'w-0 opacity-0 ml-0 pointer-events-none'
+                }`}
+              >
+                <div className="relative w-full">
                   {!query && !searchFocused && (
-                    <span
-                      className="hint-fade pointer-events-none absolute left-9 right-8 text-sm text-prime-subtext/50 truncate"
-                      style={{ opacity: hintVisible ? 1 : 0 }}
-                    >
+                    <span className="hint-fade pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/50 truncate">
                       {SEARCH_HINTS[hintIndex]}
                     </span>
                   )}
-
                   <input
                     ref={inputRef}
                     type="text"
@@ -238,88 +211,105 @@ export default function Navbar() {
                     onBlur={() => setSearchFocused(false)}
                     placeholder=""
                     maxLength={MAX_QUERY_LENGTH}
-                    className={`w-full text-white text-sm pl-9 pr-8 py-2.5 rounded-xl
-                               outline-none transition-all duration-300
-                               ${searchFocused
-                                 ? 'bg-prime-surface border border-prime-blue/40 shadow-[0_0_0_3px_rgba(0,180,255,0.12)]'
-                                 : 'bg-white/6 border border-white/8 hover:border-white/16'
-                               }`}
+                    className="w-full bg-black/40 text-white text-sm pl-4 pr-8 py-2 rounded-full outline-none border border-white/10 focus:border-white/30 transition-colors"
                   />
-
                   {query && (
                     <button
                       type="button"
                       onClick={() => setQuery('')}
-                      aria-label="Clear search"
-                      className="absolute right-2.5 text-prime-subtext hover:text-white transition-colors z-10"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
                     >
                       <X size={14} />
                     </button>
                   )}
                 </div>
-              </form>
-            </div>
-
-            {/* Mobile hamburger */}
-            <button
-              className="md:hidden text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/8 transition-all"
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-          </div>
-
-          {/* Mobile dropdown */}
-          {menuOpen && (
-            <div className="md:hidden glass-card mb-3 overflow-hidden">
-              <form onSubmit={handleSearch} className="p-4 border-b border-white/6">
-                <div className="relative flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Search
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-prime-subtext"
-                    />
-                    <input
-                      type="text"
-                      value={query}
-                      onChange={handleQueryChange}
-                      placeholder="Search movies, shows…"
-                      maxLength={MAX_QUERY_LENGTH}
-                      className="w-full bg-white/5 border border-white/8 text-white text-sm
-                                 placeholder:text-prime-subtext rounded-xl pl-9 pr-4 py-3
-                                 outline-none focus:border-prime-blue/40 transition-colors"
-                    />
-                  </div>
-                  {/* Explicit submit button for mobile keyboards */}
-                  <button
-                    type="submit"
-                    className="flex-shrink-0 bg-prime-blue text-white px-4 py-3 rounded-xl text-sm font-semibold"
-                  >
-                    Go
-                  </button>
-                </div>
-              </form>
-              <div className="p-2">
-                {NAV_LINKS.map(({ to, label }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    onClick={() => setMenuOpen(false)}
-                    className={`flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all ${
-                      isActive(to)
-                        ? 'bg-prime-blue/10 text-prime-blue border border-prime-blue/20'
-                        : 'text-prime-subtext hover:text-white hover:bg-white/6'
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                ))}
               </div>
-            </div>
-          )}
+
+              {/* Search Icon visible independently */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchFocused(true);
+                  setTimeout(() => inputRef.current?.focus(), 100);
+                }}
+                className={`p-2.5 rounded-full transition-colors flex-shrink-0
+                  ${searchFocused || query ? 'bg-transparent text-white' : 'text-prime-subtext hover:text-white'}
+                `}
+                aria-label="Search"
+              >
+                <Search size={22} strokeWidth={2.5} />
+              </button>
+            </form>
+          </div>
         </div>
+      </nav>
+
+      {/* Mobile Navbar */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-[100] flex md:hidden flex-col transition-[background-color,backdrop-filter] duration-500 ${
+          scrolled || menuOpen
+            ? 'bg-[#080E14]/90 backdrop-blur-xl border-b border-white/[0.05]'
+            : 'bg-gradient-to-b from-black/70 to-transparent border-b-0'
+        }`}
+      >
+        <div className="flex items-center justify-between h-[68px] px-5">
+          <Link to="/" className="text-xl font-black text-white font-display uppercase tracking-wider">
+            Velora
+          </Link>
+          <button
+            className="text-white p-2"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile dropdown */}
+        {menuOpen && (
+          <div className="glass-card mb-3 overflow-hidden">
+            <form onSubmit={handleSearch} className="p-4 border-b border-white/6">
+              <div className="relative flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-prime-subtext"
+                  />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={handleQueryChange}
+                    placeholder="Search movies, shows…"
+                    maxLength={MAX_QUERY_LENGTH}
+                    className="w-full bg-white/5 border border-white/8 text-white text-sm
+                               placeholder:text-prime-subtext rounded-xl pl-9 pr-4 py-3
+                               outline-none focus:border-prime-blue/40 transition-colors"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="flex-shrink-0 bg-prime-blue text-white px-4 py-3 rounded-xl text-sm font-semibold"
+                >
+                  Go
+                </button>
+              </div>
+            </form>
+            <div className="p-2">
+              {NAV_LINKS.map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={(e) => { 
+                    if (to.startsWith('#')) e.preventDefault(); 
+                    else setMenuOpen(false); 
+                  }}
+                  className="flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all text-prime-subtext hover:text-white hover:bg-white/6"
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
     </>
   );

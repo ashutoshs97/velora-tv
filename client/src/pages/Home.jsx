@@ -523,7 +523,7 @@ export default function Home() {
           </div>
 
           {/* Slider nav: arrows + dots */}
-          <div className="absolute bottom-6 left-0 right-0 z-20">
+          <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
 
               {/* Dot indicators */}
