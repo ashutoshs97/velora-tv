@@ -248,17 +248,6 @@ export default function Watch() {
       <div className="w-full relative z-10 pt-24 pb-8 bg-black">
         <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-8">
 
-          {/* Back button */}
-          <div className="mb-4">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-white hover:text-white transition-colors bg-[#1A242F] hover:bg-[#252E39] px-6 py-2.5 rounded-full border border-white/20 w-max shadow-lg"
-            >
-              <ArrowLeft size={20} />
-              <span className="text-sm font-bold tracking-wide uppercase">Back to Browse</span>
-            </Link>
-          </div>
-
           <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
 
           {/* TV Season/Episode Selectors */}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, X, Menu, Home } from 'lucide-react';
+import { Search, X, Menu, Home, ArrowLeft } from 'lucide-react';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -29,6 +29,8 @@ export default function Navbar() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isRootPath = location.pathname === '/' || location.pathname === '/movies' || location.pathname === '/shows';
+
   const inputRef = useRef(null);
   const hintTimerRef = useRef(null); // ← track setTimeout for cleanup
   const scrollTimerRef = useRef(null); // ← throttle scroll
@@ -154,7 +156,15 @@ export default function Navbar() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
           
           {/* Logo */}
-          <div className="pointer-events-auto transition-transform duration-500 hover:scale-105">
+          <div className="pointer-events-auto transition-transform duration-500 hover:scale-105 flex items-center gap-2">
+            {!isRootPath && (
+              <button
+                onClick={() => navigate(-1)}
+                className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)] overflow-hidden">
                 <span className="text-black font-black text-lg tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
@@ -272,14 +282,24 @@ export default function Navbar() {
         }`}
       >
         <div className="flex items-center justify-between h-[68px] px-5">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.15)] overflow-hidden">
-              <span className="text-black font-black text-base tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
-            </div>
-            <span className="text-base font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
-              ELORA
-            </span>
-          </Link>
+          <div className="flex items-center gap-2">
+            {!isRootPath && (
+              <button
+                onClick={() => navigate(-1)}
+                className="p-2 -ml-2 text-white/50 hover:text-white rounded-full transition-all"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-white to-white/80 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.15)] overflow-hidden">
+                <span className="text-black font-black text-base tracking-tighter mix-blend-difference" style={{ WebkitTextStroke: '0.5px white' }}>V</span>
+              </div>
+              <span className="text-base font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
+                ELORA
+              </span>
+            </Link>
+          </div>
           <button
             className="text-white p-2"
             onClick={() => setMenuOpen((o) => !o)}
