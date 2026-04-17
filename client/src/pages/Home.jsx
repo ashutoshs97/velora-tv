@@ -577,7 +577,7 @@ export default function Home() {
                 <button
                   onClick={prevSlide}
                   aria-label="Previous slide"
-                  className="w-9 h-9 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
+                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -586,7 +586,7 @@ export default function Home() {
                 <button
                   onClick={nextSlide}
                   aria-label="Next slide"
-                  className="w-9 h-9 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
+                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -654,25 +654,29 @@ export default function Home() {
 
         {/* Browse by Genre */}
         <div className="animate-fade-up" style={{ animationDelay: '0.8s' }}>
-          <div className="flex items-center gap-3 mb-4 px-1">
+          <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Browse by Genre
             </h2>
           </div>
           {/* Horizontally scrollable genre pills */}
-          <div className="flex gap-2 mb-5 overflow-x-auto pb-2"
+          <div className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {GENRES.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setSelectedGenre(g)}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${selectedGenre.id === g.id
-                    ? 'bg-prime-blue text-white border-prime-blue shadow-lg shadow-prime-blue/30'
-                    : 'bg-white/5 text-prime-subtext border-white/10 hover:border-white/30 hover:text-white'
-                  }`}
+                className={`relative flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out overflow-hidden ${
+                  selectedGenre.id === g.id
+                    ? 'text-white shadow-[0_0_20px_rgba(0,180,255,0.4)] border-transparent scale-105'
+                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white hover:bg-[#1A242F]/80'
+                }`}
               >
-                {g.label}
+                {selectedGenre.id === g.id && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-prime-blue to-blue-500 opacity-90" />
+                )}
+                <span className="relative z-10">{g.label}</span>
               </button>
             ))}
           </div>
@@ -685,26 +689,30 @@ export default function Home() {
 
         {/* Mood Collections */}
         <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.85s' }}>
-          <div className="flex items-center gap-3 mb-4 px-1">
+          <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               What's Your Mood?
             </h2>
           </div>
           {/* Horizontally scrollable mood pills */}
-          <div className="flex gap-3 mb-5 overflow-x-auto pb-2"
+          <div className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {MOODS.map((m) => (
               <button
                 key={m.key}
                 onClick={() => setSelectedMood(m)}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border ${selectedMood.key === m.key
-                    ? 'bg-prime-blue/20 text-prime-blue border-prime-blue/50 shadow-lg shadow-prime-blue/20'
-                    : 'bg-white/5 text-prime-subtext border-white/10 hover:border-white/30 hover:text-white'
-                  }`}
+                className={`relative flex-shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out overflow-hidden ${
+                  selectedMood.key === m.key
+                    ? 'text-white shadow-[0_0_20px_rgba(0,180,255,0.4)] border-transparent scale-105'
+                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white hover:bg-[#1A242F]/80'
+                }`}
               >
-                <span>{m.emoji}</span>
-                {m.label}
+                {selectedMood.key === m.key && (
+                  <span className="absolute inset-0 bg-gradient-to-r from-prime-blue to-blue-500 opacity-90" />
+                )}
+                <span className="relative z-10 text-base">{m.emoji}</span>
+                <span className="relative z-10">{m.label}</span>
               </button>
             ))}
           </div>

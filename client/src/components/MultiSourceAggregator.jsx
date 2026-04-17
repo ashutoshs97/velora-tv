@@ -227,6 +227,69 @@ export default function MultiSourceAggregator({
   return (
     <div className="space-y-3">
 
+      {/* ── Player ── */}
+      <div className="player-wrapper relative" style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.7)' }}>
+        {loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-3">
+            <div className="relative">
+              <div className="w-12 h-12 border-2 border-prime-blue border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-prime-blue/30 animate-ping" />
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-white text-sm font-bold">{currentServer.name}</p>
+              <p className="text-prime-subtext text-xs mt-0.5">
+                {usingMirror
+                  ? `Trying alternate route…`
+                  : `Connecting to ${currentServer.label}…`}
+              </p>
+              {activeServer === 0 && (
+                <p className="text-amber-400/70 text-[10px] mt-1">Powered by JW Player</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* All servers exhausted — manual selection */}
+        {allFailed && !loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-4 p-4">
+            <AlertCircle size={36} className="text-amber-400" />
+            <div className="text-center">
+              <p className="text-white text-sm font-bold mb-1">
+                All Servers Attempted
+              </p>
+              <p className="text-prime-subtext text-xs mb-4">
+                Auto-switching tried all available routes. Please select a server manually.
+              </p>
+              <button
+                onClick={reload}
+                className="px-5 py-2.5 bg-prime-blue hover:bg-prime-blue/80 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <RefreshCw size={12} className="inline mr-1.5" />
+                Start Over
+              </button>
+            </div>
+          </div>
+        )}
+
+        {src && (
+          <iframe
+            key={iframeKey}
+            src={src}
+            title={`${currentServer.name} — ${currentServer.label}`}
+            allowFullScreen
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+            onLoad={() => {
+              setLoading(false);
+              setAllFailed(false);
+            }}
+            className="w-full h-full"
+            style={{ border: 'none' }}
+          />
+        )}
+      </div>
+
       {/* ── Server Toolbar ── */}
       <div className="rounded-xl border border-white/10 bg-prime-surface p-3 sm:p-4">
         <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -343,69 +406,6 @@ export default function MultiSourceAggregator({
             );
           })}
         </div>
-      </div>
-
-      {/* ── Player ── */}
-      <div className="player-wrapper relative" style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.7)' }}>
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-3">
-            <div className="relative">
-              <div className="w-12 h-12 border-2 border-prime-blue border-t-transparent rounded-full animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-prime-blue/30 animate-ping" />
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-white text-sm font-bold">{currentServer.name}</p>
-              <p className="text-prime-subtext text-xs mt-0.5">
-                {usingMirror
-                  ? `Trying alternate route…`
-                  : `Connecting to ${currentServer.label}…`}
-              </p>
-              {activeServer === 0 && (
-                <p className="text-amber-400/70 text-[10px] mt-1">Powered by JW Player</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* All servers exhausted — manual selection */}
-        {allFailed && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-4 p-4">
-            <AlertCircle size={36} className="text-amber-400" />
-            <div className="text-center">
-              <p className="text-white text-sm font-bold mb-1">
-                All Servers Attempted
-              </p>
-              <p className="text-prime-subtext text-xs mb-4">
-                Auto-switching tried all available routes. Please select a server manually.
-              </p>
-              <button
-                onClick={reload}
-                className="px-5 py-2.5 bg-prime-blue hover:bg-prime-blue/80 text-white text-xs font-semibold rounded-lg transition-colors"
-              >
-                <RefreshCw size={12} className="inline mr-1.5" />
-                Start Over
-              </button>
-            </div>
-          </div>
-        )}
-
-        {src && (
-          <iframe
-            key={iframeKey}
-            src={src}
-            title={`${currentServer.name} — ${currentServer.label}`}
-            allowFullScreen
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
-            onLoad={() => {
-              setLoading(false);
-              setAllFailed(false);
-            }}
-            className="w-full h-full"
-            style={{ border: 'none' }}
-          />
-        )}
       </div>
 
       {/* ── Hint ── */}
