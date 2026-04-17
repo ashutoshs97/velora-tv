@@ -185,9 +185,9 @@ export default function Navbar() {
           {/* Desktop nav links */}
           <div className="flex items-center gap-1 sm:gap-2">
             {NAV_LINKS.map(({ to, label, icon: Icon }) => {
-              const active = isActive(to) || label === 'Home'; // Fallback highlight Home for now
+              const active = isActive(to);
               
-              if (active && label === 'Home') {
+              if (active) {
                 return (
                   <Link
                     key={to}

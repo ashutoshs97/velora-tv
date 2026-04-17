@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Search from './pages/Search';
@@ -8,11 +9,20 @@ import Person from './pages/Person';
 import Movies from './pages/Movies';
 import Shows from './pages/Shows';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   const location = useLocation();
 
   return (
     <div className="min-h-screen bg-prime-bg text-white flex flex-col">
+      <ScrollToTop />
       <Navbar />
       <div className="flex-1">
         <AnimatePresence mode="wait">
