@@ -18,6 +18,7 @@ export const fetchRecommendations = (id, type = 'movie') => api.get(`/movies/${i
 export const searchMovies = (q, page = 1) => api.get('/movies/search', { params: { q, page } });
 export const fetchMovieDetail = (id) => api.get(`/movies/${id}`);
 export const fetchTVDetail = (id) => api.get(`/movies/tv/${id}`);
+export const fetchPerson = (id) => api.get(`/movies/person/${id}`);
 
 export const fetchHistory = () => api.get('/history');
 export const addToHistory = (movie) => api.post('/history', movie);

@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Watch from './pages/Watch';
+import Person from './pages/Person';
 
 export default function App() {
   const location = useLocation();
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/watch/:id" element={<Watch />} />
+          <Route path="/person/:id" element={<Person />} />
         </Routes>
       </AnimatePresence>
     </div>

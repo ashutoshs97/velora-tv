@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, Tv, Film, Layers, Sparkles, TrendingUp } from 'lucide-react';
+import { Search, X, Tv, Film, Layers, Sparkles, TrendingUp, Users, User } from 'lucide-react';
 import { searchMovies, fetchTrending, fetchTrendingTV } from '../api';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w92';
@@ -12,9 +12,10 @@ const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000
 const MAX_QUERY_LENGTH = 150;
 
 const TYPE_FILTERS = [
-  { key: 'all',   label: 'All',      Icon: Layers },
-  { key: 'movie', label: 'Movies',   Icon: Film },
-  { key: 'tv',    label: 'TV Shows', Icon: Tv },
+  { key: 'all',    label: 'All',      Icon: Layers },
+  { key: 'movie',  label: 'Movies',   Icon: Film },
+  { key: 'tv',     label: 'TV Shows', Icon: Tv },
+  { key: 'person', label: 'People',   Icon: Users },
 ];
 
 const TRENDING_SEARCHES = [
@@ -22,10 +23,10 @@ const TRENDING_SEARCHES = [
   'Breaking Bad', 'Interstellar', 'The Boys', 'Oppenheimer',
 ];
 
-function getSafeType(movie) {
-  if (movie.media_type === 'tv') return 'tv';
-  if (movie.media_type === 'movie') return 'movie';
-  if (movie.name && !movie.title) return 'tv';
+function getSafeType(item) {
+  if (item.media_type) return item.media_type;
+  if (item.known_for_department) return 'person'; // fallback for person
+  if (item.name && !item.title) return 'tv';
   return 'movie';
 }
 
@@ -45,19 +46,19 @@ function ResultCard({ movie, index }) {
   const [imgError, setImgError] = useState(false);
 
   const id = movie.tmdbId || movie.id;
-  const mediaType = getSafeType(movie);
-  const watchLink = id ? `/watch/${id}?type=${mediaType}` : '/';
+  const isPerson = mediaType === 'person';
+  const watchLink = id 
+    ? isPerson ? `/person/${id}` : `/watch/${id}?type=${mediaType}` 
+    : '/';
+  
   const title = movie.title || movie.name || 'Untitled';
-  const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
-  const rating = movie.vote_average > 0
-    ? Number(movie.vote_average).toFixed(1)
-    : null;
+  const year = isPerson
+    ? movie.known_for_department || 'Actor'
+    : (movie.release_date || movie.first_air_date || '').substring(0, 4);
 
-  const rawImg = movie.backdrop_path
-    ? `${BACKDROP_BASE}${movie.backdrop_path}`
-    : movie.poster_path
-      ? `${POSTER_BASE}${movie.poster_path}`
-      : null;
+  const rawImg = isPerson 
+    ? (movie.profile_path ? `${BACKDROP_BASE}${movie.profile_path}` : null) 
+    : (movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : null);
 
   const img = imgError || !rawImg ? PLACEHOLDER_SVG : rawImg;
   const isTv = mediaType === 'tv';
@@ -84,20 +85,20 @@ function ResultCard({ movie, index }) {
             onError={() => setImgError(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-          {rating && (
+          {rating && !isPerson && (
             <span className="absolute top-2 right-2 text-[11px] font-bold text-yellow-400 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded">
               ★ {rating}
             </span>
           )}
           <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-            isTv ? 'bg-purple-600/80 text-white' : 'bg-prime-blue/80 text-white'
+            isPerson ? 'bg-amber-600/80 text-white' : isTv ? 'bg-purple-600/80 text-white' : 'bg-prime-blue/80 text-white'
           }`}>
-            {isTv ? 'TV' : 'Movie'}
+            {isPerson ? 'Person' : isTv ? 'TV' : 'Movie'}
           </span>
         </div>
         <div className="p-3">
           <h3 className="text-white font-semibold text-sm line-clamp-1 mb-0.5">{title}</h3>
-          <span className="text-prime-subtext text-xs">{year}</span>
+          <span className={`text-xs ${isPerson ? 'text-amber-400/80' : 'text-prime-subtext'}`}>{year}</span>
         </div>
       </a>
     </motion.div>
@@ -108,10 +109,15 @@ function AutocompleteItem({ movie, onClick }) {
   const [imgError, setImgError] = useState(false);
   const mediaType = getSafeType(movie);
   const isTv = mediaType === 'tv';
+  const isPerson = mediaType === 'person';
   const title = movie.title || movie.name || 'Untitled';
-  const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
-  const poster = !imgError && movie.poster_path
-    ? `${POSTER_BASE}${movie.poster_path}`
+  const year = isPerson
+    ? movie.known_for_department || 'Actor'
+    : (movie.release_date || movie.first_air_date || '').substring(0, 4);
+    
+  const poster = !imgError 
+    ? isPerson && movie.profile_path ? `${POSTER_BASE}${movie.profile_path}` 
+    : movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : null
     : null;
 
   return (
@@ -119,7 +125,7 @@ function AutocompleteItem({ movie, onClick }) {
       onMouseDown={onClick}
       className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-colors text-left group"
     >
-      <div className="w-8 h-10 rounded overflow-hidden flex-shrink-0 bg-prime-surface">
+      <div className={`w-8 h-10 rounded overflow-hidden flex-shrink-0 bg-prime-surface ${isPerson ? 'rounded-full' : ''}`}>
         {poster ? (
           <img
             src={poster}
@@ -129,20 +135,20 @@ function AutocompleteItem({ movie, onClick }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-prime-subtext">
-            <Film size={14} />
+            {isPerson ? <User size={14} /> : <Film size={14} />}
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white text-sm font-semibold truncate">{title}</p>
         <p className="text-prime-subtext text-xs">
-          {year}{year ? ' · ' : ''}{isTv ? 'TV Show' : 'Movie'}
+          {year}{!isPerson && year ? ' · ' : ''}{!isPerson ? (isTv ? 'TV Show' : 'Movie') : ''}
         </p>
       </div>
       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
-        isTv ? 'bg-purple-600/30 text-purple-400' : 'bg-prime-blue/20 text-prime-blue'
+        isPerson ? 'bg-amber-600/30 text-amber-500' : isTv ? 'bg-purple-600/30 text-purple-400' : 'bg-prime-blue/20 text-prime-blue'
       }`}>
-        {isTv ? 'TV' : 'Film'}
+        {isPerson ? 'Person' : isTv ? 'TV' : 'Film'}
       </span>
     </button>
   );

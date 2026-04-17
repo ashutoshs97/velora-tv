@@ -273,6 +273,20 @@ router.get('/tv/:id', async (req, res) => {
   }
 });
 
+// GET /api/movies/person/:id — full person detail with combined credits
+router.get('/person/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!id || isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid person id' });
+  }
+  try {
+    const data = await tmdbFetch(`/person/${id}`, { append_to_response: 'combined_credits' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────
 // ⚠️  Wildcard routes — MUST be last
 // ─────────────────────────────────────────────────────────────────────────
