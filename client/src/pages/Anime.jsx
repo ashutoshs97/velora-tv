@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Star, VolumeX, Volume2, RotateCcw } from 'lucide-react';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import CarouselRow from '../components/CarouselRow';
 import {
@@ -51,6 +51,7 @@ function norm(anime) {
     episodes: anime.episodes,
     status: anime.status,
     overview: anime.synopsis?.replace('[Written by MAL Rewrite]', '').trim() || '',
+    trailer_youtube_id: anime.trailer?.youtube_id,
   };
 }
 
@@ -109,6 +110,15 @@ export default function Anime() {
 
   const heroAnime = heroItems[heroIndex] || null;
 
+  const [trailerKey, setTrailerKey] = useState(null);
+  const [trailerActive, setTrailerActive] = useState(false);
+  const [trailerEnded, setTrailerEnded] = useState(false);
+  const [trailerMuted, setTrailerMuted] = useState(true);
+
+  const trailerTimerRef = useRef(null);
+  const replayTimerRef = useRef(null);
+  const trailerIframeRef = useRef(null);
+
   const goToSlide = useCallback((index) => {
     setHeroIndex(index);
   }, []);
@@ -151,9 +161,62 @@ export default function Anime() {
     clearInterval(autoAdvanceRef.current);
     if (!heroItems.length) return undefined;
 
-    autoAdvanceRef.current = setInterval(nextSlide, 9000);
+    autoAdvanceRef.current = setInterval(nextSlide, 10000); // 10 seconds per slide
     return () => clearInterval(autoAdvanceRef.current);
   }, [heroItems.length, nextSlide]);
+
+  useEffect(() => {
+    setTrailerKey(null);
+    setTrailerActive(false);
+    setTrailerEnded(false);
+    setTrailerMuted(true);
+    clearTimeout(trailerTimerRef.current);
+
+    if (heroAnime?.trailer_youtube_id) {
+      setTrailerKey(heroAnime.trailer_youtube_id);
+      trailerTimerRef.current = setTimeout(() => {
+        setTrailerActive(true);
+      }, 5000);
+    }
+
+    return () => {
+      clearTimeout(trailerTimerRef.current);
+    };
+  }, [heroAnime]);
+
+  const replayTrailer = useCallback(() => {
+    clearTimeout(replayTimerRef.current);
+    setTrailerEnded(false);
+    setTrailerActive(false);
+    replayTimerRef.current = setTimeout(() => setTrailerActive(true), 100);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(replayTimerRef.current);
+      clearTimeout(trailerTimerRef.current);
+      clearInterval(autoAdvanceRef.current);
+    };
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setTrailerMuted((m) => {
+      const newMuted = !m;
+      try {
+        const iframe = trailerIframeRef.current;
+        if (iframe?.contentWindow) {
+          const command = newMuted ? 'mute' : 'unMute';
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: command }),
+            'https://www.youtube.com'
+          );
+        }
+      } catch {
+        /* silent */
+      }
+      return newMuted;
+    });
+  }, []);
 
   return (
     <motion.div
@@ -165,13 +228,48 @@ export default function Anime() {
     >
       {heroAnime && (
         <section className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] overflow-hidden -mt-20 pt-4">
-          <div className="absolute inset-0">
-            <img
-              src={heroAnime.animeImage}
-              alt={heroAnime.title}
-              className="w-full h-full object-cover object-top opacity-75 scale-[1.06]"
-            />
-          </div>
+          <AnimatePresence initial={false}>
+            {(!trailerActive || trailerEnded) && (
+              <motion.div
+                key={`bg-${heroIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.2, ease: [0.32, 0.72, 0, 1] }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <img
+                  src={heroAnime.animeImage}
+                  alt={heroAnime.title}
+                  className="w-full h-full object-cover object-top opacity-75 scale-[1.06]"
+                  style={{ objectPosition: '50% 15%' }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {trailerActive && trailerKey && !trailerEnded && (
+              <motion.div
+                key="trailer"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 2.5, ease: 'easeInOut' }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <iframe
+                  ref={trailerIframeRef}
+                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&origin=${window.location.origin}`}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  className="w-full h-full"
+                  style={{ border: 'none', pointerEvents: 'none' }}
+                  title="Hero Trailer"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="absolute inset-0 bg-hero-gradient-x opacity-95 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
@@ -213,11 +311,20 @@ export default function Anime() {
                   )}
                 </div>
 
-                {heroAnime.overview && (
-                  <p className="text-sm sm:text-base text-white/85 line-clamp-4 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md">
-                    {heroAnime.overview}
-                  </p>
-                )}
+                <AnimatePresence>
+                  {(!trailerActive || trailerEnded) && heroAnime.overview && (
+                    <motion.p
+                      key="synopsis"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.8, ease: 'easeInOut' }}
+                      className="text-sm sm:text-base text-white/85 line-clamp-4 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
+                    >
+                      {heroAnime.overview}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
 
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   <Link
@@ -234,7 +341,7 @@ export default function Anime() {
           <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
               <div className="w-10 hidden sm:block" />
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
                 {heroItems.map((_, i) => (
                   <button
                     key={i}
@@ -250,13 +357,30 @@ export default function Anime() {
                         className="absolute inset-0 bg-white rounded-full origin-left"
                         initial={{ scaleX: 0 }}
                         animate={{ scaleX: 1 }}
-                        transition={{ duration: 9, ease: 'linear' }}
+                        transition={{ duration: 10, ease: 'linear' }}
                       />
                     )}
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pointer-events-auto">
+                {trailerKey && trailerActive && !trailerEnded && (
+                  <button
+                    onClick={toggleMute}
+                    aria-label={trailerMuted ? 'Unmute' : 'Mute'}
+                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                  >
+                    {trailerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                  </button>
+                )}
+                {trailerKey && trailerEnded && (
+                  <button
+                    onClick={replayTrailer}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs font-semibold hover:bg-white/20 transition-all"
+                  >
+                    <RotateCcw size={12} /> Replay
+                  </button>
+                )}
                 <button
                   onClick={prevSlide}
                   aria-label="Previous anime"

@@ -90,77 +90,85 @@ const MOVIE_PROVIDER_REGISTRY = [
       ? [
           `https://embed.su/embed/tv/${id}/${season}/${episode}`,
           `https://vidmix.to/embed/tv/${id}/${season}/${episode}`,
-          `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
+          `https://multiembed.mov/directstream.php?tmdb=1&video_id=${id}&s=${season}&e=${episode}`,
         ]
       : [
           `https://embed.su/embed/movie/${id}`,
           `https://vidmix.to/embed/movie/${id}`,
-          `https://multiembed.mov/?video_id=${id}&tmdb=1`,
+          `https://multiembed.mov/directstream.php?tmdb=1&video_id=${id}`,
         ],
   },
   {
     id: 5,
     name: 'Server 5',
-    label: 'MovieAPI',
-    sublabel: 'moviebird.com',
+    label: '2Embed',
+    sublabel: '2embed.cc',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://moviebird.com/tv/${id}-${season}-${episode}`,
-          `https://filmish.com/tv/${id}-${season}-${episode}`,
-          `https://moviesapi.club/tv/${id}-${season}-${episode}`,
+          `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`,
+          `https://2embed.ru/embedtv/${id}?s=${season}&e=${episode}`,
+          `https://2embed.org/embedtv/${id}?s=${season}&e=${episode}`,
         ]
       : [
-          `https://moviebird.com/movie/${id}`,
-          `https://filmish.com/movie/${id}`,
-          `https://moviesapi.club/movie/${id}`,
+          `https://www.2embed.cc/embed/${id}`,
+          `https://2embed.ru/embedmovie/${id}`,
+          `https://2embed.org/embedmovie/${id}`,
         ],
   },
   {
     id: 6,
     name: 'Server 6',
-    label: '2Embed',
-    sublabel: '2embed.ru',
+    label: 'PrimeWire',
+    sublabel: 'primewire.tf',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://2embed.ru/embedtv/${id}?s=${season}&e=${episode}`,
-          `https://2embed.org/embedtv/${id}?s=${season}&e=${episode}`,
-          `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`,
+          `https://www.primewire.tf/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
         ]
       : [
-          `https://2embed.ru/embedmovie/${id}`,
-          `https://2embed.org/embedmovie/${id}`,
-          `https://www.2embed.cc/embedmovie/${id}`,
+          `https://www.primewire.tf/embed/movie?tmdb=${id}`,
         ],
   },
   {
     id: 7,
     name: 'Server 7',
-    label: 'MultiEmbed',
-    sublabel: 'multiembed.xyz',
+    label: 'GDrive',
+    sublabel: 'databasegdriveplayer',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://multiembed.xyz/directstream.php?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
-          `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
-          `https://multiembed.xyz/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
+          `https://databasegdriveplayer.xyz/player.php?type=series&tmdb=${id}&season=${season}&episode=${episode}`,
         ]
       : [
-          `https://multiembed.xyz/directstream.php?video_id=${id}&tmdb=1`,
-          `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-          `https://multiembed.xyz/?video_id=${id}&tmdb=1`,
+          `https://databasegdriveplayer.xyz/player.php?tmdb=${id}`,
         ],
   },
   {
     id: 8,
     name: 'Server 8',
+    label: 'TVEmbed',
+    sublabel: 'tvembed.cc',
+    badge: 'HD',
+    recommended: false,
+    enabled: true,
+    getUrls: (id, type, season, episode) => type === 'tv'
+      ? [
+          `https://tvembed.cc/tv/${id}/${season}/${episode}`,
+        ]
+      : [
+          `https://tvembed.cc/movie/${id}`,
+        ],
+  },
+  {
+    id: 9,
+    name: 'Server 9',
     label: 'Smashy',
     sublabel: 'smashy.to',
     badge: 'HD',
@@ -168,14 +176,14 @@ const MOVIE_PROVIDER_REGISTRY = [
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
+          `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}`,
           `https://player.smashy.to/tv/${id}?s=${season}&e=${episode}`,
           `https://smashy.to/tv/${id}?s=${season}&e=${episode}`,
-          `https://player.smashy.stream/tv/${id}?s=${season}&e=${episode}`,
         ]
       : [
+          `https://embed.smashystream.com/playere.php?tmdb=${id}`,
           `https://player.smashy.to/movie/${id}`,
           `https://smashy.to/movie/${id}`,
-          `https://player.smashy.stream/movie/${id}`,
         ],
   },
 ];
