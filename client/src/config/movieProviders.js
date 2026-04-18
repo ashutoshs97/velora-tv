@@ -62,17 +62,19 @@ const MOVIE_PROVIDER_REGISTRY = [
     id: 3,
     name: 'Server 3',
     label: 'VidSrc Pro',
-    sublabel: 'vidsrc.pro',
+    sublabel: 'vidsrc.net',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`,
+          `https://vidsrc.net/embed/tv/${id}/${season}/${episode}`,
+          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
           `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
         ]
       : [
-          `https://vidsrc.pro/embed/movie/${id}`,
+          `https://vidsrc.net/embed/movie/${id}`,
+          `https://vidsrc.to/embed/movie/${id}`,
           `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
         ],
   },
@@ -87,10 +89,12 @@ const MOVIE_PROVIDER_REGISTRY = [
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
           `https://embed.su/embed/tv/${id}/${season}/${episode}`,
+          `https://vidmix.to/embed/tv/${id}/${season}/${episode}`,
           `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
         ]
       : [
           `https://embed.su/embed/movie/${id}`,
+          `https://vidmix.to/embed/movie/${id}`,
           `https://multiembed.mov/?video_id=${id}&tmdb=1`,
         ],
   },
@@ -98,17 +102,19 @@ const MOVIE_PROVIDER_REGISTRY = [
     id: 5,
     name: 'Server 5',
     label: 'MovieAPI',
-    sublabel: 'movieapi.club',
+    sublabel: 'moviebird.com',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://movieapi.club/tv/${id}-${season}-${episode}`,
+          `https://moviebird.com/tv/${id}-${season}-${episode}`,
+          `https://filmish.com/tv/${id}-${season}-${episode}`,
           `https://moviesapi.club/tv/${id}-${season}-${episode}`,
         ]
       : [
-          `https://movieapi.club/movie/${id}`,
+          `https://moviebird.com/movie/${id}`,
+          `https://filmish.com/movie/${id}`,
           `https://moviesapi.club/movie/${id}`,
         ],
   },
@@ -116,54 +122,60 @@ const MOVIE_PROVIDER_REGISTRY = [
     id: 6,
     name: 'Server 6',
     label: '2Embed',
-    sublabel: '2embed.cc',
+    sublabel: '2embed.ru',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
+          `https://2embed.ru/embedtv/${id}?s=${season}&e=${episode}`,
+          `https://2embed.org/embedtv/${id}?s=${season}&e=${episode}`,
           `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`,
-          `https://2embed.org/embedtv/${id}&s=${season}&e=${episode}`,
         ]
       : [
-          `https://www.2embed.cc/embedmovie/${id}`,
+          `https://2embed.ru/embedmovie/${id}`,
           `https://2embed.org/embedmovie/${id}`,
+          `https://www.2embed.cc/embedmovie/${id}`,
         ],
   },
   {
     id: 7,
     name: 'Server 7',
     label: 'MultiEmbed',
-    sublabel: 'multiembed.mov',
+    sublabel: 'multiembed.xyz',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
+          `https://multiembed.xyz/directstream.php?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
           `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
+          `https://multiembed.xyz/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
         ]
       : [
-          `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
+          `https://multiembed.xyz/directstream.php?video_id=${id}&tmdb=1`,
           `https://multiembed.mov/?video_id=${id}&tmdb=1`,
+          `https://multiembed.xyz/?video_id=${id}&tmdb=1`,
         ],
   },
   {
     id: 8,
     name: 'Server 8',
     label: 'Smashy',
-    sublabel: 'smashy.stream',
+    sublabel: 'smashy.to',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
+          `https://player.smashy.to/tv/${id}?s=${season}&e=${episode}`,
+          `https://smashy.to/tv/${id}?s=${season}&e=${episode}`,
           `https://player.smashy.stream/tv/${id}?s=${season}&e=${episode}`,
-          `https://smashy.stream/tv/${id}?s=${season}&e=${episode}`,
         ]
       : [
+          `https://player.smashy.to/movie/${id}`,
+          `https://smashy.to/movie/${id}`,
           `https://player.smashy.stream/movie/${id}`,
-          `https://smashy.stream/movie/${id}`,
         ],
   },
 ];
