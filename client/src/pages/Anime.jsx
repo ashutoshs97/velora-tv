@@ -275,7 +275,7 @@ export default function Anime() {
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-28 pb-20 sm:pb-28">
+          <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-28 pb-32 sm:pb-36 lg:pb-32">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
               <div className="w-full md:w-3/4 lg:w-[58%]">
                 <div className="flex items-center gap-3 mb-4">
@@ -340,7 +340,7 @@ export default function Anime() {
 
           <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
-              <div className="w-10 hidden sm:block" />
+              <div className="hidden sm:block w-10" />
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
                 {heroItems.map((_, i) => (
                   <button
@@ -363,7 +363,7 @@ export default function Anime() {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2 pointer-events-auto">
+              <div className="ml-auto flex items-center gap-2 pointer-events-auto">
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
                     onClick={toggleMute}
