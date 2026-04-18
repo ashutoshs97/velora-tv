@@ -1,93 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Server, RefreshCw, AlertCircle, Zap } from 'lucide-react';
-
-const SERVERS = [
-  {
-    id: 1, name: 'Server 1', label: 'VidLink', sublabel: 'vidlink.pro',
-    badge: 'HD', recommended: true,
-    getUrls: (id, type, s, e) => {
-      const params = ['player=jw','primaryColor=ffffff','secondaryColor=a8a8a8',
-        'iconColor=ffffff','autoplay=true','nextbutton=false'].join('&');
-      return type === 'tv'
-        ? [`https://vidlink.pro/tv/${id}/${s}/${e}?${params}`,
-           `https://vidlink.pro/tv/${id}/${s}/${e}?autoplay=true`]
-        : [`https://vidlink.pro/movie/${id}?${params}`,
-           `https://vidlink.pro/movie/${id}?autoplay=true`];
-    },
-  },
-  {
-    id: 2, name: 'Server 2', label: 'VidSrc', sublabel: 'vidsrc.cc',
-    badge: 'HD', recommended: true,
-    getUrls: (id, type, s, e) => type === 'tv'
-      ? [`https://vidsrc.cc/v3/embed/tv/${id}/${s}/${e}`,
-         `https://vidsrc.to/embed/tv/${id}/${s}/${e}`]
-      : [`https://vidsrc.cc/v3/embed/movie/${id}`,
-         `https://vidsrc.to/embed/movie/${id}`],
-  },
-  {
-    id: 3, name: 'Server 3', label: 'VidSrc Pro', sublabel: 'vidsrc.pro',
-    badge: 'HD', recommended: false,
-    getUrls: (id, type, s, e) => type === 'tv'
-      ? [`https://vidsrc.pro/embed/tv/${id}/${s}/${e}`,
-         `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${s}&episode=${e}`]
-      : [`https://vidsrc.pro/embed/movie/${id}`,
-         `https://vidsrc.xyz/embed/movie?tmdb=${id}`],
-  },
-  {
-    id: 4, name: 'Server 4', label: 'Embed', sublabel: 'embed.su',
-    badge: '4K', recommended: false,
-    getUrls: (id, type, s, e) => type === 'tv'
-      ? [`https://embed.su/embed/tv/${id}/${s}/${e}`,
-         `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`]
-      : [`https://embed.su/embed/movie/${id}`,
-         `https://multiembed.mov/?video_id=${id}&tmdb=1`],
-  },
-    {
-    id: 5,
-    name: 'Server 5',
-    label: 'MovieAPI',
-    sublabel: 'movieapi.club',
-    badge: 'HD',
-    recommended: false,
-    getUrls: (id, type, s, e) =>
-      type === 'tv'
-        ? [
-            `https://movieapi.club/tv/${id}-${s}-${e}`,
-            `https://moviesapi.club/tv/${id}-${s}-${e}` // mirror
-          ]
-        : [
-            `https://movieapi.club/movie/${id}`,
-            `https://moviesapi.club/movie/${id}` // mirror
-          ],
-  },
-  {
-    id: 6, name: 'Server 6', label: '2Embed', sublabel: '2embed.cc',
-    badge: 'HD', recommended: false,
-    getUrls: (id, type, s, e) => type === 'tv'
-      ? [`https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`,
-         `https://2embed.org/embedtv/${id}&s=${s}&e=${e}`]
-      : [`https://www.2embed.cc/embedmovie/${id}`,
-         `https://2embed.org/embedmovie/${id}`],
-  },
-  {
-    id: 7, name: 'Server 7', label: 'MultiEmbed', sublabel: 'multiembed.mov',
-    badge: 'HD', recommended: false,
-    getUrls: (id, type, s, e) => type === 'tv'
-      ? [`https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
-         `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`]
-      : [`https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
-         `https://multiembed.mov/?video_id=${id}&tmdb=1`],
-  },
-  {
-    id: 8, name: 'Server 8', label: 'Smashy', sublabel: 'smashy.stream',
-    badge: 'HD', recommended: false,
-    getUrls: (id, type, s, e) => type === 'tv'
-      ? [`https://player.smashy.stream/tv/${id}?s=${s}&e=${e}`,
-         `https://smashy.stream/tv/${id}?s=${s}&e=${e}`]
-      : [`https://player.smashy.stream/movie/${id}`,
-         `https://smashy.stream/movie/${id}`],
-  },
-];
+import { getEnabledMovieProviders } from '../config/movieProviders';
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -99,12 +12,25 @@ function getSafeType(raw) {
   return raw === 'tv' ? 'tv' : 'movie';
 }
 
+function getProviderUrls(provider, id, type, season, episode) {
+  if (!provider || typeof provider.getUrls !== 'function') return [];
+
+  try {
+    const urls = provider.getUrls(id, type, season, episode);
+    if (!Array.isArray(urls)) return [];
+    return urls.filter((url) => typeof url === 'string' && url.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
 export default function MultiSourceAggregator({
   tmdbId,
   type = 'movie',
   season = 1,
   episode = 1,
 }) {
+  const providers = getEnabledMovieProviders();
   const [activeServer, setActiveServer] = useState(0);
   const [mirrorIndex, setMirrorIndex] = useState(0);
   const [iframeKey, setIframeKey] = useState(0);
@@ -115,15 +41,18 @@ export default function MultiSourceAggregator({
   const [allFailed, setAllFailed] = useState(false);
   const loadTimerRef = useRef(null);
   const ios = isIOS();
-
-  const maxRetries = SERVERS.length * 2;
+  const providerCount = providers.length;
   const safeType = getSafeType(type);
   const safeSeason = Math.max(1, Number(season) || 1);
   const safeEpisode = Math.max(1, Number(episode) || 1);
 
-  const currentServer = SERVERS[activeServer] || SERVERS[0];
-  const urls = tmdbId
-    ? currentServer.getUrls(tmdbId, safeType, safeSeason, safeEpisode)
+  const maxRetries = providers.reduce((count, provider) => (
+    count + Math.max(getProviderUrls(provider, tmdbId, safeType, safeSeason, safeEpisode).length, 1)
+  ), 0);
+
+  const currentServer = providers[activeServer] || providers[0] || null;
+  const urls = tmdbId && currentServer
+    ? getProviderUrls(currentServer, tmdbId, safeType, safeSeason, safeEpisode)
     : [];
   const src = urls[mirrorIndex] || urls[0] || '';
 
@@ -142,6 +71,15 @@ export default function MultiSourceAggregator({
   // ── Loading timeout — mirror → next server → eventually stop ─────────
   useEffect(() => {
     clearTimeout(loadTimerRef.current);
+
+    if (providerCount === 0) {
+      setLoading(false);
+      setAllFailed(true);
+      return;
+    }
+
+    if (!tmdbId || !currentServer) return;
+
     if (!loading) return;
 
     if (retryCount >= maxRetries) {
@@ -150,14 +88,30 @@ export default function MultiSourceAggregator({
       return;
     }
 
-    loadTimerRef.current = setTimeout(() => {
-      const urls = currentServer.getUrls(
-        tmdbId, safeType, safeSeason, safeEpisode
-      );
+    const currentUrls = getProviderUrls(
+      currentServer,
+      tmdbId,
+      safeType,
+      safeSeason,
+      safeEpisode,
+    );
 
+    if (currentUrls.length === 0) {
+      setRetryCount(c => c + 1);
+      const next = (activeServer + 1) % providerCount;
+      setActiveServer(next);
+      setMirrorIndex(0);
+      setIframeKey(k => k + 1);
+      setLoading(true);
+      setAutoSwitched(true);
+      setUsingMirror(false);
+      return;
+    }
+
+    loadTimerRef.current = setTimeout(() => {
       setRetryCount(c => c + 1);
 
-      if (mirrorIndex < urls.length - 1) {
+      if (mirrorIndex < currentUrls.length - 1) {
         // Try mirror
         setMirrorIndex(m => m + 1);
         setIframeKey(k => k + 1);
@@ -165,7 +119,7 @@ export default function MultiSourceAggregator({
         setUsingMirror(true);
       } else {
         // All mirrors tried — next server
-        const next = (activeServer + 1) % SERVERS.length;
+        const next = (activeServer + 1) % providerCount;
         setActiveServer(next);
         setMirrorIndex(0);
         setIframeKey(k => k + 1);
@@ -177,7 +131,7 @@ export default function MultiSourceAggregator({
 
     return () => clearTimeout(loadTimerRef.current);
   }, [loading, iframeKey, mirrorIndex, activeServer, retryCount,
-    currentServer, tmdbId, safeType, safeSeason, safeEpisode, maxRetries]);
+    currentServer, tmdbId, safeType, safeSeason, safeEpisode, maxRetries, providerCount]);
 
   useEffect(() => {
     return () => clearTimeout(loadTimerRef.current);
@@ -205,7 +159,7 @@ export default function MultiSourceAggregator({
   }, []);
 
   const tryNext = useCallback(() => {
-    const next = (activeServer + 1) % SERVERS.length;
+    const next = (activeServer + 1) % providerCount;
     setActiveServer(next);
     setMirrorIndex(0);
     setIframeKey(k => k + 1);
@@ -214,12 +168,20 @@ export default function MultiSourceAggregator({
     setUsingMirror(false);
     setRetryCount(0);
     setAllFailed(false);
-  }, [activeServer]);
+  }, [activeServer, providerCount]);
 
   if (!tmdbId) {
     return (
       <div className="rounded-xl border border-white/10 bg-prime-surface p-8 text-center">
         <p className="text-prime-subtext text-sm">No content ID provided</p>
+      </div>
+    );
+  }
+
+  if (!providerCount) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-prime-surface p-8 text-center">
+        <p className="text-prime-subtext text-sm">No enabled movie providers configured</p>
       </div>
     );
   }
@@ -283,6 +245,9 @@ export default function MultiSourceAggregator({
             onLoad={() => {
               setLoading(false);
               setAllFailed(false);
+            }}
+            onError={() => {
+              setLoading(true);
             }}
             className="w-full h-full"
             style={{ border: 'none' }}
@@ -351,7 +316,7 @@ export default function MultiSourceAggregator({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {SERVERS.map((server, idx) => {
+          {providers.map((server, idx) => {
             const isActive = activeServer === idx;
             return (
               <button
@@ -419,6 +384,7 @@ export default function MultiSourceAggregator({
         </span>
         <button
           onClick={tryNext}
+          disabled={providerCount < 2}
           className="ml-auto flex-shrink-0 text-prime-blue hover:text-white text-xs font-semibold whitespace-nowrap transition-colors"
         >
           Try next →
