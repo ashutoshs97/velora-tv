@@ -309,14 +309,7 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
-        <div className="mb-4 bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-lg p-3 flex gap-2 items-start backdrop-blur-sm relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/80 rounded-l-lg" />
-          <AlertCircle size={14} className="text-amber-500 flex-shrink-0 mt-0.5 ml-1" />
-          <p className="text-amber-200/90 text-xs leading-relaxed font-medium">
-            <strong className="text-amber-400">Note:</strong> Servers auto-switch
-            if unavailable. Server 1 & 2 recommended for best experience.
-          </p>
-        </div>
+
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {providers.map((server, idx) => {
@@ -363,13 +356,6 @@ export default function MultiSourceAggregator({
                 }`}>
                   {server.sublabel}
                 </span>
-                {idx === 0 && (
-                  <span className={`mt-1.5 self-start text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                  }`}>
-                    JW Player
-                  </span>
-                )}
               </button>
             );
           })}
