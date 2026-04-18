@@ -22,155 +22,34 @@ const GENRES = [
 ];
 
 const MOODS = [
-  { key: 'action', emoji: '💥', label: 'Adrenaline Rush' },
-  { key: 'comedy', emoji: '😂', label: 'Feel-Good Vibes' },
-  { key: 'horror', emoji: '👻', label: 'Late Night Scare' },
-  { key: 'romance', emoji: '💕', label: 'Date Night' },
-  { key: 'scifi', emoji: '🚀', label: 'Mind-Bending' },
-  { key: 'animated', emoji: '✨', label: 'Family Fun' },
+  { key: 'action', label: 'Action' },
+  { key: 'comedy', label: 'Comedy' },
+  { key: 'horror', label: 'Horror' },
+  { key: 'romance', label: 'Romance' },
+  { key: 'scifi', label: 'Sci-Fi' },
+  { key: 'animated', label: 'Animated' },
 ];
 
 const AUTHORS_CHOICE = [
-  {
-    "id": 496243,
-    "title": "Parasite",
-    "poster_path": "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
-    "backdrop_path": "/hiKmpZMGZsrkA3cdce8a7Dpos1j.jpg",
-    "vote_average": 8.494,
-    "release_date": "2019-05-30",
-    "media_type": "movie"
-  },
-  {
-    "id": 38,
-    "title": "Eternal Sunshine of the Spotless Mind",
-    "poster_path": "/5MwkWH9tYHv3mV9OdYTMR5qreIz.jpg",
-    "backdrop_path": "/W1ffLQGHoxfAOq0ZYdPtJlvAdb.jpg",
-    "vote_average": 8.091,
-    "release_date": "2004-03-19",
-    "media_type": "movie"
-  },
-  {
-    "id": 419430,
-    "title": "Get Out",
-    "poster_path": "/mE24wUCfjK8AoBBjaMjho7Rczr7.jpg",
-    "backdrop_path": "/o8dPH0ZSIyyViP6rjRX1djwCUwI.jpg",
-    "vote_average": 7.622,
-    "release_date": "2017-02-24",
-    "media_type": "movie"
-  },
-  {
-    "id": 530385,
-    "title": "Midsommar",
-    "poster_path": "/7LEI8ulZzO5gy9Ww2NVCrKmHeDZ.jpg",
-    "backdrop_path": "/pYgj8e2Y6RufnSyOA6OnzmxFXxZ.jpg",
-    "vote_average": 7.2,
-    "release_date": "2019-07-03",
-    "media_type": "movie"
-  },
-  {
-    "id": 27205,
-    "title": "Inception",
-    "poster_path": "/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg",
-    "backdrop_path": "/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
-    "vote_average": 8.372,
-    "release_date": "2010-07-15",
-    "media_type": "movie"
-  },
-  {
-    "id": 546554,
-    "title": "Knives Out",
-    "poster_path": "/pThyQovXQrw2m0s9x82twj48Jq4.jpg",
-    "backdrop_path": "/4HWAQu28e2yaWrtupFPGFkdNU7V.jpg",
-    "vote_average": 7.839,
-    "release_date": "2019-11-27",
-    "media_type": "movie"
-  },
-  {
-    "id": 129,
-    "title": "Spirited Away",
-    "poster_path": "/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
-    "backdrop_path": "/dyJvKsNs2KP8qQnAXbRwDjblViy.jpg",
-    "vote_average": 8.534,
-    "release_date": "2001-07-20",
-    "media_type": "movie"
-  },
-  {
-    "id": 569094,
-    "title": "Spider-Man: Across the Spider-Verse",
-    "poster_path": "/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
-    "backdrop_path": "/9xfDWXAUbFXQK585JvByT5pEAhe.jpg",
-    "vote_average": 8.333,
-    "release_date": "2023-05-31",
-    "media_type": "movie"
-  },
-  {
-    "id": 489,
-    "title": "Good Will Hunting",
-    "poster_path": "/z2FnLKpFi1HPO7BEJxdkv6hpJSU.jpg",
-    "backdrop_path": "/xj1Sv1xm4Y0ydBueGuf10Y9qM0O.jpg",
-    "vote_average": 8.159,
-    "release_date": "1997-12-05",
-    "media_type": "movie"
-  },
-  {
-    "id": 16869,
-    "title": "Inglourious Basterds",
-    "poster_path": "/7sfbEnaARXDDhKm0CZ7D7uc2sbo.jpg",
-    "backdrop_path": "/hwNtEmmugU5Yd7hpfprNWI0DGIn.jpg",
-    "vote_average": 8.217,
-    "release_date": "2009-08-02",
-    "media_type": "movie"
-  },
-  {
-    "id": 1317288,
-    "title": "Marty Supreme",
-    "poster_path": "/lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg",
-    "backdrop_path": "/3iMoYSbI72Nwsvi7uSpqReLJVa6.jpg",
-    "vote_average": 7.404,
-    "release_date": "2025-12-19",
-    "media_type": "movie"
-  },
-  {
-    "id": 84892,
-    "title": "The Perks of Being a Wallflower",
-    "poster_path": "/aKCvdFFF5n80P2VdS7d8YBwbCjh.jpg",
-    "backdrop_path": "/aM6E4DBP6588q3tEr9hz41ls80q.jpg",
-    "vote_average": 7.803,
-    "release_date": "2012-09-20",
-    "media_type": "movie"
-  },
-  {
-    "id": 19913,
-    "title": "(500) Days of Summer",
-    "poster_path": "/qXAuQ9hF30sQRsXf40OfRVl0MJZ.jpg",
-    "backdrop_path": "/1M2i4Mxd03elGOTmEkIvqrHfmyS.jpg",
-    "vote_average": 7.3,
-    "release_date": "2009-07-17",
-    "media_type": "movie"
-  },
-  {
-    "id": 210577,
-    "title": "Gone Girl",
-    "poster_path": "/ts996lKsxvjkO2yiYG0ht4qAicO.jpg",
-    "backdrop_path": "/iWak7wT0j6ycCc8lKr4NBz9c7n5.jpg",
-    "vote_average": 7.889,
-    "release_date": "2014-10-01",
-    "media_type": "movie"
-  },
-  {
-    "id": 2062,
-    "title": "Ratatouille",
-    "poster_path": "/t3vaWRPSf6WjDSamIkKDs1iQWna.jpg",
-    "backdrop_path": "/xgDj56UWyeWQcxQ44f5A3RTWuSs.jpg",
-    "vote_average": 7.839,
-    "release_date": "2007-06-28",
-    "media_type": "movie"
-  }
+  { id: 496243, title: "Parasite", poster_path: "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg", backdrop_path: "/hiKmpZMGZsrkA3cdce8a7Dpos1j.jpg", vote_average: 8.494, release_date: "2019-05-30", media_type: "movie" },
+  { id: 38, title: "Eternal Sunshine of the Spotless Mind", poster_path: "/5MwkWH9tYHv3mV9OdYTMR5qreIz.jpg", backdrop_path: "/W1ffLQGHoxfAOq0ZYdPtJlvAdb.jpg", vote_average: 8.091, release_date: "2004-03-19", media_type: "movie" },
+  { id: 419430, title: "Get Out", poster_path: "/mE24wUCfjK8AoBBjaMjho7Rczr7.jpg", backdrop_path: "/o8dPH0ZSIyyViP6rjRX1djwCUwI.jpg", vote_average: 7.622, release_date: "2017-02-24", media_type: "movie" },
+  { id: 530385, title: "Midsommar", poster_path: "/7LEI8ulZzO5gy9Ww2NVCrKmHeDZ.jpg", backdrop_path: "/pYgj8e2Y6RufnSyOA6OnzmxFXxZ.jpg", vote_average: 7.2, release_date: "2019-07-03", media_type: "movie" },
+  { id: 27205, title: "Inception", poster_path: "/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg", backdrop_path: "/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg", vote_average: 8.372, release_date: "2010-07-15", media_type: "movie" },
+  { id: 546554, title: "Knives Out", poster_path: "/pThyQovXQrw2m0s9x82twj48Jq4.jpg", backdrop_path: "/4HWAQu28e2yaWrtupFPGFkdNU7V.jpg", vote_average: 7.839, release_date: "2019-11-27", media_type: "movie" },
+  { id: 129, title: "Spirited Away", poster_path: "/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg", backdrop_path: "/dyJvKsNs2KP8qQnAXbRwDjblViy.jpg", vote_average: 8.534, release_date: "2001-07-20", media_type: "movie" },
+  { id: 569094, title: "Spider-Man: Across the Spider-Verse", poster_path: "/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg", backdrop_path: "/9xfDWXAUbFXQK585JvByT5pEAhe.jpg", vote_average: 8.333, release_date: "2023-05-31", media_type: "movie" },
+  { id: 489, title: "Good Will Hunting", poster_path: "/z2FnLKpFi1HPO7BEJxdkv6hpJSU.jpg", backdrop_path: "/xj1Sv1xm4Y0ydBueGuf10Y9qM0O.jpg", vote_average: 8.159, release_date: "1997-12-05", media_type: "movie" },
+  { id: 16869, title: "Inglourious Basterds", poster_path: "/7sfbEnaARXDDhKm0CZ7D7uc2sbo.jpg", backdrop_path: "/hwNtEmmugU5Yd7hpfprNWI0DGIn.jpg", vote_average: 8.217, release_date: "2009-08-02", media_type: "movie" },
+  { id: 1317288, title: "Marty Supreme", poster_path: "/lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg", backdrop_path: "/3iMoYSbI72Nwsvi7uSpqReLJVa6.jpg", vote_average: 7.404, release_date: "2025-12-19", media_type: "movie" },
+  { id: 84892, title: "The Perks of Being a Wallflower", poster_path: "/aKCvdFFF5n80P2VdS7d8YBwbCjh.jpg", backdrop_path: "/aM6E4DBP6588q3tEr9hz41ls80q.jpg", vote_average: 7.803, release_date: "2012-09-20", media_type: "movie" },
+  { id: 19913, title: "(500) Days of Summer", poster_path: "/qXAuQ9hF30sQRsXf40OfRVl0MJZ.jpg", backdrop_path: "/1M2i4Mxd03elGOTmEkIvqrHfmyS.jpg", vote_average: 7.3, release_date: "2009-07-17", media_type: "movie" },
+  { id: 210577, title: "Gone Girl", poster_path: "/ts996lKsxvjkO2yiYG0ht4qAicO.jpg", backdrop_path: "/iWak7wT0j6ycCc8lKr4NBz9c7n5.jpg", vote_average: 7.889, release_date: "2014-10-01", media_type: "movie" },
+  { id: 2062, title: "Ratatouille", poster_path: "/t3vaWRPSf6WjDSamIkKDs1iQWna.jpg", backdrop_path: "/xgDj56UWyeWQcxQ44f5A3RTWuSs.jpg", vote_average: 7.839, release_date: "2007-06-28", media_type: "movie" },
 ];
 
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 
-// ── Safe media type helper ────────────────────────────────────────────────
 function getSafeType(movie) {
   if (!movie) return 'movie';
   if (movie.media_type === 'tv') return 'tv';
@@ -180,8 +59,15 @@ function getSafeType(movie) {
   return 'movie';
 }
 
+function getHistoryType(item) {
+  if (!item) return 'movie';
+  if (item.type === 'tv') return 'tv';
+  if (item.media_type === 'tv') return 'tv';
+  if (item.name && !item.title) return 'tv';
+  return 'movie';
+}
+
 export default function Home() {
-  // ── Data states ───────────────────────────────────────────────────────
   const [trending, setTrending] = useState([]);
   const [trendingTV, setTrendingTV] = useState([]);
   const [topRated, setTopRated] = useState([]);
@@ -192,7 +78,6 @@ export default function Home() {
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
   const [becauseTitle, setBecauseTitle] = useState('');
 
-  // ── Loading states ────────────────────────────────────────────────────
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTrendingTV, setLoadingTrendingTV] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
@@ -200,14 +85,12 @@ export default function Home() {
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [loadingMood, setLoadingMood] = useState(false);
 
-  // ── Hero slider states ────────────────────────────────────────────────
   const [heroMovies, setHeroMovies] = useState([]);
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroDirection, setHeroDirection] = useState(1);
   const [heroImgError, setHeroImgError] = useState(false);
   const autoAdvanceRef = useRef(null);
 
-  // ── Trailer states ────────────────────────────────────────────────────
   const [trailerKey, setTrailerKey] = useState(null);
   const [trailerActive, setTrailerActive] = useState(false);
   const [trailerMuted, setTrailerMuted] = useState(true);
@@ -216,20 +99,15 @@ export default function Home() {
   const replayTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
 
-  // ── Share state ───────────────────────────────────────────────────────
   const [copied, setCopied] = useState(false);
-
-  // ── Filter/selection states ───────────────────────────────────────────
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
 
-  // ── Derived values ────────────────────────────────────────────────────
   const heroMovie = useMemo(
     () => heroMovies[heroIndex] || null,
     [heroMovies, heroIndex]
   );
 
-  // ── Share handler ─────────────────────────────────────────────────────
   const handleShare = useCallback(() => {
     if (!heroMovie) return;
     const url = `${window.location.origin}/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`;
@@ -245,9 +123,7 @@ export default function Home() {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
-      } catch {
-        // silent fallback
-      }
+      } catch { /* silent */ }
     };
 
     if (navigator.share) {
@@ -268,18 +144,15 @@ export default function Home() {
     }
   }, [heroMovie]);
 
-  // ── History loader ────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
     try {
       const res = await fetchHistory();
       setHistory(Array.isArray(res.data) ? res.data : []);
     } catch {
-      // DB unavailable — history stays empty, app still works
       setHistory([]);
     }
   }, []);
 
-  // ── Initial data load ─────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -347,7 +220,6 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [loadHistory]);
 
-  // ── Genre movies ──────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoadingGenre(true);
@@ -364,7 +236,6 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [selectedGenre]);
 
-  // ── Mood movies ───────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoadingMood(true);
@@ -381,15 +252,16 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [selectedMood]);
 
-  // ── Because You Watched ───────────────────────────────────────────────
   useEffect(() => {
     if (!history?.length) return;
     let cancelled = false;
     const latest = history[0];
     if (!latest?.tmdbId) return;
 
-    setBecauseTitle(latest.title || 'your last watch');
-    fetchSimilar(latest.tmdbId, latest.type || 'movie')
+    const safeType = getHistoryType(latest);
+    setBecauseTitle(latest.title || latest.name || 'your last watch');
+
+    fetchSimilar(latest.tmdbId, safeType)
       .then(res => {
         if (!cancelled) setBecauseYouWatched(res.data?.results || []);
       })
@@ -400,11 +272,10 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [history]);
 
-  // ── Slider navigation ─────────────────────────────────────────────────
   const goToSlide = useCallback((idx, dir = 1) => {
     setHeroDirection(dir);
     setHeroIndex(idx);
-    setHeroImgError(false); // reset image error on slide change
+    setHeroImgError(false);
   }, []);
 
   const nextSlide = useCallback(() => {
@@ -417,7 +288,6 @@ export default function Home() {
     goToSlide((heroIndex - 1 + heroMovies.length) % heroMovies.length, -1);
   }, [heroIndex, heroMovies.length, goToSlide]);
 
-  // ── Auto-advance ──────────────────────────────────────────────────────
   useEffect(() => {
     if (trailerActive && !trailerEnded) {
       clearInterval(autoAdvanceRef.current);
@@ -427,7 +297,6 @@ export default function Home() {
     return () => clearInterval(autoAdvanceRef.current);
   }, [nextSlide, trailerActive, trailerEnded]);
 
-  // ── Fetch trailer when hero changes ──────────────────────────────────
   useEffect(() => {
     setTrailerKey(null);
     setTrailerActive(false);
@@ -444,7 +313,6 @@ export default function Home() {
         const videos = res.data?.videos?.results || [];
         const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
           || videos.find(v => v.site === 'YouTube');
-        // Validate key is a real non-empty string
         if (trailer?.key && typeof trailer.key === 'string' && trailer.key.trim()) {
           setTrailerKey(trailer.key.trim());
           trailerTimerRef.current = setTimeout(() => {
@@ -452,7 +320,7 @@ export default function Home() {
           }, 6000);
         }
       })
-      .catch(() => { }); // trailer is optional — silently skip
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -460,7 +328,6 @@ export default function Home() {
     };
   }, [heroMovie]);
 
-  // ── Replay trailer ────────────────────────────────────────────────────
   const replayTrailer = useCallback(() => {
     clearTimeout(replayTimerRef.current);
     setTrailerEnded(false);
@@ -468,7 +335,6 @@ export default function Home() {
     replayTimerRef.current = setTimeout(() => setTrailerActive(true), 100);
   }, []);
 
-  // Cleanup replay timer on unmount
   useEffect(() => {
     return () => {
       clearTimeout(replayTimerRef.current);
@@ -477,12 +343,9 @@ export default function Home() {
     };
   }, []);
 
-  // ── Mute toggle — no iframe restart ──────────────────────────────────
   const toggleMute = useCallback(() => {
     setTrailerMuted(m => {
       const newMuted = !m;
-
-      // Use YouTube postMessage API to mute/unmute without reloading iframe
       try {
         const iframe = trailerIframeRef.current;
         if (iframe?.contentWindow) {
@@ -492,10 +355,7 @@ export default function Home() {
             'https://www.youtube.com'
           );
         }
-      } catch {
-        // postMessage failed — silent fallback
-      }
-
+      } catch { /* silent */ }
       return newMuted;
     });
   }, []);
@@ -511,8 +371,6 @@ export default function Home() {
       {/* ── Hero Billboard ── */}
       {heroMovies.length > 0 && heroMovie && (
         <section className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20 pt-4">
-
-          {/* Slide background */}
           <AnimatePresence initial={false} custom={heroDirection}>
             {(!trailerActive || trailerEnded) && (
               <motion.div
@@ -538,14 +396,12 @@ export default function Home() {
                     onError={() => setHeroImgError(true)}
                   />
                 ) : (
-                  // Fallback gradient if image fails
                   <div className="w-full h-full bg-gradient-to-br from-prime-surface to-black" />
                 )}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* YouTube Autoplay Trailer */}
           <AnimatePresence>
             {trailerActive && trailerKey && !trailerEnded && (
               <motion.div
@@ -569,12 +425,10 @@ export default function Home() {
             )}
           </AnimatePresence>
 
-          {/* Gradients */}
           <div className="absolute inset-0 bg-hero-gradient-x opacity-90 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          {/* Content Block */}
           <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-28 pb-20 sm:pb-28">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
               <AnimatePresence initial={false} custom={heroDirection} mode="wait">
@@ -592,12 +446,10 @@ export default function Home() {
                   transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
                   className="w-full md:w-3/4 lg:w-[58%]"
                 >
-                  {/* Title */}
                   <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.15] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
                     {heroMovie.title || heroMovie.name || 'Untitled'}
                   </h1>
 
-                  {/* Metadata */}
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
                     <span className="flex items-center gap-1.5 text-[13px] font-bold text-prime-blue bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
                       <CheckCircle2 size={14} /> Included with Velora
@@ -615,7 +467,6 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Synopsis */}
                   <AnimatePresence>
                     {(!trailerActive || trailerEnded) && heroMovie.overview && (
                       <motion.p
@@ -631,7 +482,6 @@ export default function Home() {
                     )}
                   </AnimatePresence>
 
-                  {/* CTA Buttons */}
                   <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <Link
                       to={`/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`}
@@ -639,10 +489,7 @@ export default function Home() {
                     >
                       <Play size={20} fill="#000" className="mr-1.5" /> Play
                     </Link>
-                    <button
-                      title="Add to Watchlist"
-                      className="btn-secondary"
-                    >
+                    <button title="Add to Watchlist" className="btn-secondary">
                       <Plus size={22} />
                     </button>
                     <button
@@ -650,7 +497,7 @@ export default function Home() {
                       title="Share"
                       className={`btn-secondary transition-all ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
                     >
-                      {copied 
+                      {copied
                         ? <Check size={22} className="text-green-400 -ml-0.5" />
                         : <Share2 size={22} className="-ml-0.5" />
                       }
@@ -661,21 +508,16 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Slider nav: arrows + dots */}
           <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20 pointer-events-none">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
-
-              {/* Empty placeholder to keep flex distribution intact on the left */}
               <div className="w-10 hidden sm:block" />
-
-              {/* Dot indicators */}
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
                 {heroMovies.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => goToSlide(i, i > heroIndex ? 1 : -1)}
                     aria-label={`Go to slide ${i + 1}`}
-                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300 shadow-sm pointer-events-auto"
+                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300 shadow-sm"
                     style={{ width: i === heroIndex ? 36 : 14 }}
                   >
                     <span className="absolute inset-0 bg-white/25 rounded-full" />
@@ -691,21 +533,16 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-
-              {/* Right side controls */}
               <div className="flex items-center gap-2 pointer-events-auto">
-                {/* Mute toggle */}
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
                     onClick={toggleMute}
-                    aria-label={trailerMuted ? 'Unmute trailer' : 'Mute trailer'}
+                    aria-label={trailerMuted ? 'Unmute' : 'Mute'}
                     className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
                   >
                     {trailerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                   </button>
                 )}
-
-                {/* Replay */}
                 {trailerKey && trailerEnded && (
                   <button
                     onClick={replayTrailer}
@@ -714,21 +551,17 @@ export default function Home() {
                     <RotateCcw size={12} /> Replay
                   </button>
                 )}
-
-                {/* Prev */}
                 <button
                   onClick={prevSlide}
-                  aria-label="Previous slide"
-                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
+                  aria-label="Previous"
+                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
                 >
                   <ChevronLeft size={18} />
                 </button>
-
-                {/* Next */}
                 <button
                   onClick={nextSlide}
-                  aria-label="Next slide"
-                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 hover:border-white/30 transition-all"
+                  aria-label="Next"
+                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -738,14 +571,14 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Content Swimlanes ── */}
+      {/* ── Content ── */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 -mt-16 relative z-20 space-y-14">
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
           <CarouselRow
             title="Top 10 Movies"
             badge="Trending"
@@ -756,7 +589,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
           <CarouselRow
             title="Top 10 TV Shows"
             badge="Popular"
@@ -767,17 +600,16 @@ export default function Home() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
           <PrimeCarouselRow
             title="Author's Choice"
             badge="Letterboxd Favorites"
             movies={AUTHORS_CHOICE}
-            loading={false}
             titleLink="https://letterboxd.com/ashutoshs97/likes/films/by/popular/"
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
           <PrimeCarouselRow
             title="Critically Acclaimed"
             badge="Top Rated"
@@ -786,7 +618,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
           <CarouselRow
             title="Binge-Worthy TV Shows"
             badge="Series"
@@ -796,7 +628,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.7s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
           <PrimeCarouselRow
             title="Fresh Drops"
             badge="New This Month"
@@ -806,7 +638,7 @@ export default function Home() {
         </div>
 
         {becauseYouWatched.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '0.75s' }}>
+          <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
             <CarouselRow
               title={`Because You Watched "${becauseTitle}"`}
               movies={becauseYouWatched}
@@ -816,30 +648,27 @@ export default function Home() {
         )}
 
         {/* Browse by Genre */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.8s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Browse by Genre
             </h2>
           </div>
-          {/* Horizontally scrollable genre pills */}
-          <div className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
+          <div
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {GENRES.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setSelectedGenre(g)}
-                className={`relative flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out overflow-hidden ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
                   selectedGenre.id === g.id
-                    ? 'text-white shadow-[0_0_20px_rgba(0,180,255,0.4)] border-transparent scale-105'
-                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white hover:bg-[#1A242F]/80'
+                    ? 'bg-prime-blue text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
                 }`}
               >
-                {selectedGenre.id === g.id && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-prime-blue to-blue-500 opacity-90" />
-                )}
-                <span className="relative z-10">{g.label}</span>
+                {g.label}
               </button>
             ))}
           </div>
@@ -850,32 +679,28 @@ export default function Home() {
           />
         </div>
 
-        {/* Mood Collections */}
-        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.85s' }}>
+        {/* Browse by Mood */}
+        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.65s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              What's Your Mood?
+              Browse by Mood
             </h2>
           </div>
-          {/* Horizontally scrollable mood pills */}
-          <div className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
+          <div
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {MOODS.map((m) => (
               <button
                 key={m.key}
                 onClick={() => setSelectedMood(m)}
-                className={`relative flex-shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out overflow-hidden ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
                   selectedMood.key === m.key
-                    ? 'text-white shadow-[0_0_20px_rgba(0,180,255,0.4)] border-transparent scale-105'
-                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white hover:bg-[#1A242F]/80'
+                    ? 'bg-prime-blue text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
                 }`}
               >
-                {selectedMood.key === m.key && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-prime-blue to-blue-500 opacity-90" />
-                )}
-                <span className="relative z-10 text-base">{m.emoji}</span>
-                <span className="relative z-10">{m.label}</span>
+                {m.label}
               </button>
             ))}
           </div>
@@ -886,11 +711,7 @@ export default function Home() {
           />
         </div>
 
-        {/* ── Bottom ambient glow ── */}
-        <div className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
-
     </motion.div>
   );
 }

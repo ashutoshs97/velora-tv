@@ -1,13 +1,8 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import {
-  Play, Plus, Share2, Award, CheckCircle2,
-  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check
-} from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   fetchTrending, fetchTopRated, fetchHistory,
-  fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail
+  fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar
 } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
@@ -22,15 +17,13 @@ const GENRES = [
 ];
 
 const MOODS = [
-  { key: 'action', emoji: '💥', label: 'Adrenaline Rush' },
-  { key: 'comedy', emoji: '😂', label: 'Feel-Good Vibes' },
-  { key: 'horror', emoji: '👻', label: 'Late Night Scare' },
-  { key: 'romance', emoji: '💕', label: 'Date Night' },
-  { key: 'scifi', emoji: '🚀', label: 'Mind-Bending' },
-  { key: 'animated', emoji: '✨', label: 'Family Fun' },
+  { key: 'action', label: 'Action' },
+  { key: 'comedy', label: 'Comedy' },
+  { key: 'horror', label: 'Horror' },
+  { key: 'romance', label: 'Romance' },
+  { key: 'scifi', label: 'Sci-Fi' },
+  { key: 'animated', label: 'Animated' },
 ];
-
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
 
 const A24_MOVIES = [
   { id: 545611, title: "Everything Everywhere All at Once", poster_path: "/u68AjlvlutfEIcpmbYpKcdi09ut.jpg", backdrop_path: "/ss0Os3uWJfQAENILHZUdX8Tt1OC.jpg", vote_average: 7.72, release_date: "2022-03-24", media_type: "movie" },
@@ -83,18 +76,15 @@ const FOCUS_MOVIES = [
   { id: 340837, title: "A Cure for Wellness", poster_path: "/8QWJtne0pTsNoJ86KE993aQYTLW.jpg", backdrop_path: "/uXx9wjfJEzLlfqB8GW67SYBrhVT.jpg", vote_average: 6.351, release_date: "2017-02-15", media_type: "movie" },
 ];
 
-// ── Safe media type helper ────────────────────────────────────────────────
-function getSafeType(movie) {
-  if (!movie) return 'movie';
-  if (movie.media_type === 'tv') return 'tv';
-  if (movie.media_type === 'movie') return 'movie';
-  if (movie.type === 'tv') return 'tv';
-  if (movie.name && !movie.title) return 'tv';
+function getHistoryType(item) {
+  if (!item) return 'movie';
+  if (item.type === 'tv') return 'tv';
+  if (item.media_type === 'tv') return 'tv';
+  if (item.name && !item.title) return 'tv';
   return 'movie';
 }
 
 export default function Movies() {
-  // ── Data states ───────────────────────────────────────────────────────
   const [trending, setTrending] = useState([]);
   const [topRated, setTopRated] = useState([]);
   const [history, setHistory] = useState([]);
@@ -104,39 +94,31 @@ export default function Movies() {
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
   const [becauseTitle, setBecauseTitle] = useState('');
 
-  // ── Loading states ────────────────────────────────────────────────────
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
   const [loadingNew, setLoadingNew] = useState(true);
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [loadingMood, setLoadingMood] = useState(false);
 
-  // ── Filter/selection states ───────────────────────────────────────────
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
 
-
-  // ── History loader ────────────────────────────────────────────────────
   const loadHistory = useCallback(async () => {
     try {
       const res = await fetchHistory();
       setHistory(Array.isArray(res.data) ? res.data : []);
     } catch {
-      // DB unavailable — history stays empty, app still works
       setHistory([]);
     }
   }, []);
 
-  // ── Initial data load ─────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
     const loadTrending = async () => {
       try {
         const res = await fetchTrending();
-        if (cancelled) return;
-        const movies = res.data?.results || [];
-        setTrending(movies);
+        if (!cancelled) setTrending(res.data?.results || []);
       } catch {
         if (!cancelled) setTrending([]);
       } finally {
@@ -174,7 +156,6 @@ export default function Movies() {
     return () => { cancelled = true; };
   }, [loadHistory]);
 
-  // ── Genre movies ──────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoadingGenre(true);
@@ -191,7 +172,6 @@ export default function Movies() {
     return () => { cancelled = true; };
   }, [selectedGenre]);
 
-  // ── Mood movies ───────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoadingMood(true);
@@ -208,15 +188,16 @@ export default function Movies() {
     return () => { cancelled = true; };
   }, [selectedMood]);
 
-  // ── Because You Watched ───────────────────────────────────────────────
   useEffect(() => {
     if (!history?.length) return;
     let cancelled = false;
     const latest = history[0];
     if (!latest?.tmdbId) return;
 
-    setBecauseTitle(latest.title || 'your last watch');
-    fetchSimilar(latest.tmdbId, latest.type || 'movie')
+    const safeType = getHistoryType(latest);
+    setBecauseTitle(latest.title || latest.name || 'your last watch');
+
+    fetchSimilar(latest.tmdbId, safeType)
       .then(res => {
         if (!cancelled) setBecauseYouWatched(res.data?.results || []);
       })
@@ -227,8 +208,6 @@ export default function Movies() {
     return () => { cancelled = true; };
   }, [history]);
 
-
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -237,24 +216,23 @@ export default function Movies() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* ── Page Header ── */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 pb-4">
         <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
           Movies
         </h1>
         <p className="text-prime-subtext font-medium mt-3 text-lg max-w-2xl">
-          Explore our extensive catalog of blockbuster hits, critically acclaimed masterpieces, and hidden gems.
+          Explore our extensive catalog of blockbuster hits, critically acclaimed
+          masterpieces, and hidden gems.
         </p>
       </div>
 
-      {/* ── Content Swimlanes ── */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 mt-8">
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
           <CarouselRow
             title="Top 10 Movies"
             badge="Trending"
@@ -265,39 +243,35 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
           <PrimeCarouselRow
             title="A24 Films"
             badge="Studio"
             movies={A24_MOVIES}
-            loading={false}
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
           <PrimeCarouselRow
             title="Neon Films"
             badge="Studio"
             movies={NEON_MOVIES}
-            loading={false}
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
           <PrimeCarouselRow
             title="Iranian Cinema"
             badge="World Cinema"
             movies={IRANIAN_MOVIES}
-            loading={false}
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
           <PrimeCarouselRow
             title="Focus Features"
             badge="Studio"
             movies={FOCUS_MOVIES}
-            loading={false}
           />
         </div>
 
@@ -310,7 +284,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
           <PrimeCarouselRow
             title="Fresh Drops"
             badge="New This Month"
@@ -320,7 +294,7 @@ export default function Movies() {
         </div>
 
         {becauseYouWatched.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '0.75s' }}>
+          <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
             <CarouselRow
               title={`Because You Watched "${becauseTitle}"`}
               movies={becauseYouWatched}
@@ -330,30 +304,27 @@ export default function Movies() {
         )}
 
         {/* Browse by Genre */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.8s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.65s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Browse by Genre
             </h2>
           </div>
-          {/* Horizontally scrollable genre pills */}
-          <div className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
+          <div
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {GENRES.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setSelectedGenre(g)}
-                className={`relative flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out overflow-hidden ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
                   selectedGenre.id === g.id
-                    ? 'text-white shadow-[0_0_20px_rgba(0,180,255,0.4)] border-transparent scale-105'
-                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white hover:bg-[#1A242F]/80'
+                    ? 'bg-prime-blue text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
                 }`}
               >
-                {selectedGenre.id === g.id && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-prime-blue to-blue-500 opacity-90" />
-                )}
-                <span className="relative z-10">{g.label}</span>
+                {g.label}
               </button>
             ))}
           </div>
@@ -364,32 +335,28 @@ export default function Movies() {
           />
         </div>
 
-        {/* Mood Collections */}
-        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.85s' }}>
+        {/* Browse by Mood */}
+        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.7s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              What's Your Mood?
+              Browse by Mood
             </h2>
           </div>
-          {/* Horizontally scrollable mood pills */}
-          <div className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
+          <div
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {MOODS.map((m) => (
               <button
                 key={m.key}
                 onClick={() => setSelectedMood(m)}
-                className={`relative flex-shrink-0 flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ease-out overflow-hidden ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
                   selectedMood.key === m.key
-                    ? 'text-white shadow-[0_0_20px_rgba(0,180,255,0.4)] border-transparent scale-105'
-                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white hover:bg-[#1A242F]/80'
+                    ? 'bg-prime-blue text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
                 }`}
               >
-                {selectedMood.key === m.key && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-prime-blue to-blue-500 opacity-90" />
-                )}
-                <span className="relative z-10 text-base">{m.emoji}</span>
-                <span className="relative z-10">{m.label}</span>
+                {m.label}
               </button>
             ))}
           </div>
@@ -400,11 +367,7 @@ export default function Movies() {
           />
         </div>
 
-        {/* ── Bottom ambient glow ── */}
-        <div className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
-
     </motion.div>
   );
 }
