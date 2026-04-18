@@ -2,98 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { AlertCircle, Calendar, ChevronLeft, ChevronRight, Globe, Star, Tv } from 'lucide-react';
+import { fetchAnimeDetail, fetchAnimeEpisodes, fetchAnimeStream } from '../api';
 
-const JIKAN = 'https://api.jikan.moe/v4';
-const ANIPUB = 'https://anipub.xyz';
 const EPISODES_PER_PAGE = 50;
-
-async function jikanGet(path) {
-  const res = await fetch(`${JIKAN}${path}`);
-  if (!res.ok) throw new Error(`Jikan ${res.status}`);
-  return res.json();
-}
-
-function toSlug(title = '') {
-  return title
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
-}
-
-function stripSrcPrefix(link = '') {
-  return link.startsWith('src=') ? link.slice(4) : link;
-}
-
-function buildEpisodeSources(streamDetails) {
-  const local = streamDetails?.local;
-  if (!local?.link) return [];
-
-  const episodes = [{ ep: 1, src: stripSrcPrefix(local.link) }];
-  (local.ep || []).forEach((entry, index) => {
-    const src = stripSrcPrefix(entry?.link || '');
-    if (src) {
-      episodes.push({ ep: index + 2, src });
-    }
-  });
-  return episodes;
-}
-
-async function fetchAniPubStream(anime) {
-  const candidateNames = [
-    anime?.title_english,
-    anime?.title,
-    anime?.title_japanese,
-  ].filter(Boolean);
-
-  for (const name of candidateNames) {
-    const findRes = await fetch(`${ANIPUB}/api/find/${encodeURIComponent(name)}`);
-    if (!findRes.ok) continue;
-
-    const match = await findRes.json();
-    if (!match?.exist || !match?.id) continue;
-
-    const detailsRes = await fetch(`${ANIPUB}/v1/api/details/${match.id}`);
-    if (!detailsRes.ok) continue;
-
-    const details = await detailsRes.json();
-    const episodes = buildEpisodeSources(details);
-    if (episodes.length > 0) {
-      return {
-        sourceName: details?.local?.name || name,
-        sourceId: match.id,
-        episodes,
-      };
-    }
-  }
-
-  for (const name of candidateNames) {
-    const slug = toSlug(name);
-    if (!slug) continue;
-
-    const infoRes = await fetch(`${ANIPUB}/api/info/${encodeURIComponent(slug)}`);
-    if (!infoRes.ok) continue;
-
-    const info = await infoRes.json();
-    if (!info?._id) continue;
-
-    const detailsRes = await fetch(`${ANIPUB}/v1/api/details/${info._id}`);
-    if (!detailsRes.ok) continue;
-
-    const details = await detailsRes.json();
-    const episodes = buildEpisodeSources(details);
-    if (episodes.length > 0) {
-      return {
-        sourceName: details?.local?.name || info?.Name || slug,
-        sourceId: info._id,
-        episodes,
-      };
-    }
-  }
-
-  throw new Error('No playable episodes found from AniPub');
-}
+const IFRAME_LOAD_TIMEOUT_MS = 15000;
 
 export default function AnimeWatch() {
   const { id } = useParams();
@@ -112,15 +24,19 @@ export default function AnimeWatch() {
   const [streamLoading, setStreamLoading] = useState(true);
   const [streamError, setStreamError] = useState(null);
   const [streamSourceName, setStreamSourceName] = useState('');
+  const [streamProviders, setStreamProviders] = useState([]);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const [playerLoading, setPlayerLoading] = useState(true);
+  const [playerFailed, setPlayerFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    jikanGet(`/anime/${malId}/full`)
-      .then((r) => {
-        if (!cancelled) setAnime(r.data);
+    fetchAnimeDetail(malId)
+      .then((response) => {
+        if (!cancelled) setAnime(response.data?.data || null);
       })
       .catch(() => {
         if (!cancelled) setError('Failed to load anime details.');
@@ -138,9 +54,9 @@ export default function AnimeWatch() {
     let cancelled = false;
     setEpLoading(true);
 
-    jikanGet(`/anime/${malId}/episodes?page=${epPage}`)
-      .then((r) => {
-        if (!cancelled) setEpisodes(r.data || []);
+    fetchAnimeEpisodes(malId, epPage)
+      .then((response) => {
+        if (!cancelled) setEpisodes(response.data?.data || []);
       })
       .catch(() => {
         if (!cancelled) setEpisodes([]);
@@ -155,23 +71,26 @@ export default function AnimeWatch() {
   }, [malId, epPage]);
 
   useEffect(() => {
-    if (!anime) return undefined;
+    if (!malId) return undefined;
 
     let cancelled = false;
     setStreamLoading(true);
     setStreamError(null);
     setStreamEpisodes([]);
     setStreamSourceName('');
+    setStreamProviders([]);
 
-    fetchAniPubStream(anime)
-      .then((result) => {
+    fetchAnimeStream(malId)
+      .then((response) => {
+        const result = response.data || {};
         if (cancelled) return;
-        setStreamEpisodes(result.episodes);
-        setStreamSourceName(result.sourceName);
+        setStreamEpisodes(Array.isArray(result.episodes) ? result.episodes : []);
+        setStreamSourceName(result.sourceName || 'Unknown');
+        setStreamProviders(Array.isArray(result.providers) ? result.providers : []);
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
-          setStreamError('No working anime stream source is available right now.');
+          setStreamError(err?.response?.data?.error || 'No working anime stream source is available right now.');
         }
       })
       .finally(() => {
@@ -181,7 +100,7 @@ export default function AnimeWatch() {
     return () => {
       cancelled = true;
     };
-  }, [anime]);
+  }, [malId]);
 
   const coverImg = anime?.images?.webp?.large_image_url || anime?.images?.jpg?.large_image_url;
   const title = anime?.title_english || anime?.title || 'Loading...';
@@ -193,9 +112,24 @@ export default function AnimeWatch() {
   const genres = anime?.genres || [];
   const studios = anime?.studios || [];
 
-  const activeEpisodeSrc = useMemo(() => {
-    return streamEpisodes.find((item) => item.ep === episode)?.src || '';
+  const activeEpisode = useMemo(() => {
+    return streamEpisodes.find((item) => item.ep === episode) || null;
   }, [streamEpisodes, episode]);
+
+  const activeEpisodeUrls = useMemo(() => {
+    if (!activeEpisode) return [];
+    if (Array.isArray(activeEpisode.urls) && activeEpisode.urls.length > 0) return activeEpisode.urls;
+    return activeEpisode.src ? [activeEpisode.src] : [];
+  }, [activeEpisode]);
+
+  const activeEpisodeSrc = useMemo(() => {
+    return activeEpisodeUrls[sourceIndex] || '';
+  }, [activeEpisodeUrls, sourceIndex]);
+
+  const activeProviderName = useMemo(() => {
+    if (!activeEpisode || !Array.isArray(activeEpisode.providers)) return null;
+    return activeEpisode.providers[sourceIndex] || null;
+  }, [activeEpisode, sourceIndex]);
 
   useEffect(() => {
     if (!streamEpisodes.length) return;
@@ -203,6 +137,49 @@ export default function AnimeWatch() {
       setEpisode(streamEpisodes[0].ep);
     }
   }, [streamEpisodes, episode]);
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [episode]);
+
+  useEffect(() => {
+    setPlayerFailed(false);
+    setPlayerLoading(Boolean(activeEpisodeSrc));
+  }, [activeEpisodeSrc]);
+
+  useEffect(() => {
+    if (!activeEpisodeSrc) return undefined;
+
+    const timer = setTimeout(() => {
+      setPlayerLoading(false);
+      setPlayerFailed(true);
+
+      if (sourceIndex + 1 < activeEpisodeUrls.length) {
+        setSourceIndex((current) => current + 1);
+      } else {
+        setStreamError(`Episode ${episode} failed to load from all available providers.`);
+      }
+    }, IFRAME_LOAD_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [activeEpisodeSrc, activeEpisodeUrls.length, episode, sourceIndex]);
+
+  function handleIframeLoaded() {
+    setPlayerLoading(false);
+    setPlayerFailed(false);
+  }
+
+  function handleIframeFailed() {
+    setPlayerLoading(false);
+    setPlayerFailed(true);
+
+    if (sourceIndex + 1 < activeEpisodeUrls.length) {
+      setSourceIndex((current) => current + 1);
+      return;
+    }
+
+    setStreamError(`Episode ${episode} could not be loaded from available providers.`);
+  }
 
   if (loading) {
     return (
@@ -320,15 +297,24 @@ export default function AnimeWatch() {
               <p className="text-prime-subtext text-sm">Finding a working anime stream...</p>
             </div>
           ) : activeEpisodeSrc ? (
-            <iframe
-              key={`${episode}-${activeEpisodeSrc}`}
-              src={activeEpisodeSrc}
-              className="w-full"
-              style={{ aspectRatio: '16/9' }}
-              allowFullScreen
-              allow="autoplay; fullscreen"
-              title={`${title} Episode ${episode}`}
-            />
+            <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+              <iframe
+                key={`${episode}-${sourceIndex}-${activeEpisodeSrc}`}
+                src={activeEpisodeSrc}
+                className="w-full h-full"
+                allowFullScreen
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+                title={`${title} Episode ${episode}`}
+                onLoad={handleIframeLoaded}
+                onError={handleIframeFailed}
+              />
+              {playerLoading && (
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
+                  <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <p className="text-prime-subtext text-sm">Loading episode from provider...</p>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="w-full aspect-video flex items-center justify-center px-6">
               <div className="max-w-md text-center">
@@ -337,6 +323,9 @@ export default function AnimeWatch() {
                 <p className="text-prime-subtext text-sm">
                   {streamError || 'No working episode source was found for this title.'}
                 </p>
+                {playerFailed && (
+                  <p className="text-prime-subtext text-xs mt-2">Provider blocked or timed out. Try another episode.</p>
+                )}
               </div>
             </div>
           )}
@@ -347,9 +336,19 @@ export default function AnimeWatch() {
             <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
               Source: {streamSourceName || 'AniPub'}
             </span>
+            {activeProviderName && (
+              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                Provider: {activeProviderName}
+              </span>
+            )}
             {streamEpisodes.length > 0 && (
               <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
                 {streamEpisodes.length} playable episodes found
+              </span>
+            )}
+            {streamProviders.length > 0 && (
+              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                {streamProviders.length} providers
               </span>
             )}
           </div>

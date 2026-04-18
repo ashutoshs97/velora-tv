@@ -36,6 +36,7 @@ export const fetchAnimeShort     = () => api.get('/anime/short');
 export const fetchAnimeGenre     = (id) => api.get(`/anime/genre/${id}`);
 export const fetchAnimeDetail    = (id) => api.get(`/anime/${id}`);
 export const fetchAnimeEpisodes  = (id, page = 1) => api.get(`/anime/${id}/episodes`, { params: { page } });
+export const fetchAnimeStream    = (id) => api.get(`/anime/${id}/stream`);
 
 export const fetchHistory = () => api.get('/history');
 export const addToHistory = (movie) => api.post('/history', movie);

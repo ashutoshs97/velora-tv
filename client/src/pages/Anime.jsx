@@ -4,8 +4,18 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import CarouselRow from '../components/CarouselRow';
-
-const JIKAN = 'https://api.jikan.moe/v4';
+import {
+  fetchAnimeAcclaimed,
+  fetchAnimeAiring,
+  fetchAnimeGenre,
+  fetchAnimeMovies,
+  fetchAnimeOVA,
+  fetchAnimePopular,
+  fetchAnimeShort,
+  fetchAnimeTop,
+  fetchAnimeTrending,
+  fetchAnimeUpcoming,
+} from '../api';
 
 const GENRES = [
   { id: 1, label: 'Action', emoji: '⚔️' },
@@ -44,23 +54,21 @@ function norm(anime) {
   };
 }
 
-async function jikanFetch(path) {
-  const res = await fetch(`${JIKAN}${path}`);
-  if (!res.ok) throw new Error(`Jikan ${res.status}`);
-  const json = await res.json();
-  return (json.data || []).map(norm);
+function toAnimeItems(response) {
+  return (response?.data?.data || []).map(norm);
 }
 
-function useJikan(path) {
+function useAnimeCollection(apiCall) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
-    jikanFetch(path)
-      .then((data) => {
-        if (!cancelled) setItems(data);
+    apiCall()
+      .then((response) => {
+        if (!cancelled) setItems(toAnimeItems(response));
       })
       .catch(() => {
         if (!cancelled) setItems([]);
@@ -72,21 +80,21 @@ function useJikan(path) {
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [apiCall]);
 
   return { items, loading };
 }
 
 export default function Anime() {
-  const trending = useJikan('/seasons/now?limit=24');
-  const top = useJikan('/top/anime?limit=24');
-  const popular = useJikan('/anime?order_by=popularity&sort=asc&limit=24');
-  const airing = useJikan('/anime?status=airing&order_by=score&sort=desc&limit=24');
-  const upcoming = useJikan('/seasons/upcoming?limit=24');
-  const movies = useJikan('/top/anime?type=movie&limit=24');
-  const ova = useJikan('/anime?type=ova&order_by=score&sort=desc&limit=24');
-  const acclaimed = useJikan('/anime?min_score=8.5&order_by=score&sort=desc&limit=24');
-  const shorts = useJikan('/anime?type=ona&order_by=score&sort=desc&limit=24');
+  const trending = useAnimeCollection(fetchAnimeTrending);
+  const top = useAnimeCollection(fetchAnimeTop);
+  const popular = useAnimeCollection(fetchAnimePopular);
+  const airing = useAnimeCollection(fetchAnimeAiring);
+  const upcoming = useAnimeCollection(fetchAnimeUpcoming);
+  const movies = useAnimeCollection(fetchAnimeMovies);
+  const ova = useAnimeCollection(fetchAnimeOVA);
+  const acclaimed = useAnimeCollection(fetchAnimeAcclaimed);
+  const shorts = useAnimeCollection(fetchAnimeShort);
 
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [genreItems, setGenreItems] = useState([]);
@@ -119,9 +127,9 @@ export default function Anime() {
     let cancelled = false;
     setLoadingGenre(true);
 
-    jikanFetch(`/anime?genres=${selectedGenre.id}&order_by=score&sort=desc&limit=24`)
-      .then((data) => {
-        if (!cancelled) setGenreItems(data);
+    fetchAnimeGenre(selectedGenre.id)
+      .then((response) => {
+        if (!cancelled) setGenreItems(toAnimeItems(response));
       })
       .catch(() => {
         if (!cancelled) setGenreItems([]);
