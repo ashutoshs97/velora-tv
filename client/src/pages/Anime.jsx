@@ -326,13 +326,31 @@ export default function Anime() {
                   )}
                 </AnimatePresence>
 
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
                   <Link
                     to={`/anime/${heroAnime.id}`}
                     className="btn-primary text-sm sm:text-base hover:scale-105"
                   >
                     <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
                   </Link>
+                  
+                  {/* Mobile-only carousel arrows aligned with action buttons */}
+                  <div className="flex sm:hidden items-center gap-2 ml-auto pointer-events-auto">
+                    <button
+                      onClick={prevSlide}
+                      aria-label="Previous anime"
+                      className="w-11 h-11 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      onClick={nextSlide}
+                      aria-label="Next anime"
+                      className="w-11 h-11 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -381,20 +399,22 @@ export default function Anime() {
                     <RotateCcw size={12} /> Replay
                   </button>
                 )}
-                <button
-                  onClick={prevSlide}
-                  aria-label="Previous anime"
-                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  onClick={nextSlide}
-                  aria-label="Next anime"
-                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                >
-                  <ChevronRight size={18} />
-                </button>
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    onClick={prevSlide}
+                    aria-label="Previous anime"
+                    className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    aria-label="Next anime"
+                    className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
