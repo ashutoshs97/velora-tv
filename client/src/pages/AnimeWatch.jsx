@@ -7,85 +7,40 @@ import { fetchAnimeDetail, fetchAnimeEpisodes, fetchAnimeStream } from '../api';
 const EPISODES_PER_PAGE = 50;
 const IFRAME_LOAD_TIMEOUT_MS = 15000;
 
-const BUILTIN_ANIME_SERVERS = [
-  {
-    id: 'anime-s1',
-    name: 'Server 1',
-    label: '2Anime',
-    buildUrl: (malId, ep) => `https://2anime.xyz/embed/${malId}/${ep}`,
-  },
-  {
-    id: 'anime-s2',
-    name: 'Server 2',
-    label: 'AniPlay',
-    buildUrl: (malId, ep) => `https://aniplaynow.live/embed/${malId}/${ep}`,
-  },
-  {
-    id: 'anime-s3',
-    name: 'Server 3',
-    label: 'Animotvslash',
-    buildUrl: (malId, ep) => `https://animotvslash.nl/embed/${malId}/${ep}`,
-  },
-  {
-    id: 'anime-s4',
-    name: 'Server 4',
-    label: 'AnimeHQ',
-    buildUrl: (malId, ep) => `https://animehq.to/watch/${malId}/${ep}`,
-  },
-  {
-    id: 'anime-s5',
-    name: 'Server 5',
-    label: 'Mirror Play',
-    buildUrl: (malId, ep) => `https://embed.aniwatch-api.com/mal/${malId}/${ep}`,
-  },
-];
-
-function getBuiltInServers(malId, ep) {
-  if (!Number.isFinite(malId) || malId <= 0 || !Number.isFinite(ep) || ep <= 0) return [];
-
-  return BUILTIN_ANIME_SERVERS.map((server) => ({
-    provider: `${server.name} - ${server.label}`,
-    url: server.buildUrl(malId, ep),
-  }));
-}
-
 export default function AnimeWatch() {
   const { id } = useParams();
   const malId = parseInt(id, 10);
 
   const [anime, setAnime] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [animeLoadedId, setAnimeLoadedId] = useState(null);
   const [error, setError] = useState(null);
 
   const [episodes, setEpisodes] = useState([]);
-  const [epLoading, setEpLoading] = useState(true);
+  const [episodesLoadedKey, setEpisodesLoadedKey] = useState('');
   const [epPage, setEpPage] = useState(1);
 
   const [episode, setEpisode] = useState(1);
   const [streamEpisodes, setStreamEpisodes] = useState([]);
-  const [streamLoading, setStreamLoading] = useState(true);
+  const [streamLoadedId, setStreamLoadedId] = useState(null);
   const [streamError, setStreamError] = useState(null);
   const [streamSourceName, setStreamSourceName] = useState('');
   const [streamProviders, setStreamProviders] = useState([]);
   const [sourceIndex, setSourceIndex] = useState(0);
   const [playerLoading, setPlayerLoading] = useState(true);
   const [playerFailed, setPlayerFailed] = useState(false);
-  const [manualProvider, setManualProvider] = useState('');
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     fetchAnimeDetail(malId)
       .then((response) => {
-        if (!cancelled) setAnime(response.data?.data || null);
+        if (!cancelled) {
+          setAnime(response.data?.data || null);
+          setAnimeLoadedId(malId);
+        }
       })
       .catch(() => {
         if (!cancelled) setError('Failed to load anime details.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
       });
 
     return () => {
@@ -95,17 +50,16 @@ export default function AnimeWatch() {
 
   useEffect(() => {
     let cancelled = false;
-    setEpLoading(true);
 
     fetchAnimeEpisodes(malId, epPage)
       .then((response) => {
-        if (!cancelled) setEpisodes(response.data?.data || []);
+        if (!cancelled) {
+          setEpisodes(response.data?.data || []);
+          setEpisodesLoadedKey(`${malId}:${epPage}`);
+        }
       })
       .catch(() => {
         if (!cancelled) setEpisodes([]);
-      })
-      .finally(() => {
-        if (!cancelled) setEpLoading(false);
       });
 
     return () => {
@@ -117,12 +71,6 @@ export default function AnimeWatch() {
     if (!malId) return undefined;
 
     let cancelled = false;
-    setStreamLoading(true);
-    setStreamError(null);
-    setStreamEpisodes([]);
-    setStreamSourceName('');
-    setStreamProviders([]);
-    setManualProvider('');
 
     fetchAnimeStream(malId)
       .then((response) => {
@@ -131,14 +79,13 @@ export default function AnimeWatch() {
         setStreamEpisodes(Array.isArray(result.episodes) ? result.episodes : []);
         setStreamSourceName(result.sourceName || 'Unknown');
         setStreamProviders(Array.isArray(result.providers) ? result.providers : []);
+        setStreamLoadedId(malId);
       })
       .catch((err) => {
         if (!cancelled) {
           setStreamError(err?.response?.data?.error || 'No working anime stream source is available right now.');
+          setStreamLoadedId(malId);
         }
-      })
-      .finally(() => {
-        if (!cancelled) setStreamLoading(false);
       });
 
     return () => {
@@ -155,54 +102,48 @@ export default function AnimeWatch() {
   const synopsis = anime?.synopsis;
   const genres = anime?.genres || [];
   const studios = anime?.studios || [];
+  const loading = animeLoadedId !== malId;
+  const epLoading = episodesLoadedKey !== `${malId}:${epPage}`;
+  const streamLoading = streamLoadedId !== malId;
+  const displayError = loading ? null : error;
+  const displayStreamError = streamLoading ? null : streamError;
+  const visibleStreamEpisodes = useMemo(() => {
+    return streamLoading ? [] : streamEpisodes;
+  }, [streamLoading, streamEpisodes]);
+  const currentEpisode = visibleStreamEpisodes.some((item) => item.ep === episode)
+    ? episode
+    : (visibleStreamEpisodes[0]?.ep || episode);
 
   const activeEpisode = useMemo(() => {
-    return streamEpisodes.find((item) => item.ep === episode) || null;
-  }, [streamEpisodes, episode]);
+    return visibleStreamEpisodes.find((item) => item.ep === currentEpisode) || null;
+  }, [visibleStreamEpisodes, currentEpisode]);
 
   const activeEpisodeUrls = useMemo(() => {
-    const urls = [];
-
     if (activeEpisode) {
       if (Array.isArray(activeEpisode.urls) && activeEpisode.urls.length > 0) {
-        urls.push(...activeEpisode.urls);
-      } else if (activeEpisode.src) {
-        urls.push(activeEpisode.src);
+        return activeEpisode.urls;
+      }
+
+      if (activeEpisode.src) {
+        return [activeEpisode.src];
       }
     }
 
-    const builtIn = getBuiltInServers(malId, episode).map((item) => item.url);
-    builtIn.forEach((url) => {
-      if (!urls.includes(url)) urls.push(url);
-    });
-
-    return urls;
-  }, [activeEpisode, malId, episode]);
+    return [];
+  }, [activeEpisode]);
 
   const activeEpisodeSrc = useMemo(() => {
-    if (manualProvider) {
-      const manual = getBuiltInServers(malId, episode).find((item) => item.provider === manualProvider);
-      if (manual?.url) return manual.url;
-    }
     return activeEpisodeUrls[sourceIndex] || '';
-  }, [activeEpisodeUrls, sourceIndex, manualProvider, malId, episode]);
+  }, [activeEpisodeUrls, sourceIndex]);
 
   const activeProviderName = useMemo(() => {
-    if (manualProvider) return manualProvider;
-
     const providerNames = [];
     if (activeEpisode && Array.isArray(activeEpisode.providers) && activeEpisode.providers.length > 0) {
       providerNames.push(...activeEpisode.providers);
     }
 
-    getBuiltInServers(malId, episode).forEach((item) => {
-      if (!providerNames.includes(item.provider)) {
-        providerNames.push(item.provider);
-      }
-    });
-
     return providerNames[sourceIndex] || null;
-  }, [activeEpisode, sourceIndex, manualProvider, malId, episode]);
+  }, [activeEpisode, sourceIndex]);
 
   const allProviderOptions = useMemo(() => {
     const options = [];
@@ -216,31 +157,8 @@ export default function AnimeWatch() {
       });
     }
 
-    getBuiltInServers(malId, episode).forEach((item) => {
-      if (!options.some((opt) => opt.url === item.url)) {
-        options.push({ provider: item.provider, url: item.url, kind: 'builtin' });
-      }
-    });
-
     return options;
-  }, [activeEpisode, activeEpisodeUrls, malId, episode]);
-
-  useEffect(() => {
-    if (!streamEpisodes.length) return;
-    if (!streamEpisodes.some((item) => item.ep === episode)) {
-      setEpisode(streamEpisodes[0].ep);
-    }
-  }, [streamEpisodes, episode]);
-
-  useEffect(() => {
-    setSourceIndex(0);
-    setManualProvider('');
-  }, [episode]);
-
-  useEffect(() => {
-    setPlayerFailed(false);
-    setPlayerLoading(Boolean(activeEpisodeSrc));
-  }, [activeEpisodeSrc]);
+  }, [activeEpisode, activeEpisodeUrls]);
 
   useEffect(() => {
     if (!activeEpisodeSrc) return undefined;
@@ -252,12 +170,12 @@ export default function AnimeWatch() {
       if (sourceIndex + 1 < activeEpisodeUrls.length) {
         setSourceIndex((current) => current + 1);
       } else {
-        setStreamError(`Episode ${episode} failed to load from all available providers.`);
+        setStreamError(`Episode ${currentEpisode} failed to load from all available providers.`);
       }
     }, IFRAME_LOAD_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [activeEpisodeSrc, activeEpisodeUrls.length, episode, sourceIndex]);
+  }, [activeEpisodeSrc, activeEpisodeUrls.length, currentEpisode, sourceIndex]);
 
   function handleIframeLoaded() {
     setPlayerLoading(false);
@@ -273,24 +191,26 @@ export default function AnimeWatch() {
       return;
     }
 
-    setStreamError(`Episode ${episode} could not be loaded from available providers.`);
+    setStreamError(`Episode ${currentEpisode} could not be loaded from available providers.`);
   }
 
   function chooseProvider(provider) {
     const option = allProviderOptions.find((item) => item.provider === provider);
     if (!option) return;
 
-    if (option.kind === 'builtin') {
-      setManualProvider(provider);
-      setSourceIndex(0);
-    } else {
-      const idx = activeEpisodeUrls.findIndex((url) => url === option.url);
-      if (idx >= 0) {
-        setManualProvider('');
-        setSourceIndex(idx);
-      }
+    const idx = activeEpisodeUrls.findIndex((url) => url === option.url);
+    if (idx >= 0) {
+      setSourceIndex(idx);
     }
 
+    setPlayerLoading(true);
+    setPlayerFailed(false);
+    setStreamError(null);
+  }
+
+  function selectEpisode(epNumber) {
+    setEpisode(epNumber);
+    setSourceIndex(0);
     setPlayerLoading(true);
     setPlayerFailed(false);
     setStreamError(null);
@@ -307,10 +227,10 @@ export default function AnimeWatch() {
     );
   }
 
-  if (error) {
+  if (displayError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-400">{error}</p>
+        <p className="text-red-400">{displayError}</p>
       </div>
     );
   }
@@ -414,12 +334,12 @@ export default function AnimeWatch() {
           ) : activeEpisodeSrc ? (
             <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
               <iframe
-                key={`${episode}-${sourceIndex}-${activeEpisodeSrc}`}
+                key={`${currentEpisode}-${sourceIndex}-${activeEpisodeSrc}`}
                 src={activeEpisodeSrc}
                 className="w-full h-full"
                 allowFullScreen
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
-                title={`${title} Episode ${episode}`}
+                title={`${title} Episode ${currentEpisode}`}
                 onLoad={handleIframeLoaded}
                 onError={handleIframeFailed}
               />
@@ -436,7 +356,7 @@ export default function AnimeWatch() {
                 <AlertCircle size={34} className="text-amber-400 mx-auto mb-3" />
                 <p className="text-white font-semibold mb-2">Stream unavailable</p>
                 <p className="text-prime-subtext text-sm">
-                  {streamError || 'No working episode source was found for this title.'}
+                  {displayStreamError || 'No working episode source was found for this title.'}
                 </p>
                 {playerFailed && (
                   <p className="text-prime-subtext text-xs mt-2">Provider blocked or timed out. Try another episode.</p>
@@ -466,11 +386,6 @@ export default function AnimeWatch() {
                 {streamProviders.length} providers
               </span>
             )}
-            {allProviderOptions.length > 0 && (
-              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                {allProviderOptions.length} servers
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -482,11 +397,11 @@ export default function AnimeWatch() {
               <ChevronLeft size={18} />
             </button>
             <span className="text-sm text-white font-semibold min-w-[80px] text-center">
-              Episode {episode}
+              Episode {currentEpisode}
             </span>
             <button
-              onClick={() => setEpisode((e) => e + 1)}
-              disabled={!streamEpisodes.some((item) => item.ep === episode + 1)}
+              onClick={() => selectEpisode(currentEpisode + 1)}
+              disabled={!visibleStreamEpisodes.some((item) => item.ep === currentEpisode + 1)}
               className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight size={18} />
@@ -494,27 +409,29 @@ export default function AnimeWatch() {
           </div>
         </div>
 
-        <div className="mb-8 rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-xs uppercase tracking-wider text-prime-subtext mb-2">Anime Servers</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            {allProviderOptions.slice(0, 10).map((option) => {
-              const active = activeProviderName === option.provider;
-              return (
-                <button
-                  key={option.provider}
-                  onClick={() => chooseProvider(option.provider)}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
-                    active
-                      ? 'bg-red-600/80 text-white border-red-500'
-                      : 'bg-white/5 text-prime-subtext border-white/10 hover:text-white hover:border-white/30'
-                  }`}
-                >
-                  {option.provider}
-                </button>
-              );
-            })}
+        {allProviderOptions.length > 1 && (
+          <div className="mb-8 rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs uppercase tracking-wider text-prime-subtext mb-2">Available Sources</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+              {allProviderOptions.slice(0, 10).map((option) => {
+                const active = activeProviderName === option.provider;
+                return (
+                  <button
+                    key={option.provider}
+                    onClick={() => chooseProvider(option.provider)}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      active
+                        ? 'bg-red-600/80 text-white border-red-500'
+                        : 'bg-white/5 text-prime-subtext border-white/10 hover:text-white hover:border-white/30'
+                    }`}
+                  >
+                    {option.provider}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -548,18 +465,16 @@ export default function AnimeWatch() {
             <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-20 gap-2">
               {episodes.map((ep) => {
                 const epNumber = ep.episode_id || ep.mal_id;
-                const hasApiEpisode = streamEpisodes.some((item) => item.ep === epNumber);
-                const hasFallbackServers = getBuiltInServers(malId, epNumber).length >= 4;
-                const isPlayable = hasApiEpisode || hasFallbackServers;
+                const isPlayable = visibleStreamEpisodes.some((item) => item.ep === epNumber);
 
                 return (
                   <button
                     key={ep.mal_id}
-                    onClick={() => setEpisode(epNumber)}
+                    onClick={() => selectEpisode(epNumber)}
                     disabled={!isPlayable}
                     title={ep.title || `Episode ${epNumber}`}
                     className={`h-10 rounded-lg text-sm font-bold transition-all ${
-                      episode === epNumber
+                      currentEpisode === epNumber
                         ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
                         : isPlayable
                           ? 'bg-white/5 text-prime-subtext border border-white/5 hover:bg-white/10 hover:text-white'
