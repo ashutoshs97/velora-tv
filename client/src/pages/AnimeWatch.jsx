@@ -7,6 +7,48 @@ import { fetchAnimeDetail, fetchAnimeEpisodes, fetchAnimeStream } from '../api';
 const EPISODES_PER_PAGE = 50;
 const IFRAME_LOAD_TIMEOUT_MS = 15000;
 
+const BUILTIN_ANIME_SERVERS = [
+  {
+    id: 'anime-s1',
+    name: 'Server 1',
+    label: '2Anime',
+    buildUrl: (malId, ep) => `https://2anime.xyz/embed/${malId}/${ep}`,
+  },
+  {
+    id: 'anime-s2',
+    name: 'Server 2',
+    label: 'AniPlay',
+    buildUrl: (malId, ep) => `https://aniplaynow.live/embed/${malId}/${ep}`,
+  },
+  {
+    id: 'anime-s3',
+    name: 'Server 3',
+    label: 'Animotvslash',
+    buildUrl: (malId, ep) => `https://animotvslash.nl/embed/${malId}/${ep}`,
+  },
+  {
+    id: 'anime-s4',
+    name: 'Server 4',
+    label: 'AnimeHQ',
+    buildUrl: (malId, ep) => `https://animehq.to/watch/${malId}/${ep}`,
+  },
+  {
+    id: 'anime-s5',
+    name: 'Server 5',
+    label: 'Mirror Play',
+    buildUrl: (malId, ep) => `https://embed.aniwatch-api.com/mal/${malId}/${ep}`,
+  },
+];
+
+function getBuiltInServers(malId, ep) {
+  if (!Number.isFinite(malId) || malId <= 0 || !Number.isFinite(ep) || ep <= 0) return [];
+
+  return BUILTIN_ANIME_SERVERS.map((server) => ({
+    provider: `${server.name} - ${server.label}`,
+    url: server.buildUrl(malId, ep),
+  }));
+}
+
 export default function AnimeWatch() {
   const { id } = useParams();
   const malId = parseInt(id, 10);
@@ -28,6 +70,7 @@ export default function AnimeWatch() {
   const [sourceIndex, setSourceIndex] = useState(0);
   const [playerLoading, setPlayerLoading] = useState(true);
   const [playerFailed, setPlayerFailed] = useState(false);
+  const [manualProvider, setManualProvider] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +122,7 @@ export default function AnimeWatch() {
     setStreamEpisodes([]);
     setStreamSourceName('');
     setStreamProviders([]);
+    setManualProvider('');
 
     fetchAnimeStream(malId)
       .then((response) => {
@@ -117,19 +161,69 @@ export default function AnimeWatch() {
   }, [streamEpisodes, episode]);
 
   const activeEpisodeUrls = useMemo(() => {
-    if (!activeEpisode) return [];
-    if (Array.isArray(activeEpisode.urls) && activeEpisode.urls.length > 0) return activeEpisode.urls;
-    return activeEpisode.src ? [activeEpisode.src] : [];
-  }, [activeEpisode]);
+    const urls = [];
+
+    if (activeEpisode) {
+      if (Array.isArray(activeEpisode.urls) && activeEpisode.urls.length > 0) {
+        urls.push(...activeEpisode.urls);
+      } else if (activeEpisode.src) {
+        urls.push(activeEpisode.src);
+      }
+    }
+
+    const builtIn = getBuiltInServers(malId, episode).map((item) => item.url);
+    builtIn.forEach((url) => {
+      if (!urls.includes(url)) urls.push(url);
+    });
+
+    return urls;
+  }, [activeEpisode, malId, episode]);
 
   const activeEpisodeSrc = useMemo(() => {
+    if (manualProvider) {
+      const manual = getBuiltInServers(malId, episode).find((item) => item.provider === manualProvider);
+      if (manual?.url) return manual.url;
+    }
     return activeEpisodeUrls[sourceIndex] || '';
-  }, [activeEpisodeUrls, sourceIndex]);
+  }, [activeEpisodeUrls, sourceIndex, manualProvider, malId, episode]);
 
   const activeProviderName = useMemo(() => {
-    if (!activeEpisode || !Array.isArray(activeEpisode.providers)) return null;
-    return activeEpisode.providers[sourceIndex] || null;
-  }, [activeEpisode, sourceIndex]);
+    if (manualProvider) return manualProvider;
+
+    const providerNames = [];
+    if (activeEpisode && Array.isArray(activeEpisode.providers) && activeEpisode.providers.length > 0) {
+      providerNames.push(...activeEpisode.providers);
+    }
+
+    getBuiltInServers(malId, episode).forEach((item) => {
+      if (!providerNames.includes(item.provider)) {
+        providerNames.push(item.provider);
+      }
+    });
+
+    return providerNames[sourceIndex] || null;
+  }, [activeEpisode, sourceIndex, manualProvider, malId, episode]);
+
+  const allProviderOptions = useMemo(() => {
+    const options = [];
+
+    if (activeEpisode && Array.isArray(activeEpisode.providers)) {
+      activeEpisode.providers.forEach((provider, idx) => {
+        const url = activeEpisodeUrls[idx];
+        if (provider && url && !options.some((opt) => opt.provider === provider && opt.url === url)) {
+          options.push({ provider, url, kind: 'api' });
+        }
+      });
+    }
+
+    getBuiltInServers(malId, episode).forEach((item) => {
+      if (!options.some((opt) => opt.url === item.url)) {
+        options.push({ provider: item.provider, url: item.url, kind: 'builtin' });
+      }
+    });
+
+    return options;
+  }, [activeEpisode, activeEpisodeUrls, malId, episode]);
 
   useEffect(() => {
     if (!streamEpisodes.length) return;
@@ -140,6 +234,7 @@ export default function AnimeWatch() {
 
   useEffect(() => {
     setSourceIndex(0);
+    setManualProvider('');
   }, [episode]);
 
   useEffect(() => {
@@ -179,6 +274,26 @@ export default function AnimeWatch() {
     }
 
     setStreamError(`Episode ${episode} could not be loaded from available providers.`);
+  }
+
+  function chooseProvider(provider) {
+    const option = allProviderOptions.find((item) => item.provider === provider);
+    if (!option) return;
+
+    if (option.kind === 'builtin') {
+      setManualProvider(provider);
+      setSourceIndex(0);
+    } else {
+      const idx = activeEpisodeUrls.findIndex((url) => url === option.url);
+      if (idx >= 0) {
+        setManualProvider('');
+        setSourceIndex(idx);
+      }
+    }
+
+    setPlayerLoading(true);
+    setPlayerFailed(false);
+    setStreamError(null);
   }
 
   if (loading) {
@@ -351,6 +466,11 @@ export default function AnimeWatch() {
                 {streamProviders.length} providers
               </span>
             )}
+            {allProviderOptions.length > 0 && (
+              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                {allProviderOptions.length} servers
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -371,6 +491,28 @@ export default function AnimeWatch() {
             >
               <ChevronRight size={18} />
             </button>
+          </div>
+        </div>
+
+        <div className="mb-8 rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-xs uppercase tracking-wider text-prime-subtext mb-2">Anime Servers</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {allProviderOptions.slice(0, 10).map((option) => {
+              const active = activeProviderName === option.provider;
+              return (
+                <button
+                  key={option.provider}
+                  onClick={() => chooseProvider(option.provider)}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                    active
+                      ? 'bg-red-600/80 text-white border-red-500'
+                      : 'bg-white/5 text-prime-subtext border-white/10 hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  {option.provider}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -406,7 +548,9 @@ export default function AnimeWatch() {
             <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-20 gap-2">
               {episodes.map((ep) => {
                 const epNumber = ep.episode_id || ep.mal_id;
-                const isPlayable = streamEpisodes.some((item) => item.ep === epNumber);
+                const hasApiEpisode = streamEpisodes.some((item) => item.ep === epNumber);
+                const hasFallbackServers = getBuiltInServers(malId, epNumber).length >= 4;
+                const isPlayable = hasApiEpisode || hasFallbackServers;
 
                 return (
                   <button
