@@ -81,24 +81,6 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 4,
     name: 'Server 4',
-    label: 'Embed',
-    sublabel: 'embed.su',
-    badge: '4K',
-    recommended: false,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://embed.su/embed/tv/${id}/${season}/${episode}`,
-          `https://vidmix.to/embed/tv/${id}/${season}/${episode}`,
-        ]
-      : [
-          `https://embed.su/embed/movie/${id}`,
-          `https://vidmix.to/embed/movie/${id}`,
-        ],
-  },
-  {
-    id: 5,
-    name: 'Server 5',
     label: '2Embed',
     sublabel: '2embed.cc',
     badge: 'HD',
@@ -117,8 +99,8 @@ const MOVIE_PROVIDER_REGISTRY = [
         ],
   },
   {
-    id: 6,
-    name: 'Server 6',
+    id: 5,
+    name: 'Server 5',
     label: 'Smashy',
     sublabel: 'smashy.to',
     badge: 'HD',
