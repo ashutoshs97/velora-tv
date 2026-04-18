@@ -25,19 +25,21 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 1,
     name: 'Server 1',
-    label: 'VidLink',
-    sublabel: 'vidlink.pro',
+    label: 'VidSrc Pro',
+    sublabel: 'vidsrc.net',
     badge: 'HD',
     recommended: true,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://vidlink.pro/tv/${id}/${season}/${episode}?${SERVER_UI_PARAMS}`,
-          `https://vidlink.pro/tv/${id}/${season}/${episode}?autoplay=true`,
+          `https://vidsrc.net/embed/tv/${id}/${season}/${episode}`,
+          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
+          `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
         ]
       : [
-          `https://vidlink.pro/movie/${id}?${SERVER_UI_PARAMS}`,
-          `https://vidlink.pro/movie/${id}?autoplay=true`,
+          `https://vidsrc.net/embed/movie/${id}`,
+          `https://vidsrc.to/embed/movie/${id}`,
+          `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
         ],
   },
   {
@@ -61,21 +63,19 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 3,
     name: 'Server 3',
-    label: 'VidSrc Pro',
-    sublabel: 'vidsrc.net',
+    label: 'VidLink',
+    sublabel: 'vidlink.pro',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://vidsrc.net/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
+          `https://vidlink.pro/tv/${id}/${season}/${episode}?${SERVER_UI_PARAMS}`,
+          `https://vidlink.pro/tv/${id}/${season}/${episode}?autoplay=true`,
         ]
       : [
-          `https://vidsrc.net/embed/movie/${id}`,
-          `https://vidsrc.to/embed/movie/${id}`,
-          `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
+          `https://vidlink.pro/movie/${id}?${SERVER_UI_PARAMS}`,
+          `https://vidlink.pro/movie/${id}?autoplay=true`,
         ],
   },
   {
