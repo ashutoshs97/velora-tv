@@ -269,27 +269,22 @@ export default function Navbar() {
         {/* Mobile dropdown */}
         {menuOpen && (
           <div className="glass-card mb-3 overflow-hidden">
-            <form onSubmit={handleSearch} className="p-4 border-b border-white/6">
-              <div className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-prime-subtext"
-                  />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={handleQueryChange}
-                    placeholder="Search movies, shows…"
-                    maxLength={MAX_QUERY_LENGTH}
-                    className="w-full bg-white/5 border border-white/8 text-white text-sm
-                               placeholder:text-prime-subtext rounded-xl pl-9 pr-4 py-3
-                               outline-none focus:border-prime-blue/40 transition-colors"
-                  />
+            <form onSubmit={handleSearch} className="p-4 border-b border-white/5 bg-black/20">
+              <div className="relative flex items-stretch bg-black/40 border border-white/10 rounded-xl overflow-hidden focus-within:border-prime-blue/60 focus-within:shadow-[0_0_15px_rgba(10,132,255,0.15)] transition-all ease-out duration-300">
+                <div className="pl-4 flex items-center justify-center">
+                  <Search size={16} className="text-white/40" />
                 </div>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={handleQueryChange}
+                  placeholder="Search movies, shows…"
+                  maxLength={MAX_QUERY_LENGTH}
+                  className="w-full bg-transparent text-white text-[15px] placeholder:text-white/30 pl-3 pr-3 py-3.5 outline-none"
+                />
                 <button
                   type="submit"
-                  className="flex-shrink-0 bg-prime-blue text-white px-4 py-3 rounded-xl text-sm font-semibold"
+                  className="flex-shrink-0 bg-gradient-to-br from-[#0ea5e9] to-[#2563eb] text-white px-5 text-sm font-bold transition-opacity hover:opacity-90"
                 >
                   Go
                 </button>
