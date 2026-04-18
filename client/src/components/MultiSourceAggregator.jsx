@@ -256,7 +256,9 @@ export default function MultiSourceAggregator({
       </div>
 
       {/* ── Server Toolbar ── */}
-      <div className="rounded-xl border border-white/10 bg-prime-surface p-3 sm:p-4">
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.5)] relative overflow-hidden">
+        {/* Subtle glass sheen edge */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-60" />
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Server size={14} className="text-prime-blue flex-shrink-0" />
           <span className="text-xs font-bold text-prime-subtext uppercase tracking-wider">
@@ -307,10 +309,11 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
-        <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2 items-start">
-          <AlertCircle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-amber-500/80 text-xs leading-relaxed">
-            <strong className="text-amber-500">Note:</strong> Servers auto-switch
+        <div className="mb-4 bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-lg p-3 flex gap-2 items-start backdrop-blur-sm relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/80 rounded-l-lg" />
+          <AlertCircle size={14} className="text-amber-500 flex-shrink-0 mt-0.5 ml-1" />
+          <p className="text-amber-200/90 text-xs leading-relaxed font-medium">
+            <strong className="text-amber-400">Note:</strong> Servers auto-switch
             if unavailable. Server 1 & 2 recommended for best experience.
           </p>
         </div>
@@ -322,15 +325,15 @@ export default function MultiSourceAggregator({
               <button
                 key={server.id}
                 onClick={() => switchServer(idx)}
-                className={`relative flex flex-col px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
+                className={`relative flex flex-col px-3.5 py-3 rounded-xl text-left transition-all duration-300 ease-out border ${
                   isActive
-                    ? 'bg-prime-blue text-white shadow-lg shadow-prime-blue/20'
-                    : 'bg-prime-bg border border-white/8 text-prime-subtext hover:border-prime-blue/40 hover:text-white'
+                    ? 'bg-gradient-to-br from-[#0ea5e9] to-[#2563eb] border-[#38bdf8] shadow-[0_0_20px_rgba(56,189,248,0.4)] text-white scale-[1.02] z-10'
+                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/25 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none'
                 }`}
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                    isActive ? 'bg-white animate-pulse' : 'bg-white/20'
+                    isActive ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)] animate-pulse' : 'bg-white/20'
                   }`} />
                   <span className="text-xs font-bold text-white truncate">
                     {server.name}
@@ -374,12 +377,13 @@ export default function MultiSourceAggregator({
       </div>
 
       {/* ── Hint ── */}
-      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-prime-surface border border-white/10 text-xs text-prime-subtext">
-        <AlertCircle size={14} className="flex-shrink-0 mt-0.5 text-yellow-400" />
-        <span>
-          <strong className="text-white">Ad-Blocker Recommended:</strong>{' '}
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-prime-surface/80 to-transparent border border-white/10 text-xs text-white/75 backdrop-blur-md shadow-lg relative overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400/80 rounded-l-xl" />
+        <AlertCircle size={16} className="flex-shrink-0 mt-0.5 text-yellow-400 ml-1" />
+        <span className="leading-relaxed">
+          <strong className="text-white tracking-wide">Ad-Blocker Recommended:</strong>{' '}
           Third-party servers may show ads. We recommend{' '}
-          <strong>uBlock Origin</strong>. Servers auto-switch through all
+          <strong className="text-white">uBlock Origin</strong>. Servers auto-switch through all
           available routes before stopping.
         </span>
         <button
