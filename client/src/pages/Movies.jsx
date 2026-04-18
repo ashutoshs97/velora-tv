@@ -367,6 +367,9 @@ export default function Movies() {
           />
         </div>
 
+        {/* ── Bottom ambient glow ── */}
+        <div className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
+          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
     </motion.div>
   );
