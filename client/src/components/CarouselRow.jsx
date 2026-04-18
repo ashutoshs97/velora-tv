@@ -46,25 +46,31 @@ function RankBadge({ rank }) {
 }
 
 // ── Individual card ───────────────────────────────────────────────────────
-function CarouselCard({ movie, rank, usePoster = false }) {
+function CarouselCard({ movie, rank, usePoster = false, watchPrefix = '/watch' }) {
   const [imgError, setImgError] = useState(false);
 
   // ── Safe ID and type extraction ───────────────────────────────────────
   const id = movie.tmdbId || movie.id;
   const mediaType = getMediaType(movie);
-  const watchLink = `/watch/${id}?type=${mediaType}`;
+  const watchLink = watchPrefix === '/anime'
+    ? `/anime/${id}`
+    : `/watch/${id}?type=${mediaType}`;
   const title = movie.title || movie.name || 'Unknown Title';
   const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
   const rating = movie.vote_average
     ? Number(movie.vote_average).toFixed(1)
     : null;
 
-  // ── Safe image source ─────────────────────────────────────────────────
+  // ── Safe image source — supports both TMDB paths and full Jikan URLs ─────
+  const resolveImg = (path, base) =>
+    !path ? null : path.startsWith('http') ? path : `${base}${path}`;
+
+  const animeImg = movie.animeImage || null;
   const imgSrc = imgError
     ? PLACEHOLDER_SVG
     : usePoster
-      ? (movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : PLACEHOLDER_SVG)
-      : (movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : PLACEHOLDER_SVG);
+      ? (resolveImg(movie.poster_path, POSTER_BASE) || resolveImg(animeImg, '') || PLACEHOLDER_SVG)
+      : (resolveImg(movie.backdrop_path, BACKDROP_BASE) || resolveImg(animeImg, '') || PLACEHOLDER_SVG);
 
   // ── Safe key — fallback to index if both ids missing ─────────────────
   const cardKey = id ?? `card-${title}`;
@@ -164,6 +170,7 @@ export default function CarouselRow({
   loading = false,
   ranked = false,
   usePoster = false,
+  watchPrefix = '/watch',
 }) {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -248,10 +255,11 @@ export default function CarouselRow({
           >
             {movies.map((movie, idx) => (
               <CarouselCard
-                key={movie._id || movie.id || `movie-${idx}`} // ← safe fallback key
+                key={movie._id || movie.id || `movie-${idx}`}
                 movie={movie}
                 rank={ranked ? idx + 1 : null}
                 usePoster={usePoster}
+                watchPrefix={watchPrefix}
               />
             ))}
           </div>

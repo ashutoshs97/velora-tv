@@ -15,20 +15,22 @@ function getMediaType(movie) {
   return 'movie';
 }
 
-function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false }) {
+function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false, watchPrefix = '/watch' }) {
   const [imgError, setImgError] = useState(false);
   const id = movie.tmdbId || movie.id;
   const mediaType = getMediaType(movie);
-  const watchLink = id ? `/watch/${id}?type=${mediaType}` : '/';
+  const watchLink = watchPrefix === '/anime'
+    ? `/anime/${id}`
+    : id ? `/watch/${id}?type=${mediaType}` : '/';
   const title = movie.title || movie.name || 'Unknown Title';
   const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
 
-  const posterSrc = movie.poster_path
-    ? `${POSTER_BASE}${movie.poster_path}`
-    : PLACEHOLDER_SVG;
-  const backdropSrc = movie.backdrop_path
-    ? `${BACKDROP_BASE}${movie.backdrop_path}`
-    : posterSrc;
+  // Support both TMDB relative paths and full Jikan image URLs
+  const resolveImg = (path, base) =>
+    !path ? null : path.startsWith('http') ? path : `${base}${path}`;
+
+  const posterSrc = resolveImg(movie.poster_path, POSTER_BASE) || resolveImg(movie.animeImage, '') || PLACEHOLDER_SVG;
+  const backdropSrc = resolveImg(movie.backdrop_path, BACKDROP_BASE) || resolveImg(movie.animeImage, '') || posterSrc;
 
   const shouldExpand = isHovered && !disableExpand;
   const displaySrc = imgError
@@ -138,6 +140,7 @@ export default function PrimeCarouselRow({
   movies,
   loading,
   titleLink,
+  watchPrefix = '/watch',
 }) {
   const rowRef = useRef(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -253,6 +256,7 @@ useEffect(() => {
                 onHover={() => {}}
                 onLeave={() => {}}
                 disableExpand
+                watchPrefix={watchPrefix}
               />
             </div>
           ))}
@@ -288,6 +292,7 @@ useEffect(() => {
           isHovered={hoveredId === (movie._id || movie.id)}
           onHover={() => setHoveredId(movie._id || movie.id)}
           onLeave={() => setHoveredId(null)}
+          watchPrefix={watchPrefix}
         />
       </div>
     ))}

@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/movies', label: 'Movies' },
   { to: '/shows', label: 'Shows' },
+  { to: '/anime', label: 'Anime' },
 ];
 
 const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
@@ -29,7 +30,7 @@ export default function Navbar() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const isRootPath = location.pathname === '/' || location.pathname === '/movies' || location.pathname === '/shows';
+  const isRootPath = ['/', '/movies', '/shows', '/anime'].includes(location.pathname);
 
   const inputRef = useRef(null);
   const hintTimerRef = useRef(null); // ← track setTimeout for cleanup

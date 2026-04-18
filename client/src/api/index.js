@@ -23,6 +23,20 @@ export const fetchMovieDetail = (id) => api.get(`/movies/${id}`);
 export const fetchTVDetail = (id) => api.get(`/movies/tv/${id}`);
 export const fetchPerson = (id) => api.get(`/movies/person/${id}`);
 
+// ── Anime (Jikan) ──────────────────────────────────────────────────────────
+export const fetchAnimeTrending  = () => api.get('/anime/trending');
+export const fetchAnimeTop       = () => api.get('/anime/top');
+export const fetchAnimePopular   = () => api.get('/anime/popular');
+export const fetchAnimeAiring    = () => api.get('/anime/airing');
+export const fetchAnimeUpcoming  = () => api.get('/anime/upcoming');
+export const fetchAnimeMovies    = () => api.get('/anime/movies');
+export const fetchAnimeOVA       = () => api.get('/anime/ova');
+export const fetchAnimeAcclaimed = () => api.get('/anime/acclaimed');
+export const fetchAnimeShort     = () => api.get('/anime/short');
+export const fetchAnimeGenre     = (id) => api.get(`/anime/genre/${id}`);
+export const fetchAnimeDetail    = (id) => api.get(`/anime/${id}`);
+export const fetchAnimeEpisodes  = (id, page = 1) => api.get(`/anime/${id}/episodes`, { params: { page } });
+
 export const fetchHistory = () => api.get('/history');
 export const addToHistory = (movie) => api.post('/history', movie);
 export const deleteHistoryItem = (id) => api.delete(`/history/${id}`);

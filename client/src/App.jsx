@@ -8,6 +8,8 @@ import Watch from './pages/Watch';
 import Person from './pages/Person';
 import Movies from './pages/Movies';
 import Shows from './pages/Shows';
+import Anime from './pages/Anime';
+import AnimeWatch from './pages/AnimeWatch';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -30,6 +32,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/movies" element={<Movies />} />
             <Route path="/shows" element={<Shows />} />
+            <Route path="/anime" element={<Anime />} />
+            <Route path="/anime/:id" element={<AnimeWatch />} />
             <Route path="/search" element={<Search />} />
             <Route path="/watch/:id" element={<Watch />} />
             <Route path="/person/:id" element={<Person />} />
