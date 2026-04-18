@@ -1,13 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import {
-  fetchAnimeTrending, fetchAnimeTop, fetchAnimePopular,
-  fetchAnimeAiring, fetchAnimeUpcoming, fetchAnimeMovies,
-  fetchAnimeOVA, fetchAnimeAcclaimed, fetchAnimeShort, fetchAnimeGenre,
-} from '../api';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import CarouselRow from '../components/CarouselRow';
+
+const JIKAN = 'https://api.jikan.moe/v4';
 
 // ── Jikan genre IDs ───────────────────────────────────────────────────────
 const GENRES = [
@@ -26,9 +22,11 @@ const GENRES = [
   { id: 30, label: 'Sports',        emoji: '⚽' },
 ];
 
-// ── Normalize Jikan anime data to match CarouselRow / PrimeCarouselRow ────
+// ── Normalize Jikan data to match carousel component shape ────────────────
 function norm(anime) {
-  const img = anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '';
+  const img =
+    anime.images?.webp?.large_image_url ||
+    anime.images?.jpg?.large_image_url || '';
   return {
     id: anime.mal_id,
     title: anime.title_english || anime.title || 'Unknown',
@@ -43,35 +41,38 @@ function norm(anime) {
   };
 }
 
-function normList(data) {
-  return (data?.data || []).map(norm);
+async function jikanFetch(path) {
+  const res = await fetch(`${JIKAN}${path}`);
+  if (!res.ok) throw new Error(`Jikan ${res.status}`);
+  const json = await res.json();
+  return (json.data || []).map(norm);
 }
 
-// Helper hook
-function useAnimeSection(fetcher) {
-  const [items, setItems] = useState([]);
+// ── Small hook keeps component code clean ─────────────────────────────────
+function useJikan(path) {
+  const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
-    fetcher()
-      .then(r => { if (!cancelled) setItems(normList(r.data)); })
-      .catch(() => { if (!cancelled) setItems([]); })
+    jikanFetch(path)
+      .then(data  => { if (!cancelled) setItems(data); })
+      .catch(()   => { if (!cancelled) setItems([]); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [path]);
   return { items, loading };
 }
 
 export default function Anime() {
-  const trending   = useAnimeSection(fetchAnimeTrending);
-  const top        = useAnimeSection(fetchAnimeTop);
-  const popular    = useAnimeSection(fetchAnimePopular);
-  const airing     = useAnimeSection(fetchAnimeAiring);
-  const upcoming   = useAnimeSection(fetchAnimeUpcoming);
-  const movies     = useAnimeSection(fetchAnimeMovies);
-  const ova        = useAnimeSection(fetchAnimeOVA);
-  const acclaimed  = useAnimeSection(fetchAnimeAcclaimed);
-  const short_     = useAnimeSection(fetchAnimeShort);
+  const trending  = useJikan('/seasons/now?limit=24');
+  const top       = useJikan('/top/anime?limit=24');
+  const popular   = useJikan('/anime?order_by=popularity&sort=asc&limit=24');
+  const airing    = useJikan('/anime?status=airing&order_by=score&sort=desc&limit=24');
+  const upcoming  = useJikan('/seasons/upcoming?limit=24');
+  const movies    = useJikan('/top/anime?type=movie&limit=24');
+  const ova       = useJikan('/anime?type=ova&order_by=score&sort=desc&limit=24');
+  const acclaimed = useJikan('/anime?min_score=8.5&order_by=score&sort=desc&limit=24');
+  const shorts    = useJikan('/anime?type=ona&order_by=score&sort=desc&limit=24');
 
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [genreItems, setGenreItems]       = useState([]);
@@ -80,9 +81,9 @@ export default function Anime() {
   useEffect(() => {
     let cancelled = false;
     setLoadingGenre(true);
-    fetchAnimeGenre(selectedGenre.id)
-      .then(r => { if (!cancelled) setGenreItems(normList(r.data)); })
-      .catch(() => { if (!cancelled) setGenreItems([]); })
+    jikanFetch(`/anime?genres=${selectedGenre.id}&order_by=score&sort=desc&limit=24`)
+      .then(data  => { if (!cancelled) setGenreItems(data); })
+      .catch(()   => { if (!cancelled) setGenreItems([]); })
       .finally(() => { if (!cancelled) setLoadingGenre(false); });
     return () => { cancelled = true; };
   }, [selectedGenre]);
@@ -250,8 +251,8 @@ export default function Anime() {
           <PrimeCarouselRow
             title="Short Series & ONAs"
             badge="Short"
-            movies={short_.items}
-            loading={short_.loading}
+            movies={shorts.items}
+            loading={shorts.loading}
             watchPrefix="/anime"
           />
         </div>

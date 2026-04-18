@@ -1,8 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
-import { Play, Star, Tv, Calendar, Clock, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
-import { fetchAnimeDetail, fetchAnimeEpisodes } from '../api';
+import { Star, Tv, Calendar, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const JIKAN = 'https://api.jikan.moe/v4';
+
+async function jikanGet(path) {
+  const res = await fetch(`${JIKAN}${path}`);
+  if (!res.ok) throw new Error(`Jikan ${res.status}`);
+  return res.json();
+}
 
 // ── Anime-specific embed servers (accept MAL ID + episode) ────────────────
 function getAnimeEmbedUrls(malId, episode, isDub) {
@@ -50,8 +57,8 @@ export default function AnimeWatch() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchAnimeDetail(malId)
-      .then(r => { if (!cancelled) setAnime(r.data?.data); })
+    jikanGet(`/anime/${malId}/full`)
+      .then(r => { if (!cancelled) setAnime(r.data); })
       .catch(() => { if (!cancelled) setError('Failed to load anime details.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -61,14 +68,13 @@ export default function AnimeWatch() {
   useEffect(() => {
     let cancelled = false;
     setEpLoading(true);
-    fetchAnimeEpisodes(malId, epPage)
+    jikanGet(`/anime/${malId}/episodes?page=${epPage}`)
       .then(r => {
         if (cancelled) return;
-        const data = r.data?.data || [];
+        const data = r.data || [];
         setEpisodes(data);
-        // Estimate total from pagination
-        if (r.data?.pagination?.last_visible_page) {
-          setTotalEps(r.data.pagination.last_visible_page * EPISODES_PER_PAGE);
+        if (r.pagination?.last_visible_page) {
+          setTotalEps(r.pagination.last_visible_page * EPISODES_PER_PAGE);
         }
       })
       .catch(() => { if (!cancelled) setEpisodes([]); })
