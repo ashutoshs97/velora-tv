@@ -90,12 +90,10 @@ const MOVIE_PROVIDER_REGISTRY = [
       ? [
           `https://embed.su/embed/tv/${id}/${season}/${episode}`,
           `https://vidmix.to/embed/tv/${id}/${season}/${episode}`,
-          `https://multiembed.mov/directstream.php?tmdb=1&video_id=${id}&s=${season}&e=${episode}`,
         ]
       : [
           `https://embed.su/embed/movie/${id}`,
           `https://vidmix.to/embed/movie/${id}`,
-          `https://multiembed.mov/directstream.php?tmdb=1&video_id=${id}`,
         ],
   },
   {
@@ -121,54 +119,6 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 6,
     name: 'Server 6',
-    label: 'PrimeWire',
-    sublabel: 'primewire.tf',
-    badge: 'HD',
-    recommended: false,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://www.primewire.tf/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
-        ]
-      : [
-          `https://www.primewire.tf/embed/movie?tmdb=${id}`,
-        ],
-  },
-  {
-    id: 7,
-    name: 'Server 7',
-    label: 'GDrive',
-    sublabel: 'databasegdriveplayer',
-    badge: 'HD',
-    recommended: false,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://databasegdriveplayer.xyz/player.php?type=series&tmdb=${id}&season=${season}&episode=${episode}`,
-        ]
-      : [
-          `https://databasegdriveplayer.xyz/player.php?tmdb=${id}`,
-        ],
-  },
-  {
-    id: 8,
-    name: 'Server 8',
-    label: 'TVEmbed',
-    sublabel: 'tvembed.cc',
-    badge: 'HD',
-    recommended: false,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://tvembed.cc/tv/${id}/${season}/${episode}`,
-        ]
-      : [
-          `https://tvembed.cc/movie/${id}`,
-        ],
-  },
-  {
-    id: 9,
-    name: 'Server 9',
     label: 'Smashy',
     sublabel: 'smashy.to',
     badge: 'HD',
