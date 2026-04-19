@@ -249,18 +249,20 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// GET /api/movies/genre/:id
+// GET /api/movies/genre/:id?type=movie|tv
 router.get('/genre/:id', async (req, res) => {
   const { id } = req.params;
+  const { type = 'movie' } = req.query;
   // Validate genre id is a number
   if (!id || isNaN(id)) {
     return res.status(400).json({ error: 'Invalid genre id' });
   }
   try {
-    const data = await tmdbFetch('/discover/movie', {
+    const endpoint = type === 'tv' ? '/discover/tv' : '/discover/movie';
+    const data = await tmdbFetch(endpoint, {
       with_genres: id,
       sort_by: 'popularity.desc',
-      'vote_count.gte': 100,
+      'vote_count.gte': 50,
     });
     res.json(data);
   } catch (err) {

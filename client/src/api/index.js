@@ -15,7 +15,7 @@ export const fetchNewReleases = () => api.get('/movies/new-releases');
 export const fetchOnAirTV = () => api.get('/movies/on-air-tv');
 export const fetchSurprise = () => api.get('/movies/surprise');
 
-export const fetchByGenre = (genreId) => api.get(`/movies/genre/${genreId}`);
+export const fetchByGenre = (genreId, type = 'movie') => api.get(`/movies/genre/${genreId}`, { params: { type } });
 export const fetchByMood = (mood) => api.get(`/movies/mood/${mood}`);
 export const fetchSimilar = (id, type = 'movie') => api.get(`/movies/${id}/similar`, { params: { type } });
 export const fetchRecommendations = (id, type = 'movie') => api.get(`/movies/${id}/recommendations`, { params: { type } });
