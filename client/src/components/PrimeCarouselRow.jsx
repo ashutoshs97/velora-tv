@@ -286,7 +286,7 @@ useEffect(() => {
 
   <div
     ref={rowRef}
-    className="flex gap-3 sm:gap-4 overflow-x-auto pb-8 pt-4 pr-12 snap-x snap-mandatory"
+    className="flex gap-3 sm:gap-4 overflow-x-auto pb-8 pt-4 pr-12 snap-x snap-mandatory scrollbar-hide"
     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
   >
     {safeMovies.map((movie, idx) => (
