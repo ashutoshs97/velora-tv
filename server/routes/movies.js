@@ -1,20 +1,19 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import dotenv from 'dotenv';
-dotenv.config();
 
 const router = express.Router();
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const API_KEY = process.env.TMDB_API_KEY;
+const IS_PROD = process.env.NODE_ENV === 'production';
 
-// ── Warn immediately if API key is missing ────────────────────────────────
 if (!API_KEY) {
-  console.warn('⚠️  TMDB_API_KEY is not set — movie routes will not work');
+  console.warn('TMDB_API_KEY is not set — movie routes will not work');
 }
 
-// ── Simple in-memory cache ────────────────────────────────────────────────
+// in-memory cache
 const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_MAX = 100;
 
 function getCached(key) {
   const entry = cache.get(key);
@@ -27,21 +26,35 @@ function getCached(key) {
 }
 
 function setCache(key, data) {
-  // Keep cache size reasonable — max 100 entries
-  if (cache.size >= 100) {
-    const firstKey = cache.keys().next().value;
-    cache.delete(firstKey);
+  if (cache.size >= CACHE_MAX) {
+    cache.delete(cache.keys().next().value);
   }
   cache.set(key, { data, timestamp: Date.now() });
 }
 
-// ── Safe type validator ───────────────────────────────────────────────────
+// clean expired cache every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of cache.entries()) {
+    if (now - entry.timestamp > CACHE_TTL) cache.delete(key);
+  }
+}, 10 * 60 * 1000);
+
 function getSafeType(raw) {
   return raw === 'tv' ? 'tv' : 'movie';
 }
 
-// ── Filter out unreleased items ───────────────────────────────────────────
-const filterUnreleased = (results) => {
+// digits only, no minus sign, no letters
+function isValidId(id) {
+  if (!/^\d+$/.test(String(id))) return false;
+  return Number(id) > 0;
+}
+
+function clientError(err) {
+  return IS_PROD ? 'Something went wrong — please try again' : err.message;
+}
+
+function filterUnreleased(results) {
   if (!Array.isArray(results)) return results;
   const now = new Date();
   return results.filter(item => {
@@ -49,212 +62,157 @@ const filterUnreleased = (results) => {
     if (!dateStr) return true;
     return new Date(dateStr) <= now;
   });
-};
+}
 
-// ── Central TMDB fetch with timeout + caching ─────────────────────────────
-const tmdbFetch = async (path, params = {}, useCache = true) => {
-  // No API key — fail fast with clear message
-  if (!API_KEY) {
-    throw new Error('TMDB API key is not configured');
-  }
+async function tmdbFetch(path, params = {}, useCache = true) {
+  if (!API_KEY) throw new Error('TMDB API key is not configured');
 
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set('api_key', API_KEY);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
 
   const cacheKey = url.toString();
-
-  // Return cached data if available
   if (useCache) {
     const cached = getCached(cacheKey);
     if (cached) return cached;
   }
 
-  // Timeout after 10 seconds
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const res = await fetch(url.toString(), { signal: controller.signal });
-
-    // Handle rate limiting specifically
-    if (res.status === 429) {
-      throw new Error('TMDB rate limit reached — please try again shortly');
-    }
-
-    if (!res.ok) {
-      throw new Error(`TMDB error: ${res.status} ${res.statusText}`);
-    }
-
+    if (res.status === 429) throw new Error('TMDB rate limit reached — please try again shortly');
+    if (!res.ok) throw new Error(`TMDB error: ${res.status} ${res.statusText}`);
     const data = await res.json();
-
-    // Filter unreleased items from lists
-    if (data.results) {
-      data.results = filterUnreleased(data.results);
-    }
-
-    // Cache the result
+    if (data.results) data.results = filterUnreleased(data.results);
     if (useCache) setCache(cacheKey, data);
-
     return data;
-
   } catch (err) {
-    // Timeout error — friendlier message
-    if (err.name === 'AbortError') {
-      throw new Error('TMDB request timed out — please try again');
-    }
+    if (err.name === 'AbortError') throw new Error('TMDB request timed out — please try again');
     throw err;
   } finally {
     clearTimeout(timeout);
   }
-};
+}
 
-// ─────────────────────────────────────────────────────────────────────────
-// ⚠️  SPECIFIC routes MUST come before /:id wildcard routes
-// ─────────────────────────────────────────────────────────────────────────
+// specific routes must come before wildcard routes
 
-// GET /api/movies/surprise
 router.get('/surprise', async (req, res) => {
   try {
     const isTv = Math.random() > 0.5;
     const path = isTv ? '/discover/tv' : '/discover/movie';
-    // TMDB allows up to page 500
     const randomPage = Math.floor(Math.random() * 500) + 1;
     const data = await tmdbFetch(path, {
       sort_by: 'popularity.desc',
       page: randomPage,
-      'vote_count.gte': 100, // ensure it's not a completely unknown/junk entry
+      'vote_count.gte': 100,
     });
-    
-    if (!data || !data.results || data.results.length === 0) {
-      return res.status(404).json({ error: 'No response from TMDB' });
+    if (!data?.results?.length) {
+      return res.status(404).json({ error: 'No results found' });
     }
-    
     const randomResult = data.results[Math.floor(Math.random() * data.results.length)];
-    // add type for client router
     randomResult.media_type = isTv ? 'tv' : 'movie';
     res.json(randomResult);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/trending
 router.get('/trending', async (req, res) => {
   try {
-    const data = await tmdbFetch('/trending/movie/week');
-    res.json(data);
+    res.json(await tmdbFetch('/trending/movie/week'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/trending-tv
 router.get('/trending-tv', async (req, res) => {
   try {
-    const data = await tmdbFetch('/trending/tv/week');
-    res.json(data);
+    res.json(await tmdbFetch('/trending/tv/week'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/popular
 router.get('/popular', async (req, res) => {
   try {
-    const data = await tmdbFetch('/movie/popular');
-    res.json(data);
+    res.json(await tmdbFetch('/movie/popular'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/popular-tv
 router.get('/popular-tv', async (req, res) => {
   try {
-    const data = await tmdbFetch('/tv/popular');
-    res.json(data);
+    res.json(await tmdbFetch('/tv/popular'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/top-rated
 router.get('/top-rated', async (req, res) => {
   try {
-    const data = await tmdbFetch('/movie/top_rated');
-    res.json(data);
+    res.json(await tmdbFetch('/movie/top_rated'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/top-rated-tv
 router.get('/top-rated-tv', async (req, res) => {
   try {
-    const data = await tmdbFetch('/tv/top_rated');
-    res.json(data);
+    res.json(await tmdbFetch('/tv/top_rated'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/on-air-tv
 router.get('/on-air-tv', async (req, res) => {
   try {
-    const data = await tmdbFetch('/tv/on_the_air');
-    res.json(data);
+    res.json(await tmdbFetch('/tv/on_the_air'));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-
-// GET /api/movies/new-releases ← was getting blocked by /:id before
+// new releases uses TV shows — movies are CAM quality when newly released
 router.get('/new-releases', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const monthAgo = new Date(
-      Date.now() - 30 * 24 * 60 * 60 * 1000
-    ).toISOString().split('T')[0];
-    const data = await tmdbFetch('/discover/movie', {
-      'primary_release_date.gte': monthAgo,
-      'primary_release_date.lte': today,
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString().split('T')[0];
+    const data = await tmdbFetch('/discover/tv', {
+      'first_air_date.gte': monthAgo,
+      'first_air_date.lte': today,
       sort_by: 'popularity.desc',
-      'vote_count.gte': 50,
+      'vote_count.gte': 20,
     });
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/search?q=query
 router.get('/search', async (req, res) => {
   const { q, page = 1 } = req.query;
   if (!q || !q.trim()) {
     return res.status(400).json({ error: 'Query parameter q is required' });
   }
-  // Limit page to reasonable range
+  const safeQuery = q.trim().substring(0, 150);
   const safePage = Math.min(Math.max(Number(page) || 1, 1), 500);
   try {
-    const data = await tmdbFetch(
-      '/search/multi',
-      { query: q.trim(), page: safePage },
-      false // ← don't cache search results
-    );
+    const data = await tmdbFetch('/search/multi', { query: safeQuery, page: safePage }, false);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/genre/:id?type=movie|tv
+// supports ?type=tv for TV genre browsing
 router.get('/genre/:id', async (req, res) => {
   const { id } = req.params;
   const { type = 'movie' } = req.query;
-  // Validate genre id is a number
-  if (!id || isNaN(id)) {
+  if (!isValidId(id)) {
     return res.status(400).json({ error: 'Invalid genre id' });
   }
   try {
@@ -266,22 +224,22 @@ router.get('/genre/:id', async (req, res) => {
     });
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// ── Each mood has ONE primary genre (OR logic via separate calls) ──────
 const MOOD_GENRES = {
-  action: [28],    // Action
-  comedy: [35],    // Comedy
-  romance: [10749], // Romance
-  horror: [27],    // Horror
-  scifi: [878],   // Science Fiction
-  animated: [16],    // Animation
-  thriller: [53],    // Thriller
-  documentary: [99],    // Documentary
+  action:      [28],
+  comedy:      [35],
+  romance:     [10749],
+  horror:      [27],
+  scifi:       [878],
+  animated:    [16],
+  thriller:    [53],
+  documentary: [99],
 };
 
+// pipe | means OR between genres
 router.get('/mood/:mood', async (req, res) => {
   const { mood } = req.params;
   const genres = MOOD_GENRES[mood?.toLowerCase()];
@@ -293,21 +251,20 @@ router.get('/mood/:mood', async (req, res) => {
   }
   try {
     const data = await tmdbFetch('/discover/movie', {
-      with_genres: genres.join('|'), // ← | means OR not AND
+      with_genres: genres.join('|'),
       sort_by: 'popularity.desc',
       'vote_count.gte': 100,
-      'vote_average.gte': 6.0,       // ← only decent rated movies
+      'vote_average.gte': 6.0,
     });
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/tv/:id — full TV detail
 router.get('/tv/:id', async (req, res) => {
   const { id } = req.params;
-  if (!id || isNaN(id)) {
+  if (!isValidId(id)) {
     return res.status(400).json({ error: 'Invalid TV show id' });
   }
   try {
@@ -315,140 +272,65 @@ router.get('/tv/:id', async (req, res) => {
       tmdbFetch(`/tv/${id}`, { append_to_response: 'videos' }),
       tmdbFetch(`/tv/${id}/credits`),
     ]);
-
-    // Detail is required — fail if it errored
     if (detail.status === 'rejected') {
       throw new Error(detail.reason?.message || 'Failed to fetch TV details');
     }
-
-    // Credits are optional — use empty object if failed
     const creditsData = credits.status === 'fulfilled'
       ? credits.value
       : { cast: [], crew: [] };
-
     res.json({ ...detail.value, credits: creditsData });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/person/:id — full person detail with combined credits
 router.get('/person/:id', async (req, res) => {
   const { id } = req.params;
-  if (!id || isNaN(id)) {
+  if (!isValidId(id)) {
     return res.status(400).json({ error: 'Invalid person id' });
   }
   try {
     const data = await tmdbFetch(`/person/${id}`, { append_to_response: 'combined_credits' });
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/yts/:imdb_id — securely fetch YTS data bypassing ISP blocks
-router.get('/yts/:imdb_id', async (req, res) => {
-  const { imdb_id } = req.params;
-  try {
-    // Attempt 1: YTS (May fail due to Cloudflare blocking Server IP)
-    try {
-      const response = await fetch(`https://yts.mx/api/v2/list_movies.json?query_term=${imdb_id}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.data?.movies?.length > 0) {
-          return res.json(data);
-        }
-      }
-    } catch (err) {
-      console.warn('YTS proxy fetch failed, falling back to TPB:', err.message);
-    }
+// wildcard routes must be last
 
-    // Attempt 2: ThePirateBay (Apibay)
-    let tpbData;
-    try {
-      const tpbResponse = await fetch(`https://apibay.org/q.php?q=${imdb_id}`);
-      tpbData = await tpbResponse.json();
-    } catch (tpbErr) {
-      console.warn('Direct TPB fetch failed (likely ISP block), falling back to public proxy...');
-      // Ultimate Fallback: Apibay via AllOrigins Proxy (Bypasses Indian ISP blocks)
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://apibay.org/q.php?q=${imdb_id}`)}`;
-      const proxyRes = await fetch(proxyUrl);
-      const proxyWrapper = await proxyRes.json();
-      tpbData = JSON.parse(proxyWrapper.contents);
-    }
-    
-    if (Array.isArray(tpbData) && tpbData.length > 0 && tpbData[0].info_hash !== '0000000000000000000000000000000000000000') {
-      // Prioritize 1080p and high seeders
-      const sorted = tpbData.sort((a, b) => Number(b.seeders) - Number(a.seeders));
-      const best = sorted.find(t => t.name.includes('1080p')) || sorted[0];
-      
-      // Mock the YTS response structure so the frontend WebTorrentPlayer doesn't break
-      return res.json({
-        status: 'ok',
-        data: {
-          movies: [
-            {
-              torrents: [
-                { hash: best.info_hash, quality: '1080p', type: 'tpb' }
-              ]
-            }
-          ]
-        }
-      });
-    }
-
-    throw new Error('No torrents found on YTS or TPB tracker networks.');
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────────────────
-// ⚠️  Wildcard routes — MUST be last
-// ─────────────────────────────────────────────────────────────────────────
-
-// GET /api/movies/:id/similar
 router.get('/:id/similar', async (req, res) => {
   const { id } = req.params;
   const type = getSafeType(req.query.type);
-  if (!id || isNaN(id)) {
+  if (!isValidId(id)) {
     return res.status(400).json({ error: 'Invalid id' });
   }
   try {
-    const path = type === 'tv'
-      ? `/tv/${id}/similar`
-      : `/movie/${id}/similar`;
-    const data = await tmdbFetch(path);
-    res.json(data);
+    const path = type === 'tv' ? `/tv/${id}/similar` : `/movie/${id}/similar`;
+    res.json(await tmdbFetch(path));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/:id/recommendations
 router.get('/:id/recommendations', async (req, res) => {
   const { id } = req.params;
   const type = getSafeType(req.query.type);
-  if (!id || isNaN(id)) {
+  if (!isValidId(id)) {
     return res.status(400).json({ error: 'Invalid id' });
   }
   try {
-    const path = type === 'tv'
-      ? `/tv/${id}/recommendations`
-      : `/movie/${id}/recommendations`;
-    const data = await tmdbFetch(path);
-    res.json(data);
+    const path = type === 'tv' ? `/tv/${id}/recommendations` : `/movie/${id}/recommendations`;
+    res.json(await tmdbFetch(path));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
-// GET /api/movies/:id — full movie detail (MUST BE LAST)
+// must be last — catches all /:id requests
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
-  if (!id || isNaN(id)) {
+  if (!isValidId(id)) {
     return res.status(400).json({ error: 'Invalid movie id' });
   }
   try {
@@ -456,20 +338,15 @@ router.get('/:id', async (req, res) => {
       tmdbFetch(`/movie/${id}`, { append_to_response: 'videos' }),
       tmdbFetch(`/movie/${id}/credits`),
     ]);
-
-    // Detail is required
     if (detail.status === 'rejected') {
       throw new Error(detail.reason?.message || 'Failed to fetch movie details');
     }
-
-    // Credits are optional
     const creditsData = credits.status === 'fulfilled'
       ? credits.value
       : { cast: [], crew: [] };
-
     res.json({ ...detail.value, credits: creditsData });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: clientError(err) });
   }
 });
 
