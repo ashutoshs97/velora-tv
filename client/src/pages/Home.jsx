@@ -503,23 +503,7 @@ export default function Home() {
                       }
                     </button>
 
-                    {/* Mobile-only carousel arrows aligned with action buttons */}
-                    <div className="flex sm:hidden items-center gap-2 ml-auto pointer-events-auto">
-                      <button
-                        onClick={prevSlide}
-                        aria-label="Previous"
-                        className="w-11 h-11 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                      >
-                        <ChevronLeft size={20} />
-                      </button>
-                      <button
-                        onClick={nextSlide}
-                        aria-label="Next"
-                        className="w-11 h-11 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                      >
-                        <ChevronRight size={20} />
-                      </button>
-                    </div>
+
                   </div>
                 </motion.div>
               </AnimatePresence>

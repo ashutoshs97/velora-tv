@@ -334,23 +334,7 @@ export default function Anime() {
                     <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
                   </Link>
                   
-                  {/* Mobile-only carousel arrows aligned with action buttons */}
-                  <div className="flex sm:hidden items-center gap-2 ml-auto pointer-events-auto">
-                    <button
-                      onClick={prevSlide}
-                      aria-label="Previous anime"
-                      className="w-11 h-11 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={nextSlide}
-                      aria-label="Next anime"
-                      className="w-11 h-11 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </div>
+
                 </div>
               </div>
             </div>

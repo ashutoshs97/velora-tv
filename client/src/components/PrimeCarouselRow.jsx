@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Plus, Info, CheckCircle2 } from 'lucide-react';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
@@ -32,7 +32,9 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false, 
   const posterSrc = resolveImg(movie.poster_path, POSTER_BASE) || resolveImg(movie.animeImage, '') || PLACEHOLDER_SVG;
   const backdropSrc = resolveImg(movie.backdrop_path, BACKDROP_BASE) || resolveImg(movie.animeImage, '') || posterSrc;
 
-  const shouldExpand = isHovered && !disableExpand;
+  const navigate = useNavigate();
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const shouldExpand = isHovered && !disableExpand && !isMobile;
   const displaySrc = imgError
     ? PLACEHOLDER_SVG
     : shouldExpand ? backdropSrc : posterSrc;
@@ -42,6 +44,11 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false, 
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       onTouchStart={onHover}
+      onClick={() => {
+        if (isMobile) {
+          navigate(watchLink);
+        }
+      }}
       className={`relative flex-shrink-0 transition-all overflow-hidden duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] group cursor-pointer ${
         shouldExpand
           ? 'w-[260px] sm:w-[440px] md:w-[540px] z-30 shadow-2xl shadow-black ring-2 ring-white/20 rounded-xl'
