@@ -241,7 +241,7 @@ export default function MultiSourceAggregator({
             src={src}
             title={`${currentServer.name} — ${currentServer.label}`}
             allowFullScreen
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+            allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share; xr-spatial-tracking"
             onLoad={() => {
               setLoading(false);
               setAllFailed(false);
