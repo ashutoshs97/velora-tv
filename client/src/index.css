@@ -12,7 +12,7 @@
   body {
     background-color: #080E14;
     color: #FFFFFF;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Satoshi', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
@@ -48,7 +48,7 @@
 
   .animate-fade-up  { animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
   .animate-float    { animation: float 3s ease-in-out infinite; }
-  .font-display     { font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif; }
+  .font-display     { font-family: 'Satoshi', system-ui, sans-serif; }
 }
 
 @layer components {
