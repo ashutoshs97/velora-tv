@@ -2,102 +2,103 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { AlertCircle, Calendar, ChevronLeft, ChevronRight, Globe, Star, Tv } from 'lucide-react';
-import { fetchAnimeDetail, fetchAnimeEpisodes, fetchAnimeStream } from '../api';
-import CommentsSection from '../components/CommentsSection';
+import { fetchAnimeDetail, fetchAnimeEpisodes, fetchMalToTmdb } from '../api';
+import MultiSourceAggregator from '../components/MultiSourceAggregator';
 
 const EPISODES_PER_PAGE = 50;
-const IFRAME_LOAD_TIMEOUT_MS = 15000;
+
+function isValidId(id) {
+  if (!/^\d+$/.test(String(id))) return false;
+  return Number(id) > 0;
+}
 
 export default function AnimeWatch() {
   const { id } = useParams();
-  const malId = parseInt(id, 10);
+
+  if (!isValidId(id)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-400">Invalid anime ID</p>
+      </div>
+    );
+  }
+
+  const malId = Number(id);
 
   const [anime, setAnime] = useState(null);
   const [animeLoadedId, setAnimeLoadedId] = useState(null);
   const [error, setError] = useState(null);
+  const [coverError, setCoverError] = useState(false);
+
+  const [tmdbId, setTmdbId] = useState(null);
+  const [tmdbType, setTmdbType] = useState('tv');
+  const [tmdbLoaded, setTmdbLoaded] = useState(false);
+  const [tmdbError, setTmdbError] = useState(false);
 
   const [episodes, setEpisodes] = useState([]);
   const [episodesLoadedKey, setEpisodesLoadedKey] = useState('');
   const [epPage, setEpPage] = useState(1);
+  const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [selectedSeason, setSelectedSeason] = useState(1);
 
-  const [episode, setEpisode] = useState(1);
-  const [streamEpisodes, setStreamEpisodes] = useState([]);
-  const [streamLoadedId, setStreamLoadedId] = useState(null);
-  const [streamError, setStreamError] = useState(null);
-  const [streamSourceName, setStreamSourceName] = useState('');
-  const [streamProviders, setStreamProviders] = useState([]);
-  const [sourceIndex, setSourceIndex] = useState(0);
-  const [playerLoading, setPlayerLoading] = useState(true);
-  const [playerFailed, setPlayerFailed] = useState(false);
-
+  // fetch anime details from Jikan
   useEffect(() => {
     let cancelled = false;
-
     fetchAnimeDetail(malId)
-      .then((response) => {
+      .then((res) => {
         if (!cancelled) {
-          setAnime(response.data?.data || null);
+          setAnime(res.data?.data || null);
           setAnimeLoadedId(malId);
         }
       })
       .catch(() => {
         if (!cancelled) setError('Failed to load anime details.');
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [malId]);
 
+  // convert MAL ID to TMDB ID
   useEffect(() => {
     let cancelled = false;
-
-    fetchAnimeEpisodes(malId, epPage)
-      .then((response) => {
+    setTmdbLoaded(false);
+    setTmdbError(false);
+    fetchMalToTmdb(malId)
+      .then((res) => {
         if (!cancelled) {
-          setEpisodes(response.data?.data || []);
+          setTmdbId(res.data.tmdbId);
+          setTmdbType(res.data.type || 'tv');
+          setTmdbLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTmdbError(true);
+          setTmdbLoaded(true);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [malId]);
+
+  // fetch episode list from Jikan
+  useEffect(() => {
+    let cancelled = false;
+    fetchAnimeEpisodes(malId, epPage)
+      .then((res) => {
+        if (!cancelled) {
+          setEpisodes(res.data?.data || []);
           setEpisodesLoadedKey(`${malId}:${epPage}`);
         }
       })
       .catch(() => {
         if (!cancelled) setEpisodes([]);
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [malId, epPage]);
-
-  useEffect(() => {
-    if (!malId) return undefined;
-
-    let cancelled = false;
-
-    fetchAnimeStream(malId)
-      .then((response) => {
-        const result = response.data || {};
-        if (cancelled) return;
-        setStreamEpisodes(Array.isArray(result.episodes) ? result.episodes : []);
-        setStreamSourceName(result.sourceName || 'Unknown');
-        setStreamProviders(Array.isArray(result.providers) ? result.providers : []);
-        setStreamLoadedId(malId);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setStreamError(err?.response?.data?.error || 'No working anime stream source is available right now.');
-          setStreamLoadedId(malId);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [malId]);
 
   const coverImg = anime?.images?.webp?.large_image_url || anime?.images?.jpg?.large_image_url;
   const title = anime?.title_english || anime?.title || 'Loading...';
   const score = anime?.score;
-  const totalEpisodes = anime?.episodes || streamEpisodes.length || 0;
+  const totalEpisodes = anime?.episodes || 0;
   const status = anime?.status;
   const year = anime?.year;
   const synopsis = anime?.synopsis;
@@ -105,116 +106,10 @@ export default function AnimeWatch() {
   const studios = anime?.studios || [];
   const loading = animeLoadedId !== malId;
   const epLoading = episodesLoadedKey !== `${malId}:${epPage}`;
-  const streamLoading = streamLoadedId !== malId;
-  const displayError = loading ? null : error;
-  const displayStreamError = streamLoading ? null : streamError;
-  const visibleStreamEpisodes = useMemo(() => {
-    return streamLoading ? [] : streamEpisodes;
-  }, [streamLoading, streamEpisodes]);
-  const currentEpisode = visibleStreamEpisodes.some((item) => item.ep === episode)
-    ? episode
-    : (visibleStreamEpisodes[0]?.ep || episode);
-
-  const activeEpisode = useMemo(() => {
-    return visibleStreamEpisodes.find((item) => item.ep === currentEpisode) || null;
-  }, [visibleStreamEpisodes, currentEpisode]);
-
-  const activeEpisodeUrls = useMemo(() => {
-    if (activeEpisode) {
-      if (Array.isArray(activeEpisode.urls) && activeEpisode.urls.length > 0) {
-        return activeEpisode.urls;
-      }
-
-      if (activeEpisode.src) {
-        return [activeEpisode.src];
-      }
-    }
-
-    return [];
-  }, [activeEpisode]);
-
-  const activeEpisodeSrc = useMemo(() => {
-    return activeEpisodeUrls[sourceIndex] || '';
-  }, [activeEpisodeUrls, sourceIndex]);
-
-  const activeProviderName = useMemo(() => {
-    const providerNames = [];
-    if (activeEpisode && Array.isArray(activeEpisode.providers) && activeEpisode.providers.length > 0) {
-      providerNames.push(...activeEpisode.providers);
-    }
-
-    return providerNames[sourceIndex] || null;
-  }, [activeEpisode, sourceIndex]);
-
-  const allProviderOptions = useMemo(() => {
-    const options = [];
-
-    if (activeEpisode && Array.isArray(activeEpisode.providers)) {
-      activeEpisode.providers.forEach((provider, idx) => {
-        const url = activeEpisodeUrls[idx];
-        if (provider && url && !options.some((opt) => opt.provider === provider && opt.url === url)) {
-          options.push({ provider, url, kind: 'api' });
-        }
-      });
-    }
-
-    return options;
-  }, [activeEpisode, activeEpisodeUrls]);
-
-  useEffect(() => {
-    if (!activeEpisodeSrc) return undefined;
-
-    const timer = setTimeout(() => {
-      setPlayerLoading(false);
-      setPlayerFailed(true);
-
-      if (sourceIndex + 1 < activeEpisodeUrls.length) {
-        setSourceIndex((current) => current + 1);
-      } else {
-        setStreamError(`Episode ${currentEpisode} failed to load from all available providers.`);
-      }
-    }, IFRAME_LOAD_TIMEOUT_MS);
-
-    return () => clearTimeout(timer);
-  }, [activeEpisodeSrc, activeEpisodeUrls.length, currentEpisode, sourceIndex]);
-
-  function handleIframeLoaded() {
-    setPlayerLoading(false);
-    setPlayerFailed(false);
-  }
-
-  function handleIframeFailed() {
-    setPlayerLoading(false);
-    setPlayerFailed(true);
-
-    if (sourceIndex + 1 < activeEpisodeUrls.length) {
-      setSourceIndex((current) => current + 1);
-      return;
-    }
-
-    setStreamError(`Episode ${currentEpisode} could not be loaded from available providers.`);
-  }
-
-  function chooseProvider(provider) {
-    const option = allProviderOptions.find((item) => item.provider === provider);
-    if (!option) return;
-
-    const idx = activeEpisodeUrls.findIndex((url) => url === option.url);
-    if (idx >= 0) {
-      setSourceIndex(idx);
-    }
-
-    setPlayerLoading(true);
-    setPlayerFailed(false);
-    setStreamError(null);
-  }
 
   function selectEpisode(epNumber) {
-    setEpisode(epNumber);
-    setSourceIndex(0);
-    setPlayerLoading(true);
-    setPlayerFailed(false);
-    setStreamError(null);
+    setSelectedEpisode(epNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   if (loading) {
@@ -228,10 +123,10 @@ export default function AnimeWatch() {
     );
   }
 
-  if (displayError) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-400">{displayError}</p>
+        <p className="text-red-400">{error}</p>
       </div>
     );
   }
@@ -246,21 +141,29 @@ export default function AnimeWatch() {
       transition={{ duration: 0.3 }}
       className="min-h-screen"
     >
-      {coverImg && (
+      {/* background blur */}
+      {coverImg && !coverError && (
         <div className="fixed inset-0 z-0 pointer-events-none">
-          <img src={coverImg} alt="" className="w-full h-full object-cover opacity-5 blur-2xl scale-110" />
+          <img
+            src={coverImg}
+            alt=""
+            className="w-full h-full object-cover opacity-5 blur-2xl scale-110"
+            onError={() => setCoverError(true)}
+          />
           <div className="absolute inset-0 bg-gradient-to-b from-prime-bg/60 via-prime-bg/80 to-prime-bg" />
         </div>
       )}
 
       <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-24 pb-16">
+        {/* anime info */}
         <div className="flex flex-col lg:flex-row gap-8 mb-10">
-          {coverImg && (
+          {coverImg && !coverError && (
             <div className="flex-shrink-0">
               <img
                 src={coverImg}
                 alt={title}
                 className="w-48 sm:w-56 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/10"
+                onError={() => setCoverError(true)}
               />
             </div>
           )}
@@ -326,83 +229,71 @@ export default function AnimeWatch() {
           </div>
         </div>
 
-        <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10 bg-black mb-4">
-          {streamLoading ? (
+        {/* player — uses MultiSourceAggregator with TMDB ID */}
+        {!tmdbLoaded ? (
+          <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10 bg-black mb-4">
             <div className="w-full aspect-video flex flex-col items-center justify-center gap-4">
               <div className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              <p className="text-prime-subtext text-sm">Finding a working anime stream...</p>
+              <p className="text-prime-subtext text-sm">Finding stream sources...</p>
             </div>
-          ) : activeEpisodeSrc ? (
-            <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-              <iframe
-                key={`${currentEpisode}-${sourceIndex}-${activeEpisodeSrc}`}
-                src={activeEpisodeSrc}
-                className="w-full h-full"
-                allowFullScreen
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
-                title={`${title} Episode ${currentEpisode}`}
-                onLoad={handleIframeLoaded}
-                onError={handleIframeFailed}
-              />
-              {playerLoading && (
-                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
-                  <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  <p className="text-prime-subtext text-sm">Loading episode from provider...</p>
-                </div>
-              )}
-            </div>
-          ) : (
+          </div>
+        ) : tmdbError ? (
+          <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10 bg-black mb-4">
             <div className="w-full aspect-video flex items-center justify-center px-6">
               <div className="max-w-md text-center">
                 <AlertCircle size={34} className="text-amber-400 mx-auto mb-3" />
-                <p className="text-white font-semibold mb-2">Stream unavailable</p>
+                <p className="text-white font-semibold mb-2">Stream not available</p>
                 <p className="text-prime-subtext text-sm">
-                  {displayStreamError || 'No working episode source was found for this title.'}
+                  This anime is not available in our streaming database yet.
+                  Try searching for it on the main site.
                 </p>
-                {playerFailed && (
-                  <p className="text-prime-subtext text-xs mt-2">Provider blocked or timed out. Try another episode.</p>
-                )}
               </div>
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
-          <div className="flex items-center gap-2 text-xs text-prime-subtext">
-            <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-              Source: {streamSourceName || 'AniPub'}
-            </span>
-            {activeProviderName && (
-              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                Provider: {activeProviderName}
-              </span>
-            )}
-            {streamEpisodes.length > 0 && (
-              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                {streamEpisodes.length} playable episodes found
-              </span>
-            )}
-            {streamProviders.length > 0 && (
-              <span className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                {streamProviders.length} providers
-              </span>
-            )}
           </div>
+        ) : (
+          <MultiSourceAggregator
+            tmdbId={tmdbId}
+            type={tmdbType}
+            season={selectedSeason}
+            episode={selectedEpisode}
+          />
+        )}
+
+        {/* episode/season controls */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mt-6 mb-10">
+          {/* season selector for multi-season anime */}
+          {tmdbType === 'tv' && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-prime-subtext font-semibold">Season:</span>
+              <select
+                value={selectedSeason}
+                onChange={(e) => {
+                  setSelectedSeason(Number(e.target.value));
+                  setSelectedEpisode(1);
+                }}
+                className="bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-2 outline-none appearance-none cursor-pointer"
+              >
+                {Array.from({ length: Math.max(1, Math.ceil(totalEpisodes / 24)) }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>Season {i + 1}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setEpisode((e) => Math.max(1, e - 1))}
-              disabled={episode <= 1}
+              onClick={() => selectEpisode(Math.max(1, selectedEpisode - 1))}
+              disabled={selectedEpisode <= 1}
               className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft size={18} />
             </button>
             <span className="text-sm text-white font-semibold min-w-[80px] text-center">
-              Episode {currentEpisode}
+              Episode {selectedEpisode}
             </span>
             <button
-              onClick={() => selectEpisode(currentEpisode + 1)}
-              disabled={!visibleStreamEpisodes.some((item) => item.ep === currentEpisode + 1)}
+              onClick={() => selectEpisode(selectedEpisode + 1)}
+              disabled={selectedEpisode >= totalEpisodes}
               className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight size={18} />
@@ -410,35 +301,12 @@ export default function AnimeWatch() {
           </div>
         </div>
 
-        {allProviderOptions.length > 1 && (
-          <div className="mb-8 rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs uppercase tracking-wider text-prime-subtext mb-2">Available Sources</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-              {allProviderOptions.slice(0, 10).map((option) => {
-                const active = activeProviderName === option.provider;
-                return (
-                  <button
-                    key={option.provider}
-                    onClick={() => chooseProvider(option.provider)}
-                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
-                      active
-                        ? 'bg-red-600/80 text-white border-red-500'
-                        : 'bg-white/5 text-prime-subtext border-white/10 hover:text-white hover:border-white/30'
-                    }`}
-                  >
-                    {option.provider}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="mb-6">
+        {/* episode grid */}
+        <div className="mb-16">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white">Episodes</h2>
             {totalPages > 1 && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
                   <button
                     key={pg}
@@ -457,29 +325,43 @@ export default function AnimeWatch() {
           </div>
 
           {epLoading ? (
-            <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-20 gap-2">
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div key={i} className="h-10 bg-white/5 rounded-lg skeleton" />
               ))}
             </div>
           ) : episodes.length > 0 ? (
-            <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-14 lg:grid-cols-20 gap-2">
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
               {episodes.map((ep) => {
                 const epNumber = ep.episode_id || ep.mal_id;
-                const isPlayable = visibleStreamEpisodes.some((item) => item.ep === epNumber);
-
                 return (
                   <button
                     key={ep.mal_id}
                     onClick={() => selectEpisode(epNumber)}
-                    disabled={!isPlayable}
                     title={ep.title || `Episode ${epNumber}`}
                     className={`h-10 rounded-lg text-sm font-bold transition-all ${
-                      currentEpisode === epNumber
+                      selectedEpisode === epNumber
                         ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                        : isPlayable
-                          ? 'bg-white/5 text-prime-subtext border border-white/5 hover:bg-white/10 hover:text-white'
-                          : 'bg-white/5 text-white/30 border border-white/5 cursor-not-allowed'
+                        : 'bg-white/5 text-prime-subtext border border-white/5 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {epNumber}
+                  </button>
+                );
+              })}
+            </div>
+          ) : totalEpisodes > 0 ? (
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+              {Array.from({ length: Math.min(totalEpisodes, EPISODES_PER_PAGE) }, (_, i) => {
+                const epNumber = i + 1;
+                return (
+                  <button
+                    key={epNumber}
+                    onClick={() => selectEpisode(epNumber)}
+                    className={`h-10 rounded-lg text-sm font-bold transition-all ${
+                      selectedEpisode === epNumber
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
+                        : 'bg-white/5 text-prime-subtext border border-white/5 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     {epNumber}
@@ -488,13 +370,8 @@ export default function AnimeWatch() {
               })}
             </div>
           ) : (
-            <div className="text-prime-subtext text-sm">Episode list unavailable.</div>
+            <p className="text-prime-subtext text-sm">Episode list unavailable.</p>
           )}
-        </div>
-
-        {/* Comments Section */}
-        <div className="animate-fade-up mb-20" style={{ animationDelay: '0.2s' }}>
-          <CommentsSection mediaType="anime" mediaId={id} />
         </div>
       </div>
     </motion.div>
