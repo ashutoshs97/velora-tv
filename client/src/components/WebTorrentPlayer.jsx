@@ -79,10 +79,31 @@ export default function WebTorrentPlayer({ tmdbId }) {
         // 2. Fetch Magnet securely bypassing ISP blocks
         setStatus('Searching P2P network...');
         
-        const ytsRes = await fetchYtsMagnet(imdb_id);
-        const ytsData = ytsRes.data;
+        let ytsData = null;
+        try {
+          const ytsRes = await fetchYtsMagnet(imdb_id);
+          ytsData = ytsRes.data;
+        } catch (backendError) {
+          console.warn("Backend proxy failed. Utilizing ultimate frontend proxy bypass...");
+          // If the backend is unreachable or throwing 500s because the local server isn't updated
+          const tpbProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://apibay.org/q.php?q=${imdb_id}`)}`;
+          const proxyRes = await fetch(tpbProxyUrl);
+          const proxyWrapper = await proxyRes.json();
+          const tpbData = JSON.parse(proxyWrapper.contents);
+          
+          if (Array.isArray(tpbData) && tpbData.length > 0 && tpbData[0].info_hash !== '0000000000000000000000000000000000000000') {
+             const sorted = tpbData.sort((a, b) => Number(b.seeders) - Number(a.seeders));
+             const best = sorted.find(t => t.name.includes('1080p')) || sorted[0];
+             ytsData = {
+                status: 'ok',
+                data: { movies: [{ torrents: [{ hash: best.info_hash, quality: '1080p', type: 'tpb' }] }] }
+             };
+          } else {
+             throw new Error("No torrents found across any network structure.");
+          }
+        }
         
-        if (!ytsData || ytsData.status !== 'ok') throw new Error("Auto-search blocked by ISP or Network.");
+        if (!ytsData || (ytsData.status !== 'ok' && !ytsData.data)) throw new Error("Auto-search blocked by ISP or Network.");
 
         const movie = ytsData?.data?.movies?.[0];
         if (!movie) throw new Error("Movie not found on the auto-P2P network.");

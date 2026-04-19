@@ -366,8 +366,18 @@ router.get('/yts/:imdb_id', async (req, res) => {
     }
 
     // Attempt 2: ThePirateBay (Apibay)
-    const tpbResponse = await fetch(`https://apibay.org/q.php?q=${imdb_id}`);
-    const tpbData = await tpbResponse.json();
+    let tpbData;
+    try {
+      const tpbResponse = await fetch(`https://apibay.org/q.php?q=${imdb_id}`);
+      tpbData = await tpbResponse.json();
+    } catch (tpbErr) {
+      console.warn('Direct TPB fetch failed (likely ISP block), falling back to public proxy...');
+      // Ultimate Fallback: Apibay via AllOrigins Proxy (Bypasses Indian ISP blocks)
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://apibay.org/q.php?q=${imdb_id}`)}`;
+      const proxyRes = await fetch(proxyUrl);
+      const proxyWrapper = await proxyRes.json();
+      tpbData = JSON.parse(proxyWrapper.contents);
+    }
     
     if (Array.isArray(tpbData) && tpbData.length > 0 && tpbData[0].info_hash !== '0000000000000000000000000000000000000000') {
       // Prioritize 1080p and high seeders
