@@ -1,0 +1,56 @@
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/trending[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/trending-tv[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/top-rated[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/new-releases[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/history[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/genre/28?type=movie[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/mood/action[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/trending[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/trending-tv[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/top-rated[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/new-releases[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/history[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/genre/28?type=movie[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
+[2m4:59:44 pm[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/movies/mood/action[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1142:49)
+    at afterConnectMultiple (node:net:1723:7)
