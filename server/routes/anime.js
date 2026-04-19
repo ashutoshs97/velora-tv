@@ -6,13 +6,12 @@ const JIKAN = 'https://api.jikan.moe/v4';
 const ANIPUB = 'https://anipub.xyz';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// separate caches for metadata and streams — different TTLs
 const cache = new Map();
 const streamCache = new Map();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes — anime data changes slowly
-const STREAM_CACHE_TTL = 2 * 60 * 1000; // 2 minutes — stream links expire faster
+const CACHE_TTL = 30 * 60 * 1000;
+const STREAM_CACHE_TTL = 2 * 60 * 1000;
 
-// clean expired cache entries every 15 minutes
+// clean expired entries every 15 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [k, v] of cache.entries()) {
@@ -35,7 +34,6 @@ function clientError(err) {
   return IS_PROD ? 'Service temporarily unavailable' : err.message;
 }
 
-// tells Cloudflare and browsers how long to cache
 function setCacheHeaders(res, seconds = 1800) {
   res.set('Cache-Control', `public, max-age=${seconds}, s-maxage=${seconds}`);
 }
@@ -110,11 +108,7 @@ async function tryAniPubFind(name) {
   const details = detailsRes.data;
   const episodes = buildEpisodeSources(details);
   if (!episodes.length) return null;
-  return {
-    sourceName: details?.local?.name || details?.sub?.name || name,
-    sourceId: match.id,
-    episodes,
-  };
+  return { sourceName: details?.local?.name || details?.sub?.name || name, sourceId: match.id, episodes };
 }
 
 async function tryAniPubSlug(name) {
@@ -127,11 +121,7 @@ async function tryAniPubSlug(name) {
   const details = detailsRes.data;
   const episodes = buildEpisodeSources(details);
   if (!episodes.length) return null;
-  return {
-    sourceName: details?.local?.name || details?.sub?.name || info?.Name || slug,
-    sourceId: info._id,
-    episodes,
-  };
+  return { sourceName: details?.local?.name || details?.sub?.name || info?.Name || slug, sourceId: info._id, episodes };
 }
 
 async function resolveAniPubStream(candidateNames) {
@@ -140,15 +130,11 @@ async function resolveAniPubStream(candidateNames) {
     try {
       const direct = await tryAniPubFind(name);
       if (direct) return direct;
-    } catch (err) {
-      errors.push(`find:${name}:${err.message}`);
-    }
+    } catch (err) { errors.push(`find:${name}:${err.message}`); }
     try {
       const slug = await tryAniPubSlug(name);
       if (slug) return slug;
-    } catch (err) {
-      errors.push(`slug:${name}:${err.message}`);
-    }
+    } catch (err) { errors.push(`slug:${name}:${err.message}`); }
   }
   const err = new Error('No playable episodes found from providers');
   err.details = errors;
@@ -165,16 +151,14 @@ function getCachedStream(key) {
   return hit.data;
 }
 
-// list routes — stable data, long cache
+// list routes
 
 router.get('/schedule', async (_, res) => {
   try {
     const data = await jikan('/schedules');
-    setCacheHeaders(res, 3600); // schedules change daily
+    setCacheHeaders(res, 3600);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/trending', async (_, res) => {
@@ -182,9 +166,7 @@ router.get('/trending', async (_, res) => {
     const data = await jikan('/seasons/now?limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/top', async (_, res) => {
@@ -192,9 +174,7 @@ router.get('/top', async (_, res) => {
     const data = await jikan('/top/anime?limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/popular', async (_, res) => {
@@ -202,9 +182,7 @@ router.get('/popular', async (_, res) => {
     const data = await jikan('/anime?order_by=popularity&sort=asc&limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/airing', async (_, res) => {
@@ -212,9 +190,7 @@ router.get('/airing', async (_, res) => {
     const data = await jikan('/anime?status=airing&order_by=score&sort=desc&limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/upcoming', async (_, res) => {
@@ -222,9 +198,7 @@ router.get('/upcoming', async (_, res) => {
     const data = await jikan('/seasons/upcoming?limit=24');
     setCacheHeaders(res, 3600);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/movies', async (_, res) => {
@@ -232,9 +206,7 @@ router.get('/movies', async (_, res) => {
     const data = await jikan('/top/anime?type=movie&limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/ova', async (_, res) => {
@@ -242,9 +214,7 @@ router.get('/ova', async (_, res) => {
     const data = await jikan('/anime?type=ova&order_by=score&sort=desc&limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/acclaimed', async (_, res) => {
@@ -252,9 +222,7 @@ router.get('/acclaimed', async (_, res) => {
     const data = await jikan('/anime?min_score=8.5&order_by=score&sort=desc&limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/short', async (_, res) => {
@@ -262,60 +230,39 @@ router.get('/short', async (_, res) => {
     const data = await jikan('/anime?type=ona&order_by=score&sort=desc&limit=24');
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
-// genres list almost never changes
 router.get('/genres', async (_, res) => {
   try {
     const data = await jikan('/genres/anime');
-    setCacheHeaders(res, 86400); // 24 hours
+    setCacheHeaders(res, 86400);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 router.get('/genre/:id', async (req, res) => {
   const { id } = req.params;
-  if (!isValidId(id)) {
-    return res.status(400).json({ error: 'Invalid genre id' });
-  }
+  if (!isValidId(id)) return res.status(400).json({ error: 'Invalid genre id' });
   try {
     const data = await jikan(`/anime?genres=${id}&order_by=score&sort=desc&limit=24`);
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
-// stream — must come before /:id
+// stream must come before /:id
 router.get('/:id/stream', async (req, res) => {
   const { id } = req.params;
-  if (!isValidId(id)) {
-    return res.status(400).json({ error: 'Invalid anime id' });
-  }
+  if (!isValidId(id)) return res.status(400).json({ error: 'Invalid anime id' });
   try {
     const cacheKey = `stream:${id}`;
     const cached = getCachedStream(cacheKey);
     if (cached) return res.json(cached);
-
     const details = await jikan(`/anime/${id}/full`);
     const anime = details?.data || {};
-
-    const candidateNames = [
-      anime?.title_english,
-      anime?.title,
-      anime?.title_japanese,
-    ].filter(Boolean);
-
-    if (!candidateNames.length) {
-      return res.status(404).json({ error: 'No anime titles available for stream lookup' });
-    }
-
+    const candidateNames = [anime?.title_english, anime?.title, anime?.title_japanese].filter(Boolean);
+    if (!candidateNames.length) return res.status(404).json({ error: 'No anime titles available' });
     const resolved = await resolveAniPubStream(candidateNames);
     const payload = {
       malId: Number(id),
@@ -324,7 +271,6 @@ router.get('/:id/stream', async (req, res) => {
       episodes: resolved.episodes,
       providers: Array.from(new Set(resolved.episodes.flatMap((ep) => ep.providers || []))),
     };
-
     streamCache.set(cacheKey, { data: payload, ts: Date.now() });
     return res.json(payload);
   } catch (e) {
@@ -338,32 +284,24 @@ router.get('/:id/stream', async (req, res) => {
 
 router.get('/:id/episodes', async (req, res) => {
   const { id } = req.params;
-  if (!isValidId(id)) {
-    return res.status(400).json({ error: 'Invalid anime id' });
-  }
+  if (!isValidId(id)) return res.status(400).json({ error: 'Invalid anime id' });
   const safePage = Math.min(Math.max(Number(req.query.page) || 1, 1), 100);
   try {
     const data = await jikan(`/anime/${id}/episodes?page=${safePage}`);
     setCacheHeaders(res, 1800);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 // must be last
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
-  if (!isValidId(id)) {
-    return res.status(400).json({ error: 'Invalid anime id' });
-  }
+  if (!isValidId(id)) return res.status(400).json({ error: 'Invalid anime id' });
   try {
     const data = await jikan(`/anime/${id}/full`);
     setCacheHeaders(res, 3600);
     res.json(data);
-  } catch (e) {
-    res.status(502).json({ error: clientError(e) });
-  }
+  } catch (e) { res.status(502).json({ error: clientError(e) }); }
 });
 
 export default router;

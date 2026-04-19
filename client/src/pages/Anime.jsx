@@ -84,15 +84,24 @@ const stableFetchAnimeAcclaimed = fetchAnimeAcclaimed;
 const stableFetchAnimeShort = fetchAnimeShort;
 
 export default function Anime() {
+  // load trending first — hero depends on it
   const trending = useAnimeCollection(stableFetchAnimeTrending);
-  const top = useAnimeCollection(stableFetchAnimeTop);
-  const popular = useAnimeCollection(stableFetchAnimePopular);
-  const airing = useAnimeCollection(stableFetchAnimeAiring);
-  const upcoming = useAnimeCollection(stableFetchAnimeUpcoming);
-  const movies = useAnimeCollection(stableFetchAnimeMovies);
-  const ova = useAnimeCollection(stableFetchAnimeOVA);
-  const acclaimed = useAnimeCollection(stableFetchAnimeAcclaimed);
-  const shorts = useAnimeCollection(stableFetchAnimeShort);
+
+  // load rest only after trending is done to avoid Jikan rate limits
+  const [secondaryReady, setSecondaryReady] = useState(false);
+  useEffect(() => {
+    if (!trending.loading) setSecondaryReady(true);
+  }, [trending.loading]);
+
+  const noopFetch = useCallback(async () => ({ data: { data: [] } }), []);
+  const top = useAnimeCollection(secondaryReady ? stableFetchAnimeTop : noopFetch);
+  const popular = useAnimeCollection(secondaryReady ? stableFetchAnimePopular : noopFetch);
+  const airing = useAnimeCollection(secondaryReady ? stableFetchAnimeAiring : noopFetch);
+  const upcoming = useAnimeCollection(secondaryReady ? stableFetchAnimeUpcoming : noopFetch);
+  const movies = useAnimeCollection(secondaryReady ? stableFetchAnimeMovies : noopFetch);
+  const ova = useAnimeCollection(secondaryReady ? stableFetchAnimeOVA : noopFetch);
+  const acclaimed = useAnimeCollection(secondaryReady ? stableFetchAnimeAcclaimed : noopFetch);
+  const shorts = useAnimeCollection(secondaryReady ? stableFetchAnimeShort : noopFetch);
 
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [genreItems, setGenreItems] = useState([]);
@@ -204,8 +213,8 @@ export default function Anime() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* hero — only when data is ready */}
-      {hasHero && (
+      {/* hero — shows loading state or actual hero */}
+      {(hasHero || trending.loading) && (
         <section
           className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] overflow-hidden -mt-20 pt-4"
           style={{ clipPath: 'inset(0)' }}
@@ -218,179 +227,196 @@ export default function Anime() {
             }
           }}
         >
-          <AnimatePresence initial={false}>
-            {(!trailerActive || trailerEnded) && (
-              <motion.div
-                key={`bg-${heroIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.2, ease: [0.32, 0.72, 0, 1] }}
-                className="absolute inset-0 w-full h-full"
-              >
-                <img
-                  src={heroAnime.animeImage}
-                  alt={heroAnime.title}
-                  className="w-full h-full object-cover object-top opacity-75 scale-[1.06]"
-                  style={{ objectPosition: '50% 15%' }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* loading placeholder */}
+          {trending.loading && !hasHero && (
+            <div className="absolute inset-0 bg-[#0d1117]" />
+          )}
 
-          <AnimatePresence>
-            {trailerActive && trailerKey && !trailerEnded && (
-              <motion.div
-                key="trailer"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 2.5, ease: 'easeInOut' }}
-                className="absolute inset-0 w-full h-full"
-              >
-                <iframe
-                  ref={trailerIframeRef}
-                  src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&origin=${window.location.origin}`}
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  className="w-full h-full"
-                  style={{ border: 'none', pointerEvents: 'none' }}
-                  title="Hero Trailer"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* backdrop */}
+          {hasHero && (
+            <AnimatePresence initial={false}>
+              {(!trailerActive || trailerEnded) && (
+                <motion.div
+                  key={`bg-${heroIndex}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1.2, ease: [0.32, 0.72, 0, 1] }}
+                  className="absolute inset-0 w-full h-full"
+                >
+                  <img
+                    src={heroAnime.animeImage}
+                    alt={heroAnime.title}
+                    className="w-full h-full object-cover opacity-75 scale-[1.06]"
+                    style={{ objectPosition: '50% 20%' }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
+          {/* trailer */}
+          {hasHero && (
+            <AnimatePresence>
+              {trailerActive && trailerKey && !trailerEnded && (
+                <motion.div
+                  key="trailer"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 2.5, ease: 'easeInOut' }}
+                  className="absolute inset-0 w-full h-full"
+                >
+                  <iframe
+                    ref={trailerIframeRef}
+                    src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&origin=${window.location.origin}`}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    className="w-full h-full"
+                    style={{ border: 'none', pointerEvents: 'none' }}
+                    title="Hero Trailer"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
+
+          {/* gradients */}
           <div className="absolute inset-0 bg-hero-gradient-x opacity-95 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-28 pb-32 sm:pb-36 lg:pb-32">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
-              <div className="w-full md:w-3/4 lg:w-[58%]">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-3xl sm:text-4xl">🎌</span>
-                  <span className="text-[13px] font-bold text-red-300 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 uppercase tracking-[0.18em]">
-                    Seasonal Spotlight
-                  </span>
-                </div>
-
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.12] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
-                  {heroAnime.title}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
-                  <span className="text-[13px] font-bold text-red-300 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
-                    Trending This Season
-                  </span>
-                  {heroAnime.release_date && (
-                    <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                      {heroAnime.release_date.substring(0, 4)}
+          {/* hero content — only when data is ready */}
+          {hasHero && (
+            <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-36 pb-32 sm:pb-36 lg:pb-32">
+              <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
+                <div className="w-full md:w-3/4 lg:w-[58%]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-[13px] font-bold text-red-300 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 uppercase tracking-[0.18em]">
+                      🎌 Seasonal Spotlight
                     </span>
-                  )}
-                  {heroAnime.vote_average > 0 && (
-                    <div className="flex items-center gap-1 text-[15px] font-bold text-yellow-400 border-l border-white/20 pl-4">
-                      <Star size={16} fill="currentColor" />
-                      <span>{Number(heroAnime.vote_average).toFixed(1)}</span>
-                    </div>
-                  )}
-                  {heroAnime.episodes && (
-                    <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                      {heroAnime.episodes} Episodes
+                  </div>
+
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.12] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
+                    {heroAnime.title}
+                  </h1>
+
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
+                    <span className="text-[13px] font-bold text-red-300 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
+                      Trending This Season
                     </span>
-                  )}
-                </div>
-
-                <AnimatePresence>
-                  {(!trailerActive || trailerEnded) && heroAnime.overview && (
-                    <motion.p
-                      key="synopsis"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.8, ease: 'easeInOut' }}
-                      className="text-sm sm:text-base text-white/85 line-clamp-4 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
-                    >
-                      {heroAnime.overview}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-
-                <Link
-                  to={`/anime/${heroAnime.id}`}
-                  className="btn-primary text-sm sm:text-base hover:scale-105 inline-flex items-center"
-                >
-                  <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
-              <div className="hidden sm:block w-10" />
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
-                {heroItems.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goToSlide(i)}
-                    aria-label={`Slide ${i + 1}`}
-                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
-                    style={{ width: i === heroIndex ? 36 : 14 }}
-                  >
-                    <span className="absolute inset-0 bg-white/25 rounded-full" />
-                    {i === heroIndex && (
-                      <motion.span
-                        key={heroIndex}
-                        className="absolute inset-0 bg-white rounded-full origin-left"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        transition={{ duration: 10, ease: 'linear' }}
-                      />
+                    {heroAnime.release_date && (
+                      <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                        {heroAnime.release_date.substring(0, 4)}
+                      </span>
                     )}
-                  </button>
-                ))}
-              </div>
-              <div className="hidden sm:flex ml-auto items-center gap-2 pointer-events-auto">
-                {trailerKey && trailerActive && !trailerEnded && (
-                  <button
-                    onClick={toggleMute}
-                    aria-label={trailerMuted ? 'Unmute' : 'Mute'}
-                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    {heroAnime.vote_average > 0 && (
+                      <div className="flex items-center gap-1 text-[15px] font-bold text-yellow-400 border-l border-white/20 pl-4">
+                        <Star size={16} fill="currentColor" />
+                        <span>{Number(heroAnime.vote_average).toFixed(1)}</span>
+                      </div>
+                    )}
+                    {heroAnime.episodes && (
+                      <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                        {heroAnime.episodes} Episodes
+                      </span>
+                    )}
+                  </div>
+
+                  <AnimatePresence>
+                    {(!trailerActive || trailerEnded) && heroAnime.overview && (
+                      <motion.p
+                        key="synopsis"
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.8, ease: 'easeInOut' }}
+                        className="text-sm sm:text-base text-white/85 line-clamp-4 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
+                      >
+                        {heroAnime.overview}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  <Link
+                    to={`/anime/${heroAnime.id}`}
+                    className="btn-primary text-sm sm:text-base hover:scale-105 inline-flex items-center"
                   >
-                    {trailerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                  </button>
-                )}
-                {trailerKey && trailerEnded && (
-                  <button
-                    onClick={replayTrailer}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs font-semibold hover:bg-white/20 transition-all"
-                  >
-                    <RotateCcw size={12} /> Replay
-                  </button>
-                )}
-                <button
-                  onClick={prevSlide}
-                  aria-label="Previous"
-                  className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
-                >
-                  <ChevronLeft size={22} />
-                </button>
-                <button
-                  onClick={nextSlide}
-                  aria-label="Next"
-                  className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
-                >
-                  <ChevronRight size={22} />
-                </button>
+                    <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* dots and controls — only when hero is ready */}
+          {hasHero && (
+            <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
+              <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
+                <div className="hidden sm:block w-10" />
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
+                  {heroItems.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => goToSlide(i)}
+                      aria-label={`Slide ${i + 1}`}
+                      className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
+                      style={{ width: i === heroIndex ? 36 : 14 }}
+                    >
+                      <span className="absolute inset-0 bg-white/25 rounded-full" />
+                      {i === heroIndex && (
+                        <motion.span
+                          key={heroIndex}
+                          className="absolute inset-0 bg-white rounded-full origin-left"
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: 1 }}
+                          transition={{ duration: 10, ease: 'linear' }}
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="hidden sm:flex ml-auto items-center gap-2 pointer-events-auto">
+                  {trailerKey && trailerActive && !trailerEnded && (
+                    <button
+                      onClick={toggleMute}
+                      aria-label={trailerMuted ? 'Unmute' : 'Mute'}
+                      className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    >
+                      {trailerMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                    </button>
+                  )}
+                  {trailerKey && trailerEnded && (
+                    <button
+                      onClick={replayTrailer}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs font-semibold hover:bg-white/20 transition-all"
+                    >
+                      <RotateCcw size={12} /> Replay
+                    </button>
+                  )}
+                  <button
+                    onClick={prevSlide}
+                    aria-label="Previous"
+                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    aria-label="Next"
+                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                  >
+                    <ChevronRight size={22} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
-      {/* content — title inside the main container so it aligns with everything */}
-      <div className={`max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 ${hasHero ? '-mt-8 pt-4' : 'pt-28'}`}>
+      {/* content */}
+      <div className={`max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 ${(hasHero || trending.loading) ? '-mt-8 pt-4' : 'pt-28'}`}>
 
         {/* page title */}
         <div>
