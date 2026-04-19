@@ -30,13 +30,7 @@ export default function SplashIntro({ onDone }) {
         style={{ height: '50vh', background: '#000', originY: 0 }}
         animate={isWiping ? { y: '-100%' } : { y: '0%' }}
         transition={{ duration: 1.0, ease: EASE_CURTAIN }}
-      >
-        {/* Subtle scan line at bottom edge of top bar */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.6), transparent)' }}
-        />
-      </motion.div>
+      />
 
       {/* ── Bottom curtain bar ──────────────────────────────────────────── */}
       <motion.div
@@ -44,13 +38,7 @@ export default function SplashIntro({ onDone }) {
         style={{ height: '50vh', background: '#000', originY: 1 }}
         animate={isWiping ? { y: '100%' } : { y: '0%' }}
         transition={{ duration: 1.0, ease: EASE_CURTAIN }}
-      >
-        {/* Subtle scan line at top edge of bottom bar */}
-        <div
-          className="absolute top-0 left-0 right-0 h-px"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.6), transparent)' }}
-        />
-      </motion.div>
+      />
 
       {/* ── Logo — centered between the two bars ────────────────────────── */}
       <motion.div
