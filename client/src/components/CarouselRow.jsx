@@ -237,9 +237,7 @@ export default function CarouselRow({
           <button
             onClick={() => scroll('left')}
             aria-label="Scroll left"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white flex items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200
-              opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100"
-            // ↑ Always visible on mobile, hover-only on desktop
+            className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
           >
             <ChevronLeft size={20} />
           </button>
@@ -270,9 +268,7 @@ export default function CarouselRow({
           <button
             onClick={() => scroll('right')}
             aria-label="Scroll right"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white flex items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200
-              opacity-100 sm:opacity-0 sm:group-hover/row:opacity-100"
-            // ↑ Always visible on mobile, hover-only on desktop
+            className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
           >
             <ChevronRight size={20} />
           </button>
