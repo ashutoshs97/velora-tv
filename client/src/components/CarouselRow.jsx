@@ -248,7 +248,7 @@ export default function CarouselRow({
         ) : (
           <div
             ref={scrollRef}
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide"
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scroll-smooth"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {movies.map((movie, idx) => (

@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
 import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2 } from 'lucide-react';
@@ -6,12 +6,12 @@ import SettingsModal from './SettingsModal';
 import { AnimatePresence } from 'framer-motion';
 
 const SEARCH_HINTS = [
-  'Search "Inception"ΓÇª',
-  'Search "The Boys"ΓÇª',
-  'Search "Oppenheimer"ΓÇª',
-  'Search "Breaking Bad"ΓÇª',
-  'Search "Dune"ΓÇª',
-  'Search "Stranger Things"ΓÇª',
+  'Search "Inception"…',
+  'Search "The Boys"…',
+  'Search "Oppenheimer"…',
+  'Search "Breaking Bad"…',
+  'Search "Dune"…',
+  'Search "Stranger Things"…',
 ];
 
 const NAV_LINKS = [
@@ -21,7 +21,7 @@ const NAV_LINKS = [
   { to: '/genres', label: 'Genres' },
 ];
 
-const MAX_QUERY_LENGTH = 150; // ΓåÉ prevent absurdly long queries
+const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
 
 export default function Navbar() {
   const [query, setQuery] = useState('');
@@ -55,15 +55,15 @@ export default function Navbar() {
   const isRootPath = ['/', '/movies', '/shows', '/anime'].includes(location.pathname);
 
   const inputRef = useRef(null);
-  const hintTimerRef = useRef(null); // ΓåÉ track setTimeout for cleanup
-  const scrollTimerRef = useRef(null); // ΓåÉ throttle scroll
+  const hintTimerRef = useRef(null); // ← track setTimeout for cleanup
+  const scrollTimerRef = useRef(null); // ← throttle scroll
 
-  // ΓöÇΓöÇ Close menu on route change ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Close menu on route change ────────────────────────────────────────
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // ΓöÇΓöÇ Throttled scroll listener ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Throttled scroll listener ─────────────────────────────────────────
   useEffect(() => {
     const onScroll = () => {
       if (scrollTimerRef.current) return;
@@ -79,7 +79,7 @@ export default function Navbar() {
     };
   }, []);
 
-  // ΓöÇΓöÇ Cycling placeholder ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Cycling placeholder ───────────────────────────────────────────────
   useEffect(() => {
     if (query || searchFocused) return;
 
@@ -93,11 +93,11 @@ export default function Navbar() {
 
     return () => {
       clearInterval(interval);
-      clearTimeout(hintTimerRef.current); // ΓåÉ clean up inner setTimeout
+      clearTimeout(hintTimerRef.current); // ← clean up inner setTimeout
     };
   }, [query, searchFocused]);
 
-  // ΓöÇΓöÇ Close menu on outside click ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Close menu on outside click ───────────────────────────────────────
   useEffect(() => {
     if (!menuOpen) return;
 
@@ -111,7 +111,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [menuOpen]);
 
-  // ΓöÇΓöÇ Cleanup all timers on unmount ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── Cleanup all timers on unmount ─────────────────────────────────────
   useEffect(() => {
     return () => {
       clearTimeout(hintTimerRef.current);
