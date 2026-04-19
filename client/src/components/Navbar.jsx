@@ -1,27 +1,27 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
-import { Search, X, Menu, Home, ArrowLeft, Dices, Settings, Calendar as CalIcon, Loader2 } from 'lucide-react';
+import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2 } from 'lucide-react';
 import SettingsModal from './SettingsModal';
+import { AnimatePresence } from 'framer-motion';
 
 const SEARCH_HINTS = [
-  'Search "Inception"…',
-  'Search "The Boys"…',
-  'Search "Oppenheimer"…',
-  'Search "Breaking Bad"…',
-  'Search "Dune"…',
-  'Search "Stranger Things"…',
+  'Search "Inception"ΓÇª',
+  'Search "The Boys"ΓÇª',
+  'Search "Oppenheimer"ΓÇª',
+  'Search "Breaking Bad"ΓÇª',
+  'Search "Dune"ΓÇª',
+  'Search "Stranger Things"ΓÇª',
 ];
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/movies', label: 'Movies' },
   { to: '/shows', label: 'Shows' },
-  { to: '/anime', label: 'Anime' },
   { to: '/genres', label: 'Genres' },
 ];
 
-const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
+const MAX_QUERY_LENGTH = 150; // ΓåÉ prevent absurdly long queries
 
 export default function Navbar() {
   const [query, setQuery] = useState('');
@@ -55,15 +55,15 @@ export default function Navbar() {
   const isRootPath = ['/', '/movies', '/shows', '/anime'].includes(location.pathname);
 
   const inputRef = useRef(null);
-  const hintTimerRef = useRef(null); // ← track setTimeout for cleanup
-  const scrollTimerRef = useRef(null); // ← throttle scroll
+  const hintTimerRef = useRef(null); // ΓåÉ track setTimeout for cleanup
+  const scrollTimerRef = useRef(null); // ΓåÉ throttle scroll
 
-  // ── Close menu on route change ────────────────────────────────────────
+  // ΓöÇΓöÇ Close menu on route change ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // ── Throttled scroll listener ─────────────────────────────────────────
+  // ΓöÇΓöÇ Throttled scroll listener ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   useEffect(() => {
     const onScroll = () => {
       if (scrollTimerRef.current) return;
@@ -79,7 +79,7 @@ export default function Navbar() {
     };
   }, []);
 
-  // ── Cycling placeholder ───────────────────────────────────────────────
+  // ΓöÇΓöÇ Cycling placeholder ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   useEffect(() => {
     if (query || searchFocused) return;
 
@@ -93,11 +93,11 @@ export default function Navbar() {
 
     return () => {
       clearInterval(interval);
-      clearTimeout(hintTimerRef.current); // ← clean up inner setTimeout
+      clearTimeout(hintTimerRef.current); // ΓåÉ clean up inner setTimeout
     };
   }, [query, searchFocused]);
 
-  // ── Close menu on outside click ───────────────────────────────────────
+  // ΓöÇΓöÇ Close menu on outside click ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   useEffect(() => {
     if (!menuOpen) return;
 
@@ -111,7 +111,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [menuOpen]);
 
-  // ── Cleanup all timers on unmount ─────────────────────────────────────
+  // ΓöÇΓöÇ Cleanup all timers on unmount ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   useEffect(() => {
     return () => {
       clearTimeout(hintTimerRef.current);
@@ -237,7 +237,7 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Search */}
+          {/* Search & Settings */}
           <div className="flex items-center">
             <Link
               to="/search"
@@ -247,6 +247,13 @@ export default function Navbar() {
             >
               <Search size={18} className="translate-y-[1px]" />
             </Link>
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
+              aria-label="Settings"
+            >
+              <Settings size={18} className="translate-y-[1px]" />
+            </button>
           </div>
 
           <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
@@ -263,15 +270,6 @@ export default function Navbar() {
               <Dices size={18} />
             )}
             <span>Surprise</span>
-          </button>
-
-          {/* Settings Gear */}
-          <button
-            onClick={() => setSettingsOpen(true)}
-            title="App Settings"
-            className="p-2.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
-          >
-            <Settings size={18} />
           </button>
         </div>
       </nav>
@@ -364,11 +362,13 @@ export default function Navbar() {
             </div>
           </div>
         )}
-          </div>
-        )}
       </nav>
-
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {settingsOpen && (
+          <SettingsModal onClose={() => setSettingsOpen(false)} />
+        )}
+      </AnimatePresence>
     </>
   );
 }
