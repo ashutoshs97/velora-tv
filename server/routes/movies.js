@@ -350,9 +350,46 @@ router.get('/person/:id', async (req, res) => {
 router.get('/yts/:imdb_id', async (req, res) => {
   const { imdb_id } = req.params;
   try {
-    const response = await fetch(`https://yts.mx/api/v2/list_movies.json?query_term=${imdb_id}`);
-    const data = await response.json();
-    res.json(data);
+    // Attempt 1: YTS (May fail due to Cloudflare blocking Server IP)
+    try {
+      const response = await fetch(`https://yts.mx/api/v2/list_movies.json?query_term=${imdb_id}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.data?.movies?.length > 0) {
+          return res.json(data);
+        }
+      }
+    } catch (err) {
+      console.warn('YTS proxy fetch failed, falling back to TPB:', err.message);
+    }
+
+    // Attempt 2: ThePirateBay (Apibay)
+    const tpbResponse = await fetch(`https://apibay.org/q.php?q=${imdb_id}`);
+    const tpbData = await tpbResponse.json();
+    
+    if (Array.isArray(tpbData) && tpbData.length > 0 && tpbData[0].info_hash !== '0000000000000000000000000000000000000000') {
+      // Prioritize 1080p and high seeders
+      const sorted = tpbData.sort((a, b) => Number(b.seeders) - Number(a.seeders));
+      const best = sorted.find(t => t.name.includes('1080p')) || sorted[0];
+      
+      // Mock the YTS response structure so the frontend WebTorrentPlayer doesn't break
+      return res.json({
+        status: 'ok',
+        data: {
+          movies: [
+            {
+              torrents: [
+                { hash: best.info_hash, quality: '1080p', type: 'tpb' }
+              ]
+            }
+          ]
+        }
+      });
+    }
+
+    throw new Error('No torrents found on YTS or TPB tracker networks.');
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
