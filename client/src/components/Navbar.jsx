@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
-import { Search, X, Menu, Home, ArrowLeft, Dices, Calendar as CalIcon, Loader2 } from 'lucide-react';
+import { Search, X, Menu, Home, ArrowLeft, Dices, Settings, Calendar as CalIcon, Loader2 } from 'lucide-react';
+import SettingsModal from './SettingsModal';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -25,6 +26,7 @@ const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
 export default function Navbar() {
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
@@ -262,6 +264,15 @@ export default function Navbar() {
             )}
             <span>Surprise</span>
           </button>
+
+          {/* Settings Gear */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            title="App Settings"
+            className="p-2.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+          >
+            <Settings size={18} />
+          </button>
         </div>
       </nav>
         </div>
@@ -353,7 +364,11 @@ export default function Navbar() {
             </div>
           </div>
         )}
+          </div>
+        )}
       </nav>
+
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }

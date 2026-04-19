@@ -9,8 +9,8 @@ export default {
           surface: '#0F1923',
           hover:   '#16212E',
           card:    '#111D28',
-          blue:    '#00B4FF',
-          cyan:    '#00D4FF',
+          blue:    'var(--theme-primary, #00B4FF)',
+          cyan:    'var(--theme-secondary, #00D4FF)',
           purple:  '#7C3AED',
           text:    '#FFFFFF',
           subtext: '#6B8499',
@@ -30,9 +30,9 @@ export default {
       },
       boxShadow: {
         'card':        '0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset',
-        'card-hover':  '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,180,255,0.25)',
-        'glow-blue':   '0 0 30px rgba(0,180,255,0.35), 0 0 60px rgba(0,180,255,0.15)',
-        'glow-sm':     '0 0 12px rgba(0,180,255,0.4)',
+        'card-hover':  '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--theme-primary-rgb, 0,180,255), 0.25)',
+        'glow-blue':   '0 0 30px rgba(var(--theme-primary-rgb, 0,180,255), 0.35), 0 0 60px rgba(var(--theme-primary-rgb, 0,180,255), 0.15)',
+        'glow-sm':     '0 0 12px rgba(var(--theme-primary-rgb, 0,180,255), 0.4)',
         'navbar':      '0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.4)',
       },
       borderColor: {

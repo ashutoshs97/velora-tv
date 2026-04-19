@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, RefreshCw, AlertCircle, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Server, RefreshCw, AlertCircle, Volume2, VolumeX, Zap, Download } from 'lucide-react';
 import { getEnabledMovieProviders } from '../config/movieProviders';
 import { triggerHaptic } from '../utils/haptics';
 
@@ -45,6 +45,11 @@ export default function MultiSourceAggregator({
   const audioCtxRef  = useRef(null);
   const gainNodeRef  = useRef(null);
   const [volume, setVolume] = useState(100);
+  
+  // Torrent/Magnet mode
+  const [magnetMode, setMagnetMode] = useState(false);
+  const [magnetLink, setMagnetLink] = useState('');
+  const [activeMagnet, setActiveMagnet] = useState('');
   const ios = isIOS();
   const providerCount = providers.length;
   const safeType = getSafeType(type);
@@ -162,6 +167,7 @@ export default function MultiSourceAggregator({
     setUsingMirror(false);
     setRetryCount(0);
     setAllFailed(false);
+    setActiveMagnet('');
   }, []);
 
   // ── Volume Boost via Web Audio API ─────────────────────────────────────────
@@ -210,6 +216,7 @@ export default function MultiSourceAggregator({
 
   const tryNext = useCallback(() => {
     triggerHaptic('light');
+    if (magnetMode) return;
     const next = (activeServer + 1) % providerCount;
     setActiveServer(next);
     setMirrorIndex(0);
@@ -219,7 +226,16 @@ export default function MultiSourceAggregator({
     setUsingMirror(false);
     setRetryCount(0);
     setAllFailed(false);
-  }, [activeServer, providerCount]);
+  }, [activeServer, providerCount, magnetMode]);
+
+  const handleMagnetSubmit = (e) => {
+    e.preventDefault();
+    if (magnetLink.trim().startsWith('magnet:?')) {
+      triggerHaptic('heavy');
+      setActiveMagnet(magnetLink.trim());
+      setLoading(true);
+    }
+  };
 
   if (!tmdbId) {
     return (
@@ -286,27 +302,76 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
-        {src && (
-          <motion.iframe
-            key={iframeKey}
-            initial={{ rotateX: -90, opacity: 0 }}
-            animate={{ rotateX: 0, opacity: 1 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-            style={{ transformOrigin: 'center', perspective: 1000, border: 'none' }}
-            src={src}
-            title={`${currentServer.name} — ${currentServer.label}`}
-            allowFullScreen
-            allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share; xr-spatial-tracking"
-            onLoad={() => {
-              setLoading(false);
-              setAllFailed(false);
-            }}
-            onError={() => {
-              setLoading(true);
-            }}
-            className="w-full h-full"
-          />
+        {/* Magnet Input UI */}
+        {magnetMode && !activeMagnet && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0F1923] z-20 rounded-xl overflow-hidden p-6 border border-white/5">
+            <div className="max-w-md w-full space-y-4">
+              <div className="flex justify-center mb-6 text-prime-blue">
+                <Download size={48} strokeWidth={1.5} />
+              </div>
+              <h2 className="text-xl font-bold text-center text-white">Torrent Player Fallback</h2>
+              <p className="text-sm text-center text-white/50 mb-4 px-4">
+                Paste any valid magnet link below to stream directly via the WebTor distributed network.
+              </p>
+              <form onSubmit={handleMagnetSubmit} className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="magnet:?xt=urn:btih:..."
+                  value={magnetLink}
+                  onChange={e => setMagnetLink(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-prime-blue transition-colors"
+                  spellCheck="false"
+                />
+                <button
+                  type="submit"
+                  disabled={!magnetLink.trim().startsWith('magnet:?')}
+                  className="w-full bg-prime-blue text-white font-bold rounded-xl py-3 disabled:opacity-50 transition-opacity"
+                >
+                  Stream Magnet
+                </button>
+              </form>
+            </div>
+          </div>
         )}
+
+        <AnimatePresence mode="popLayout">
+          {src && !magnetMode && (
+            <motion.iframe
+              key={iframeKey}
+              initial={{ rotateX: -90, opacity: 0 }}
+              animate={{ rotateX: 0, opacity: 1 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+              style={{ transformOrigin: 'center', perspective: 1000, border: 'none' }}
+              src={src}
+              title={`${currentServer.name} — ${currentServer.label}`}
+              allowFullScreen
+              allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share; xr-spatial-tracking"
+              onLoad={() => {
+                setLoading(false);
+                setAllFailed(false);
+              }}
+              onError={() => {
+                setLoading(true);
+              }}
+              className="w-full h-full"
+            />
+          )}
+
+          {activeMagnet && magnetMode && (
+             <motion.iframe
+              key={`magnet-${activeMagnet}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              src={`https://webtor.io/show?magnet=${encodeURIComponent(activeMagnet)}`}
+              title="WebTor Player"
+              allowFullScreen
+              onLoad={() => setLoading(false)}
+              className="w-full h-full"
+              style={{ border: 'none' }}
+             />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── Server Toolbar ── */}
@@ -412,6 +477,27 @@ export default function MultiSourceAggregator({
               </button>
             );
           })}
+          
+          {/* Torrent Fallback Button */}
+          <button
+            onClick={() => {
+              triggerHaptic('medium');
+              setMagnetMode(!magnetMode);
+            }}
+            className={`relative col-span-2 sm:col-span-1 flex flex-col items-center justify-center px-1 py-3 rounded-xl text-center transition-all duration-300 ease-out border ${
+              magnetMode
+                ? 'bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] border-[#a78bfa] shadow-[0_0_20px_rgba(167,139,250,0.4)] text-white scale-[1.02] z-10'
+                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/25 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <Download size={13} className={magnetMode ? 'text-white' : 'text-purple-400'} />
+              <span className="text-xs font-bold text-white truncate">Torrent Mode</span>
+            </div>
+            <span className={`text-[10px] font-semibold truncate ${magnetMode ? 'text-white/90' : 'text-white/50'}`}>
+              Magnet Fallback
+            </span>
+          </button>
         </div>
       </div>
 

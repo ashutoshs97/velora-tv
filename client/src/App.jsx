@@ -1,9 +1,10 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import SplashIntro from './components/SplashIntro';
 import Home from './pages/Home';
+import { useSettings } from './contexts/SettingsContext';
 import Search from './pages/Search';
 import Watch from './pages/Watch';
 import Person from './pages/Person';
@@ -29,8 +30,10 @@ export default function App() {
   );
   const handleIntroDone = useCallback(() => setShowIntro(false), []);
 
+  const { reducedMotion } = useSettings();
+
   return (
-    <>
+    <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>
       {showIntro && <SplashIntro onDone={handleIntroDone} />}
       <div className="min-h-screen bg-prime-bg text-white flex flex-col">
         <ScrollToTop />
@@ -60,6 +63,6 @@ export default function App() {
           </div>
         </footer>
       </div>
-    </>
+    </MotionConfig>
   );
 }
