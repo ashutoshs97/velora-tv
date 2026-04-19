@@ -17,7 +17,6 @@ const NAV_LINKS = [
   { to: '/movies', label: 'Movies' },
   { to: '/shows', label: 'Shows' },
   { to: '/anime', label: 'Anime' },
-  { to: '/calendar', label: 'Calendar' },
 ];
 
 const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
