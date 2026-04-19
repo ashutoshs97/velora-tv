@@ -18,27 +18,27 @@ import {
 } from '../api';
 
 const GENRES = [
-  { id: 1, label: 'Action', emoji: '⚔️' },
-  { id: 22, label: 'Romance', emoji: '💕' },
-  { id: 10, label: 'Fantasy', emoji: '🔮' },
-  { id: 24, label: 'Sci-Fi', emoji: '🚀' },
-  { id: 37, label: 'Supernatural', emoji: '👻' },
-  { id: 40, label: 'Psychological', emoji: '🧠' },
-  { id: 2, label: 'Adventure', emoji: '🗺️' },
-  { id: 4, label: 'Comedy', emoji: '😂' },
-  { id: 8, label: 'Drama', emoji: '🎭' },
-  { id: 36, label: 'Slice of Life', emoji: '🌸' },
-  { id: 7, label: 'Mystery', emoji: '🕵️' },
-  { id: 14, label: 'Horror', emoji: '💀' },
-  { id: 30, label: 'Sports', emoji: '⚽' },
+  { id: 1, label: 'Action' },
+  { id: 22, label: 'Romance' },
+  { id: 10, label: 'Fantasy' },
+  { id: 24, label: 'Sci-Fi' },
+  { id: 37, label: 'Supernatural' },
+  { id: 40, label: 'Psychological' },
+  { id: 2, label: 'Adventure' },
+  { id: 4, label: 'Comedy' },
+  { id: 8, label: 'Drama' },
+  { id: 36, label: 'Slice of Life' },
+  { id: 7, label: 'Mystery' },
+  { id: 14, label: 'Horror' },
+  { id: 30, label: 'Sports' },
 ];
 
+// normalize Jikan API response to our common movie shape
 function norm(anime) {
   const img =
     anime.images?.webp?.large_image_url ||
     anime.images?.jpg?.large_image_url ||
     '';
-
   return {
     id: anime.mal_id,
     title: anime.title_english || anime.title || 'Unknown',
@@ -59,6 +59,7 @@ function toAnimeItems(response) {
   return (response?.data?.data || []).map(norm);
 }
 
+// stable hook — apiCall must be a stable reference (useCallback)
 function useAnimeCollection(apiCall) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,36 +67,37 @@ function useAnimeCollection(apiCall) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-
     apiCall()
-      .then((response) => {
-        if (!cancelled) setItems(toAnimeItems(response));
-      })
-      .catch(() => {
-        if (!cancelled) setItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .then((res) => { if (!cancelled) setItems(toAnimeItems(res)); })
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [apiCall]);
 
   return { items, loading };
 }
 
+// stable api call refs so useAnimeCollection doesn't re-fire
+const stableFetchAnimeTrending = fetchAnimeTrending;
+const stableFetchAnimeTop = fetchAnimeTop;
+const stableFetchAnimePopular = fetchAnimePopular;
+const stableFetchAnimeAiring = fetchAnimeAiring;
+const stableFetchAnimeUpcoming = fetchAnimeUpcoming;
+const stableFetchAnimeMovies = fetchAnimeMovies;
+const stableFetchAnimeOVA = fetchAnimeOVA;
+const stableFetchAnimeAcclaimed = fetchAnimeAcclaimed;
+const stableFetchAnimeShort = fetchAnimeShort;
+
 export default function Anime() {
-  const trending = useAnimeCollection(fetchAnimeTrending);
-  const top = useAnimeCollection(fetchAnimeTop);
-  const popular = useAnimeCollection(fetchAnimePopular);
-  const airing = useAnimeCollection(fetchAnimeAiring);
-  const upcoming = useAnimeCollection(fetchAnimeUpcoming);
-  const movies = useAnimeCollection(fetchAnimeMovies);
-  const ova = useAnimeCollection(fetchAnimeOVA);
-  const acclaimed = useAnimeCollection(fetchAnimeAcclaimed);
-  const shorts = useAnimeCollection(fetchAnimeShort);
+  const trending = useAnimeCollection(stableFetchAnimeTrending);
+  const top = useAnimeCollection(stableFetchAnimeTop);
+  const popular = useAnimeCollection(stableFetchAnimePopular);
+  const airing = useAnimeCollection(stableFetchAnimeAiring);
+  const upcoming = useAnimeCollection(stableFetchAnimeUpcoming);
+  const movies = useAnimeCollection(stableFetchAnimeMovies);
+  const ova = useAnimeCollection(stableFetchAnimeOVA);
+  const acclaimed = useAnimeCollection(stableFetchAnimeAcclaimed);
+  const shorts = useAnimeCollection(stableFetchAnimeShort);
 
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [genreItems, setGenreItems] = useState([]);
@@ -103,21 +105,24 @@ export default function Anime() {
   const [heroIndex, setHeroIndex] = useState(0);
   const autoAdvanceRef = useRef(null);
 
+  // touch tracking as refs — no re-render needed
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  const [trailerKey, setTrailerKey] = useState(null);
+  const [trailerActive, setTrailerActive] = useState(false);
+  const [trailerEnded, setTrailerEnded] = useState(false);
+  const [trailerMuted, setTrailerMuted] = useState(true);
+  const trailerTimerRef = useRef(null);
+  const replayTimerRef = useRef(null);
+  const trailerIframeRef = useRef(null);
+
   const heroItems = useMemo(
     () => trending.items.filter((item) => item.animeImage).slice(0, 6),
     [trending.items]
   );
 
   const heroAnime = heroItems[heroIndex] || null;
-
-  const [trailerKey, setTrailerKey] = useState(null);
-  const [trailerActive, setTrailerActive] = useState(false);
-  const [trailerEnded, setTrailerEnded] = useState(false);
-  const [trailerMuted, setTrailerMuted] = useState(true);
-
-  const trailerTimerRef = useRef(null);
-  const replayTimerRef = useRef(null);
-  const trailerIframeRef = useRef(null);
 
   const goToSlide = useCallback((index) => {
     setHeroIndex(index);
@@ -133,73 +138,41 @@ export default function Anime() {
     setHeroIndex((prev) => (prev - 1 + heroItems.length) % heroItems.length);
   }, [heroItems.length]);
 
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEndHandler = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const minSwipeDistance = 50;
-    if (distance > minSwipeDistance) nextSlide();
-    if (distance < -minSwipeDistance) prevSlide();
-  };
-
+  // genre fetch
   useEffect(() => {
     let cancelled = false;
     setLoadingGenre(true);
-
     fetchAnimeGenre(selectedGenre.id)
-      .then((response) => {
-        if (!cancelled) setGenreItems(toAnimeItems(response));
-      })
-      .catch(() => {
-        if (!cancelled) setGenreItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingGenre(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .then((res) => { if (!cancelled) setGenreItems(toAnimeItems(res)); })
+      .catch(() => { if (!cancelled) setGenreItems([]); })
+      .finally(() => { if (!cancelled) setLoadingGenre(false); });
+    return () => { cancelled = true; };
   }, [selectedGenre]);
 
-  useEffect(() => {
-    setHeroIndex(0);
-  }, [heroItems.length]);
-
+  // auto-advance — pauses when trailer is active
   useEffect(() => {
     clearInterval(autoAdvanceRef.current);
-    if (!heroItems.length) return undefined;
-
-    autoAdvanceRef.current = setInterval(nextSlide, 10000); // 10 seconds per slide
+    if (!heroItems.length) return;
+    if (trailerActive && !trailerEnded) return; // pause during trailer
+    autoAdvanceRef.current = setInterval(nextSlide, 10000);
     return () => clearInterval(autoAdvanceRef.current);
-  }, [heroItems.length, nextSlide]);
+  }, [heroItems.length, nextSlide, trailerActive, trailerEnded]);
 
+  // trailer fetch on hero change
   useEffect(() => {
     setTrailerKey(null);
     setTrailerActive(false);
     setTrailerEnded(false);
     setTrailerMuted(true);
     clearTimeout(trailerTimerRef.current);
-
-    if (heroAnime?.trailer_youtube_id) {
-      setTrailerKey(heroAnime.trailer_youtube_id);
-      trailerTimerRef.current = setTimeout(() => {
-        setTrailerActive(true);
-      }, 5000);
-    }
-
+    if (!heroAnime?.trailer_youtube_id) return;
+    setTrailerKey(heroAnime.trailer_youtube_id);
+    let cancelled = false;
+    trailerTimerRef.current = setTimeout(() => {
+      if (!cancelled) setTrailerActive(true);
+    }, 5000);
     return () => {
+      cancelled = true;
       clearTimeout(trailerTimerRef.current);
     };
   }, [heroAnime]);
@@ -211,6 +184,7 @@ export default function Anime() {
     replayTimerRef.current = setTimeout(() => setTrailerActive(true), 100);
   }, []);
 
+  // cleanup all timers on unmount
   useEffect(() => {
     return () => {
       clearTimeout(replayTimerRef.current);
@@ -225,15 +199,12 @@ export default function Anime() {
       try {
         const iframe = trailerIframeRef.current;
         if (iframe?.contentWindow) {
-          const command = newMuted ? 'mute' : 'unMute';
           iframe.contentWindow.postMessage(
-            JSON.stringify({ event: 'command', func: command }),
+            JSON.stringify({ event: 'command', func: newMuted ? 'mute' : 'unMute' }),
             'https://www.youtube.com'
           );
         }
-      } catch {
-        /* silent */
-      }
+      } catch { /* silent */ }
       return newMuted;
     });
   }, []);
@@ -246,13 +217,21 @@ export default function Anime() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
+      {/* hero */}
       {heroAnime && (
-        <section 
+        <section
           className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] overflow-hidden -mt-20 pt-4"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEndHandler}
+          style={{ clipPath: 'inset(0)' }}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            touchEndX.current = e.changedTouches[0].clientX;
+            const diff = touchStartX.current - touchEndX.current;
+            if (Math.abs(diff) > 50) {
+              diff > 0 ? nextSlide() : prevSlide();
+            }
+          }}
         >
+          {/* backdrop */}
           <AnimatePresence initial={false}>
             {(!trailerActive || trailerEnded) && (
               <motion.div
@@ -273,6 +252,7 @@ export default function Anime() {
             )}
           </AnimatePresence>
 
+          {/* trailer */}
           <AnimatePresence>
             {trailerActive && trailerKey && !trailerEnded && (
               <motion.div
@@ -296,10 +276,12 @@ export default function Anime() {
             )}
           </AnimatePresence>
 
+          {/* gradients */}
           <div className="absolute inset-0 bg-hero-gradient-x opacity-95 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
+          {/* content */}
           <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-28 pb-32 sm:pb-36 lg:pb-32">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
               <div className="w-full md:w-3/4 lg:w-[58%]">
@@ -351,21 +333,18 @@ export default function Anime() {
                   )}
                 </AnimatePresence>
 
-                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
-                  <Link
-                    to={`/anime/${heroAnime.id}`}
-                    className="btn-primary text-sm sm:text-base hover:scale-105"
-                  >
-                    <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
-                  </Link>
-                  
-
-                </div>
+                <Link
+                  to={`/anime/${heroAnime.id}`}
+                  className="btn-primary text-sm sm:text-base hover:scale-105 inline-flex items-center"
+                >
+                  <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
+                </Link>
               </div>
             </div>
           </div>
 
-          <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20">
+          {/* dots + controls */}
+          <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
               <div className="hidden sm:block w-10" />
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
@@ -374,7 +353,7 @@ export default function Anime() {
                     key={i}
                     onClick={() => goToSlide(i)}
                     aria-label={`Go to anime slide ${i + 1}`}
-                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300 shadow-sm"
+                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
                     style={{ width: i === heroIndex ? 36 : 14 }}
                   >
                     <span className="absolute inset-0 bg-white/25 rounded-full" />
@@ -390,7 +369,8 @@ export default function Anime() {
                   </button>
                 ))}
               </div>
-              <div className="ml-auto flex items-center gap-2 pointer-events-auto">
+
+              <div className="hidden sm:flex ml-auto items-center gap-2 pointer-events-auto">
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
                     onClick={toggleMute}
@@ -408,60 +388,48 @@ export default function Anime() {
                     <RotateCcw size={12} /> Replay
                   </button>
                 )}
-                <div className="hidden sm:flex items-center gap-2">
-                  <button
-                    onClick={prevSlide}
-                    aria-label="Previous anime"
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-lg text-white"
-                  >
-                    <ChevronLeft size={22} className="mr-0.5" />
-                  </button>
-                  <button
-                    onClick={nextSlide}
-                    aria-label="Next anime"
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-lg text-white"
-                  >
-                    <ChevronRight size={22} className="ml-0.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={prevSlide}
+                  aria-label="Previous"
+                  className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  aria-label="Next"
+                  className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                >
+                  <ChevronRight size={22} />
+                </button>
               </div>
             </div>
           </div>
         </section>
       )}
 
+      {/* page header */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-8 pb-6">
-        <div className="flex items-end gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-4xl">🎌</span>
-              <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
-                Anime
-              </h1>
-            </div>
-            <p className="text-prime-subtext font-medium mt-1 text-lg max-w-2xl">
-              Explore thousands of anime from timeless classics to the latest seasonal releases.
-            </p>
-          </div>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-4xl">🎌</span>
+          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
+            Anime
+          </h1>
         </div>
+        <p className="text-prime-subtext font-medium mt-1 text-lg max-w-2xl">
+          Explore thousands of anime from timeless classics to the latest seasonal releases.
+        </p>
       </div>
 
-      <div
-        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] opacity-10"
-        style={{
-          background: 'radial-gradient(ellipse, rgba(255,100,100,0.4) 0%, transparent 70%)',
-          filter: 'blur(80px)',
-        }}
-      />
-
+      {/* content rows */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 mt-4">
+
         <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <PrimeCarouselRow
             title="Trending This Season"
             badge="Seasonal"
             movies={trending.items}
             loading={trending.loading}
-            watchPrefix="/anime"
           />
         </div>
 
@@ -471,7 +439,6 @@ export default function Anime() {
             badge="Live"
             movies={airing.items}
             loading={airing.loading}
-            watchPrefix="/anime"
           />
         </div>
 
@@ -483,7 +450,6 @@ export default function Anime() {
             loading={top.loading}
             ranked
             usePoster
-            watchPrefix="/anime"
           />
         </div>
 
@@ -493,7 +459,6 @@ export default function Anime() {
             badge="Fan Favourites"
             movies={popular.items}
             loading={popular.loading}
-            watchPrefix="/anime"
           />
         </div>
 
@@ -503,33 +468,31 @@ export default function Anime() {
             badge="Score 8.5+"
             movies={acclaimed.items}
             loading={acclaimed.loading}
-            watchPrefix="/anime"
           />
         </div>
 
+        {/* genre filter */}
         <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Browse by Genre</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Browse by Genre
+            </h2>
           </div>
           <div
-            className="flex gap-3 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {GENRES.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setSelectedGenre(g)}
-                className={`relative flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
                   selectedGenre.id === g.id
-                    ? 'text-white shadow-[0_0_20px_rgba(255,100,100,0.4)] scale-105 border-transparent'
-                    : 'text-prime-subtext bg-[#1A242F]/50 backdrop-blur-md border border-white/10 hover:border-white/30 hover:text-white'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
                 }`}
               >
-                {selectedGenre.id === g.id && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-500 opacity-90" />
-                )}
-                <span className="relative z-10">{g.emoji}</span>
-                <span className="relative z-10">{g.label}</span>
+                {g.label}
               </button>
             ))}
           </div>
@@ -537,7 +500,6 @@ export default function Anime() {
             title=""
             movies={genreItems}
             loading={loadingGenre}
-            watchPrefix="/anime"
           />
         </div>
 
@@ -547,7 +509,6 @@ export default function Anime() {
             badge="Coming Soon"
             movies={upcoming.items}
             loading={upcoming.loading}
-            watchPrefix="/anime"
           />
         </div>
 
@@ -558,7 +519,6 @@ export default function Anime() {
             movies={movies.items}
             loading={movies.loading}
             usePoster
-            watchPrefix="/anime"
           />
         </div>
 
@@ -568,27 +528,18 @@ export default function Anime() {
             badge="OVA"
             movies={ova.items}
             loading={ova.loading}
-            watchPrefix="/anime"
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+        <div className="animate-fade-up mb-24" style={{ animationDelay: '0.55s' }}>
           <PrimeCarouselRow
             title="Short Series & ONAs"
             badge="Short"
             movies={shorts.items}
             loading={shorts.loading}
-            watchPrefix="/anime"
           />
         </div>
 
-        <div
-          className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
-          style={{
-            background: 'radial-gradient(ellipse, rgba(255,80,80,0.25) 0%, transparent 70%)',
-            filter: 'blur(80px)',
-          }}
-        />
       </div>
     </motion.div>
   );
