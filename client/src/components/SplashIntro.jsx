@@ -63,25 +63,28 @@ export default function SplashIntro({ onDone }) {
         }
       >
         {/* Velora icon + wordmark */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           <img
             src="/velora-icon.svg"
             alt="Velora"
             style={{
-              width: 52,
-              height: 52,
-              filter: 'drop-shadow(0 0 18px rgba(37,99,235,0.8))',
+              width: 56,
+              height: 56,
+              filter: 'drop-shadow(0 0 24px rgba(37,99,235,0.95)) drop-shadow(0 0 60px rgba(37,99,235,0.4))',
             }}
           />
           <span
             style={{
               fontFamily: 'Satoshi, system-ui, sans-serif',
               fontWeight: 900,
-              fontSize: 'clamp(2.8rem, 8vw, 5rem)',
-              letterSpacing: '0.14em',
-              color: '#ffffff',
-              textShadow: '0 0 40px rgba(37,99,235,0.7), 0 0 80px rgba(37,99,235,0.3)',
+              fontSize: 'clamp(3.5rem, 10vw, 6.5rem)',
+              letterSpacing: '0.22em',
               lineHeight: 1,
+              background: 'linear-gradient(160deg, #ffffff 0%, #c8d8ff 35%, #ffffff 55%, #ddeeff 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 0 30px rgba(37,99,235,0.5))',
             }}
           >
             VELORA
@@ -89,18 +92,23 @@ export default function SplashIntro({ onDone }) {
         </div>
 
         {/* Film-style tag line */}
-        <p
-          style={{
-            fontFamily: 'Satoshi, system-ui, sans-serif',
-            fontSize: '0.65rem',
-            letterSpacing: '0.4em',
-            color: 'rgba(255,255,255,0.35)',
-            textTransform: 'uppercase',
-            fontWeight: 600,
-          }}
-        >
-          Stream Anything
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+          <div style={{ width: 32, height: 1, background: 'rgba(255,255,255,0.2)' }} />
+          <p
+            style={{
+              fontFamily: 'Satoshi, system-ui, sans-serif',
+              fontSize: '0.6rem',
+              letterSpacing: '0.5em',
+              color: 'rgba(180,200,255,0.5)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+              margin: 0,
+            }}
+          >
+            Stream Anything
+          </p>
+          <div style={{ width: 32, height: 1, background: 'rgba(255,255,255,0.2)' }} />
+        </div>
       </motion.div>
     </>
   );
