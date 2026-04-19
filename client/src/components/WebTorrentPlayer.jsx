@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, AlertCircle, Link } from 'lucide-react';
+import { fetchMovieDetail } from '../api';
 
 export default function WebTorrentPlayer({ tmdbId }) {
   const videoRef = useRef(null);
@@ -68,12 +69,12 @@ export default function WebTorrentPlayer({ tmdbId }) {
 
     const fetchAutoMagnet = async () => {
       try {
-        // 1. Fetch IMDb ID from TMDB
+        // 1. Fetch IMDb ID from our own backend which acts as a TMDB proxy
         setStatus('Fetching metadata...');
-        const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=422da8e52a5caed78cbbd377b2520149`);
-        const tmdbData = await tmdbRes.json();
+        const { data: movieDetail } = await fetchMovieDetail(tmdbId);
+        const imdb_id = movieDetail?.imdb_id;
         
-        if (!tmdbData.imdb_id) throw new Error("No IMDb ID found for this title.");
+        if (!imdb_id) throw new Error("No IMDb ID found for this title.");
         
         // 2. Fetch Magnet from multiple YTS mirrors
         setStatus('Searching P2P network...');
@@ -82,7 +83,7 @@ export default function WebTorrentPlayer({ tmdbId }) {
         
         for (const mirror of mirrors) {
           try {
-            const res = await fetch(`https://${mirror}/api/v2/list_movies.json?query_term=${tmdbData.imdb_id}`);
+            const res = await fetch(`https://${mirror}/api/v2/list_movies.json?query_term=${imdb_id}`);
             if (res.ok) {
                const data = await res.json();
                if (data.status === 'ok') {
