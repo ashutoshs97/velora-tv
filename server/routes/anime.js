@@ -180,6 +180,11 @@ function getCachedStream(key) {
 }
 
 // ── Endpoint handlers ──────────────────────────────────────────────────────
+router.get('/schedule',     async (_, res) => {
+  try { res.json(await jikan('/schedules')); }
+  catch (e) { res.status(502).json({ error: 'Jikan error', detail: e.message }); }
+});
+
 router.get('/trending',     async (_, res) => {
   try { res.json(await jikan('/seasons/now?limit=24')); }
   catch (e) { res.status(502).json({ error: 'Jikan error', detail: e.message }); }

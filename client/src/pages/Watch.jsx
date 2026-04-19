@@ -9,6 +9,7 @@ import MultiSourceAggregator from '../components/MultiSourceAggregator';
 import TrailerModal from '../components/TrailerModal';
 import AmbientBackground from '../components/AmbientBackground';
 import CarouselRow from '../components/CarouselRow';
+import CommentsSection from '../components/CommentsSection';
 
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
 
@@ -286,7 +287,7 @@ export default function Watch() {
                     {
                       length: movie.seasons.find(
                         s => s.season_number === season
-                      )?.episode_count || 1  // ← Changed from 24 to 1 (safer default)
+                      )?.episode_count || 1
                     },
                     (_, i) => (
                       <option key={i + 1} value={i + 1}>Episode {i + 1}</option>
@@ -466,8 +467,8 @@ export default function Watch() {
       {/* Similar & Recommended */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
         {similar.length > 0 && (
-          <div className="mt-10">
-            <CarouselRow title="More Like This" movies={similar} usePoster />
+          <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <CarouselRow title="Similar Movies" movies={similar} usePoster />
           </div>
         )}
         {recommended.length > 0 && (
@@ -475,6 +476,10 @@ export default function Watch() {
             <CarouselRow title="Recommended For You" badge="Curated" movies={recommended} />
           </div>
         )}
+
+        <div className="animate-fade-up mb-20" style={{ animationDelay: '0.2s' }}>
+          <CommentsSection mediaType={type} mediaId={id} />
+        </div>
       </div>
       </div>
     </motion.div>

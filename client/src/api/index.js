@@ -13,6 +13,7 @@ export const fetchTopRated = () => api.get('/movies/top-rated');
 export const fetchTopRatedTV = () => api.get('/movies/top-rated-tv');
 export const fetchNewReleases = () => api.get('/movies/new-releases');
 export const fetchOnAirTV = () => api.get('/movies/on-air-tv');
+export const fetchSurprise = () => api.get('/movies/surprise');
 
 export const fetchByGenre = (genreId) => api.get(`/movies/genre/${genreId}`);
 export const fetchByMood = (mood) => api.get(`/movies/mood/${mood}`);
@@ -24,6 +25,7 @@ export const fetchTVDetail = (id) => api.get(`/movies/tv/${id}`);
 export const fetchPerson = (id) => api.get(`/movies/person/${id}`);
 
 // ── Anime (Jikan) ──────────────────────────────────────────────────────────
+export const fetchAnimeSchedule  = () => api.get('/anime/schedule');
 export const fetchAnimeTrending  = () => api.get('/anime/trending');
 export const fetchAnimeTop       = () => api.get('/anime/top');
 export const fetchAnimePopular   = () => api.get('/anime/popular');
@@ -42,5 +44,9 @@ export const fetchHistory = () => api.get('/history');
 export const addToHistory = (movie) => api.post('/history', movie);
 export const deleteHistoryItem = (id) => api.delete(`/history/${id}`);
 export const clearHistory = () => api.delete('/history');
+
+// ── Comments ───────────────────────────────────────────────────────────────
+export const fetchComments = (mediaType, mediaId) => api.get(`/comments/${mediaType}/${mediaId}`);
+export const postComment = (mediaType, mediaId, content) => api.post('/comments', { mediaType, mediaId, content });
 
 export default api;

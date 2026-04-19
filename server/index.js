@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import moviesRouter from './routes/movies.js';
 import historyRouter from './routes/history.js';
 import animeRouter from './routes/anime.js';
+import commentsRouter from './routes/comments.js';
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ app.use(express.json());
 app.use('/api/movies', moviesRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/anime', animeRouter);
+app.use('/api/comments', commentsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

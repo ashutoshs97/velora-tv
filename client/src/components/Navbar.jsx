@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, X, Menu, Home, ArrowLeft } from 'lucide-react';
+import { fetchSurprise } from '../api';
+import { Search, X, Menu, Home, ArrowLeft, Dices, Calendar as CalIcon, Loader2 } from 'lucide-react';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -16,6 +17,7 @@ const NAV_LINKS = [
   { to: '/movies', label: 'Movies' },
   { to: '/shows', label: 'Shows' },
   { to: '/anime', label: 'Anime' },
+  { to: '/calendar', label: 'Calendar' },
 ];
 
 const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
@@ -27,6 +29,24 @@ export default function Navbar() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const [hintVisible, setHintVisible] = useState(true);
+  const [surprising, setSurprising] = useState(false);
+
+  const handleSurprise = async () => {
+    if (surprising) return;
+    setSurprising(true);
+    try {
+      const res = await fetchSurprise();
+      const item = res.data;
+      if (item && item.id) {
+        navigate(`/watch/${item.id}?type=${item.media_type}`);
+        setMenuOpen(false);
+      }
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setSurprising(false);
+    }
+  };
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -223,9 +243,25 @@ export default function Navbar() {
               className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
               aria-label="Search"
             >
-              <Search size={22} strokeWidth={2.5} />
+              <Search size={18} className="translate-y-[1px]" />
             </Link>
           </div>
+
+          <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
+
+          <button
+            onClick={handleSurprise}
+            disabled={surprising}
+            title="Surprise Me!"
+            className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/40 hover:to-pink-500/40 border border-purple-500/30 rounded-full text-white font-bold transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+          >
+            {surprising ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Dices size={18} />
+            )}
+            <span>Surprise</span>
+          </button>
         </div>
       </nav>
         </div>
@@ -270,25 +306,35 @@ export default function Navbar() {
         {menuOpen && (
           <div className="glass-card mb-3 overflow-hidden">
             <form onSubmit={handleSearch} className="p-4 border-b border-white/5 bg-black/20">
-              <div className="relative flex items-stretch bg-black/40 border border-white/10 rounded-xl overflow-hidden focus-within:border-prime-blue/60 focus-within:shadow-[0_0_15px_rgba(10,132,255,0.15)] transition-all ease-out duration-300">
-                <div className="pl-4 flex items-center justify-center">
-                  <Search size={16} className="text-white/40" />
-                </div>
+              <div className="flex gap-2">
                 <input
                   type="text"
+                  placeholder="Search movies & shows..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/40 focus:outline-none focus:border-prime-blue focus:bg-white/10 transition-colors"
                   value={query}
                   onChange={handleQueryChange}
-                  placeholder="Search movies, shows…"
                   maxLength={MAX_QUERY_LENGTH}
-                  className="w-full bg-transparent text-white text-[15px] placeholder:text-white/30 pl-3 pr-3 py-3.5 outline-none"
                 />
                 <button
                   type="submit"
-                  className="flex-shrink-0 bg-gradient-to-br from-[#0ea5e9] to-[#2563eb] text-white px-5 text-sm font-bold transition-opacity hover:opacity-90"
+                  className="bg-prime-blue text-white px-5 rounded-xl font-bold flex items-center justify-center hover:bg-blue-600 transition-colors"
                 >
                   Go
                 </button>
               </div>
+
+              <button
+                onClick={handleSurprise}
+                disabled={surprising}
+                className="w-full flex items-center justify-center gap-2 mt-4 px-4 py-3.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl text-white font-bold transition-all hover:from-purple-500/40 hover:to-pink-500/40 disabled:opacity-50"
+              >
+                {surprising ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Dices size={20} />
+                )}
+                Surprise Me (Random)
+              </button>
             </form>
             <div className="p-2">
               {NAV_LINKS.map(({ to, label }) => (

@@ -113,6 +113,32 @@ const tmdbFetch = async (path, params = {}, useCache = true) => {
 // ⚠️  SPECIFIC routes MUST come before /:id wildcard routes
 // ─────────────────────────────────────────────────────────────────────────
 
+// GET /api/movies/surprise
+router.get('/surprise', async (req, res) => {
+  try {
+    const isTv = Math.random() > 0.5;
+    const path = isTv ? '/discover/tv' : '/discover/movie';
+    // TMDB allows up to page 500
+    const randomPage = Math.floor(Math.random() * 500) + 1;
+    const data = await tmdbFetch(path, {
+      sort_by: 'popularity.desc',
+      page: randomPage,
+      'vote_count.gte': 100, // ensure it's not a completely unknown/junk entry
+    });
+    
+    if (!data || !data.results || data.results.length === 0) {
+      return res.status(404).json({ error: 'No response from TMDB' });
+    }
+    
+    const randomResult = data.results[Math.floor(Math.random() * data.results.length)];
+    // add type for client router
+    randomResult.media_type = isTv ? 'tv' : 'movie';
+    res.json(randomResult);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/movies/trending
 router.get('/trending', async (req, res) => {
   try {

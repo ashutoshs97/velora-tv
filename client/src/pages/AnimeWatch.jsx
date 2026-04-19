@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { AlertCircle, Calendar, ChevronLeft, ChevronRight, Globe, Star, Tv } from 'lucide-react';
 import { fetchAnimeDetail, fetchAnimeEpisodes, fetchAnimeStream } from '../api';
+import ErrorDisplay from '../components/ErrorDisplay';
+import CommentsSection from '../components/CommentsSection';
 
 const EPISODES_PER_PAGE = 50;
 const IFRAME_LOAD_TIMEOUT_MS = 15000;
@@ -489,6 +491,11 @@ export default function AnimeWatch() {
           ) : (
             <div className="text-prime-subtext text-sm">Episode list unavailable.</div>
           )}
+        </div>
+
+        {/* Comments Section */}
+        <div className="animate-fade-up mb-20" style={{ animationDelay: '0.2s' }}>
+          <CommentsSection mediaType="anime" mediaId={id} />
         </div>
       </div>
     </motion.div>
