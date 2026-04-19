@@ -52,7 +52,7 @@ export default function SettingsModal({ onClose }) {
             </div>
             <button
               onClick={() => setReducedMotion(!reducedMotion)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${
                 reducedMotion ? 'bg-[var(--color-primary)]' : 'bg-white/20'
               }`}
               style={{ backgroundColor: reducedMotion ? 'var(--color-primary, #2563eb)' : '' }}
