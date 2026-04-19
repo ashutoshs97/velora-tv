@@ -1,39 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Link } from 'lucide-react';
 
 export default function WebTorrentPlayer({ tmdbId }) {
   const videoRef = useRef(null);
+  const clientRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('Initializing P2P engine...');
   const [progress, setProgress] = useState(0);
+  const [manualMagnet, setManualMagnet] = useState('');
+  const [awaitingMagnet, setAwaitingMagnet] = useState(false);
 
-  useEffect(() => {
-    let client = null;
-
-    const startTorrent = async () => {
-      try {
-        // 1. Fetch IMDb ID from TMDB
-        setStatus('Fetching metadata...');
-        const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=422da8e52a5caed78cbbd377b2520149`);
-        const tmdbData = await tmdbRes.json();
+  const startStreamWithMagnet = async (magnetURI) => {
+    try {
+        setLoading(true);
+        setError(null);
+        setAwaitingMagnet(false);
         
-        if (!tmdbData.imdb_id) throw new Error("No IMDb ID found for this title.");
-        
-        // 2. Fetch Magnet from YTS
-        setStatus('Searching P2P network...');
-        const ytsRes = await fetch(`https://yts.mx/api/v2/list_movies.json?query_term=${tmdbData.imdb_id}`);
-        const ytsData = await ytsRes.json();
-        
-        const movie = ytsData?.data?.movies?.[0];
-        if (!movie) throw new Error("No P2P sources found for this title.");
-        
-        // Prefer 1080p stream
-        const torrent = movie.torrents.find(t => t.quality === '1080p') || movie.torrents[0];
-        const hash = torrent.hash;
-        const magnetURI = `magnet:?xt=urn:btih:${hash}&tr=udp://open.demonii.com:1337/announce&tr=udp://tracker.openbittorrent.com:80&tr=udp://tracker.coppersurfer.tk:6969&tr=udp://glotorrents.pw:6969/announce`;
-
-        // 3. Load WebTorrent Script if not present
+        // Load WebTorrent Script if not present
         if (!window.WebTorrent) {
           setStatus('Loading WebTorrent client...');
           await new Promise((resolve, reject) => {
@@ -45,54 +29,132 @@ export default function WebTorrentPlayer({ tmdbId }) {
           });
         }
 
-        // 4. Start Streaming
         setStatus('Connecting to peers...');
-        client = new window.WebTorrent();
+        if (!clientRef.current) {
+           clientRef.current = new window.WebTorrent();
+        }
         
-        client.add(magnetURI, (torrentData) => {
-          // Torrents can contain multiple files. Find the mp4 file.
-          const file = torrentData.files.find(f => f.name.endsWith('.mp4'));
+        clientRef.current.add(magnetURI, (torrentData) => {
+          // Find any playable video format
+          const file = torrentData.files.find(f => f.name.endsWith('.mp4') || f.name.endsWith('.mkv') || f.name.endsWith('.webm'));
           
           if (!file) {
             setError("No playable video file found in this swarm.");
+            setAwaitingMagnet(true);
             return;
           }
 
-          // Render it directly into the video element
           file.renderTo(videoRef.current, { autoplay: true });
           setLoading(false);
 
-          // Track progress
           torrentData.on('download', () => {
              setProgress(Math.round(torrentData.progress * 100));
           });
         });
         
-        client.on('error', (err) => {
+        clientRef.current.on('error', (err) => {
            setError('P2P Error: ' + err.message);
+           setAwaitingMagnet(true);
         });
+
+    } catch (err) {
+      setError(err.message);
+      setAwaitingMagnet(true);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+
+    const fetchAutoMagnet = async () => {
+      try {
+        // 1. Fetch IMDb ID from TMDB
+        setStatus('Fetching metadata...');
+        const tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=422da8e52a5caed78cbbd377b2520149`);
+        const tmdbData = await tmdbRes.json();
+        
+        if (!tmdbData.imdb_id) throw new Error("No IMDb ID found for this title.");
+        
+        // 2. Fetch Magnet from multiple YTS mirrors
+        setStatus('Searching P2P network...');
+        const mirrors = ['yts.mx', 'yts.rs', 'yts.do', 'yts.pm', 'yts.lt'];
+        let ytsData = null;
+        
+        for (const mirror of mirrors) {
+          try {
+            const res = await fetch(`https://${mirror}/api/v2/list_movies.json?query_term=${tmdbData.imdb_id}`);
+            if (res.ok) {
+               const data = await res.json();
+               if (data.status === 'ok') {
+                 ytsData = data;
+                 break;
+               }
+            }
+          } catch(e) {
+            continue; // if fetch fails (cors, dns block), try next mirror
+          }
+        }
+        
+        if (!ytsData) throw new Error("Auto-search blocked by ISP or Network.");
+
+        const movie = ytsData?.data?.movies?.[0];
+        if (!movie) throw new Error("Movie not found on the auto-P2P network.");
+        
+        // Prefer 1080p stream
+        const torrent = movie.torrents.find(t => t.quality === '1080p') || movie.torrents[0];
+        const hash = torrent.hash;
+        const magnetURI = `magnet:?xt=urn:btih:${hash}&tr=udp://open.demonii.com:1337/announce&tr=udp://tracker.openbittorrent.com:80&tr=udp://tracker.coppersurfer.tk:6969&tr=udp://glotorrents.pw:6969/announce`;
+
+        // 3. Hand off to stream
+        startStreamWithMagnet(magnetURI);
 
       } catch (err) {
         setError(err.message);
+        setAwaitingMagnet(true);
         setLoading(false);
       }
     };
 
-    startTorrent();
+    fetchAutoMagnet();
 
     return () => {
-      if (client) {
-        client.destroy();
+      if (clientRef.current) {
+        clientRef.current.destroy();
       }
     };
   }, [tmdbId]);
 
-  if (error) {
+  if (awaitingMagnet) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-3 text-white p-4">
-        <AlertCircle className="text-red-500 w-12 h-12 mb-2" />
-        <h3 className="text-lg font-bold">P2P Stream Failed</h3>
-        <p className="text-sm text-white/50 text-center max-w-sm">{error}</p>
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-30 gap-4 p-6 text-center">
+        <AlertCircle className="text-amber-500 w-12 h-12 mb-2" />
+        <h3 className="text-lg font-bold text-white">Manual P2P Required</h3>
+        <p className="text-sm text-white/60 max-w-sm mb-2">
+          {error}
+          <br/><br/>
+          You can stream any movie directly by pasting a Magnet URI. Wait for peers to connect after submitting.
+        </p>
+        
+        <div className="flex bg-white/5 border border-white/10 rounded-lg overflow-hidden w-full max-w-md focus-within:border-[var(--color-primary)] transition-colors shadow-2xl mt-2">
+           <div className="px-3 flex items-center justify-center bg-white/5 border-r border-white/5">
+              <Link size={16} className="text-white/50" />
+           </div>
+           <input 
+             type="text" 
+             placeholder="magnet:?xt=urn:btih:..."
+             value={manualMagnet}
+             onChange={e => setManualMagnet(e.target.value)}
+             className="flex-1 bg-transparent px-3 py-3 text-sm text-white outline-none"
+           />
+           <button 
+             onClick={() => startStreamWithMagnet(manualMagnet)}
+             disabled={!manualMagnet.startsWith('magnet:')}
+             className="px-5 font-bold text-xs bg-prime-blue text-white hover:opacity-80 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider"
+             style={{ backgroundColor: 'var(--color-primary, #2563eb)' }}
+           >
+             Stream
+           </button>
+        </div>
       </div>
     );
   }
