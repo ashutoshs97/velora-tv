@@ -216,7 +216,7 @@ export default function Anime() {
       {/* hero — shows loading state or actual hero */}
       {(hasHero || trending.loading) && (
         <section
-          className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] overflow-hidden -mt-20 pt-4"
+          className="relative w-full h-[75vh] sm:h-[85vh] lg:h-[620px] overflow-hidden -mt-20 pt-4"
           style={{ clipPath: 'inset(0)' }}
           onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
           onTouchEnd={(e) => {
@@ -288,7 +288,7 @@ export default function Anime() {
 
           {/* hero content — only when data is ready */}
           {hasHero && (
-            <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-36 pb-32 sm:pb-36 lg:pb-32">
+            <div className="relative z-10 w-full h-full flex flex-col justify-end pt-36 pb-32 sm:pb-36 lg:pb-32">
               <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
                 <div className="w-full md:w-3/4 lg:w-[58%]">
                   <div className="flex items-center gap-3 mb-3">
