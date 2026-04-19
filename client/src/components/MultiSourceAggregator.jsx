@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Server, RefreshCw, AlertCircle, Zap } from 'lucide-react';
+import { Server, RefreshCw, AlertCircle, Volume2, VolumeX } from 'lucide-react';
 import { getEnabledMovieProviders } from '../config/movieProviders';
 
 function isIOS() {
@@ -40,6 +40,9 @@ export default function MultiSourceAggregator({
   const [retryCount, setRetryCount] = useState(0);
   const [allFailed, setAllFailed] = useState(false);
   const loadTimerRef = useRef(null);
+  const audioCtxRef  = useRef(null);
+  const gainNodeRef  = useRef(null);
+  const [volume, setVolume] = useState(100);
   const ios = isIOS();
   const providerCount = providers.length;
   const safeType = getSafeType(type);
@@ -156,6 +159,50 @@ export default function MultiSourceAggregator({
     setUsingMirror(false);
     setRetryCount(0);
     setAllFailed(false);
+  }, []);
+
+  // ── Volume Boost via Web Audio API ─────────────────────────────────────────
+  useEffect(() => {
+    const gain = volume / 100;
+    // Try to connect to any audio/video elements on the page
+    const tryBoost = () => {
+      try {
+        const mediaEls = Array.from(document.querySelectorAll('audio, video'));
+        if (mediaEls.length === 0) return;
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (!gainNodeRef.current) {
+          gainNodeRef.current = audioCtxRef.current.createGain();
+          gainNodeRef.current.connect(audioCtxRef.current.destination);
+        }
+        gainNodeRef.current.gain.value = gain;
+        mediaEls.forEach(el => {
+          if (!el._boosted) {
+            try {
+              const src = audioCtxRef.current.createMediaElementSource(el);
+              src.connect(gainNodeRef.current);
+              el._boosted = true;
+            } catch (_) { /* cross-origin or already connected */ }
+          }
+        });
+      } catch (_) { /* AudioContext not supported */ }
+    };
+    tryBoost();
+    // Re-scan after iframe loads
+    const t = setTimeout(tryBoost, 2000);
+    return () => clearTimeout(t);
+  }, [volume]);
+
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+        gainNodeRef.current = null;
+      }
+    };
   }, []);
 
   const tryNext = useCallback(() => {
@@ -379,6 +426,41 @@ export default function MultiSourceAggregator({
         >
           Try next →
         </button>
+      </div>
+
+      {/* ── Volume Boost ── */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
+        <button
+          onClick={() => setVolume(v => v === 0 ? 100 : 0)}
+          title={volume === 0 ? 'Unmute' : 'Mute'}
+          className="text-white/60 hover:text-white transition-colors flex-shrink-0"
+        >
+          {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+        </button>
+        <span className="text-xs text-white/50 font-semibold flex-shrink-0 w-16">Volume Boost</span>
+        <input
+          type="range"
+          min={0}
+          max={300}
+          step={10}
+          value={volume}
+          onChange={e => setVolume(Number(e.target.value))}
+          className="flex-1 h-1 accent-prime-blue cursor-pointer"
+          style={{ accentColor: '#2563eb' }}
+        />
+        <span className={`text-xs font-bold w-10 text-right flex-shrink-0 ${
+          volume > 100 ? 'text-prime-blue' : 'text-white/60'
+        }`}>
+          {volume}%
+        </span>
+        {volume !== 100 && (
+          <button
+            onClick={() => setVolume(100)}
+            className="text-[10px] text-white/40 hover:text-white/80 transition-colors flex-shrink-0 underline"
+          >
+            Reset
+          </button>
+        )}
       </div>
     </div>
   );
