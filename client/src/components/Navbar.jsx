@@ -364,8 +364,6 @@ export default function Navbar() {
             </div>
           </div>
         )}
-          </div>
-        )}
       </nav>
 
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
