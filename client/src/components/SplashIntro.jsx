@@ -1,95 +1,107 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+
+const EASE_CURTAIN = [0.76, 0, 0.24, 1]; // cinematic cubic-bezier
 
 export default function SplashIntro({ onDone }) {
-  const [phase, setPhase]     = useState('enter');  // enter → flash → exit
-  const [exiting, setExiting] = useState(false);
+  const [phase, setPhase] = useState('hold'); // hold → wipe → done
 
   useEffect(() => {
-    // After logo slams in (~0.6s), trigger the flash
-    const flashTimer = setTimeout(() => setPhase('flash'), 650);
-
-    // Hold, then begin exit
-    const exitTimer = setTimeout(() => {
-      setExiting(true);
-      setTimeout(() => {
-        sessionStorage.setItem('velora_intro_shown', '1');
-        onDone();
-      }, 600);
-    }, 1800);
+    // Logo fades in immediately, bars start wiping after a hold
+    const wipeTimer = setTimeout(() => setPhase('wipe'), 1300);
+    const doneTimer = setTimeout(() => {
+      sessionStorage.setItem('velora_intro_shown', '1');
+      onDone();
+    }, 2700);
 
     return () => {
-      clearTimeout(flashTimer);
-      clearTimeout(exitTimer);
+      clearTimeout(wipeTimer);
+      clearTimeout(doneTimer);
     };
   }, [onDone]);
 
-  return (
-    <AnimatePresence>
-      {!exiting && (
-        <motion.div
-          key="splash"
-          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-black"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: 'easeInOut' }}
-        >
-          {/* Flash overlay */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: 'white' }}
-            initial={{ opacity: 0 }}
-            animate={phase === 'flash' ? { opacity: [0, 0.18, 0] } : { opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          />
+  const isWiping = phase === 'wipe';
 
-          {/* Logo slam */}
-          <motion.div
-            className="flex items-center gap-4 select-none"
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{
-              type: 'spring',
-              stiffness: 380,
-              damping: 22,
-              mass: 0.8,
-              delay: 0.05,
+  return (
+    <>
+      {/* ── Top curtain bar ─────────────────────────────────────────────── */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-[9999]"
+        style={{ height: '50vh', background: '#000', originY: 0 }}
+        animate={isWiping ? { y: '-100%' } : { y: '0%' }}
+        transition={{ duration: 1.0, ease: EASE_CURTAIN }}
+      >
+        {/* Subtle scan line at bottom edge of top bar */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.6), transparent)' }}
+        />
+      </motion.div>
+
+      {/* ── Bottom curtain bar ──────────────────────────────────────────── */}
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 z-[9999]"
+        style={{ height: '50vh', background: '#000', originY: 1 }}
+        animate={isWiping ? { y: '100%' } : { y: '0%' }}
+        transition={{ duration: 1.0, ease: EASE_CURTAIN }}
+      >
+        {/* Subtle scan line at top edge of bottom bar */}
+        <div
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.6), transparent)' }}
+        />
+      </motion.div>
+
+      {/* ── Logo — centered between the two bars ────────────────────────── */}
+      <motion.div
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-none select-none gap-3"
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={
+          isWiping
+            ? { opacity: 0, scale: 1.08, transition: { duration: 0.45, ease: 'easeIn' } }
+            : { opacity: 1, scale: 1,    transition: { duration: 0.5,  ease: 'easeOut', delay: 0.15 } }
+        }
+      >
+        {/* Velora icon + wordmark */}
+        <div className="flex items-center gap-4">
+          <img
+            src="/velora-icon.svg"
+            alt="Velora"
+            style={{
+              width: 52,
+              height: 52,
+              filter: 'drop-shadow(0 0 18px rgba(37,99,235,0.8))',
+            }}
+          />
+          <span
+            style={{
+              fontFamily: 'Satoshi, system-ui, sans-serif',
+              fontWeight: 900,
+              fontSize: 'clamp(2.8rem, 8vw, 5rem)',
+              letterSpacing: '0.14em',
+              color: '#ffffff',
+              textShadow: '0 0 40px rgba(37,99,235,0.7), 0 0 80px rgba(37,99,235,0.3)',
+              lineHeight: 1,
             }}
           >
-            <motion.img
-              src="/velora-icon.svg"
-              alt="Velora"
-              style={{ width: 56, height: 56 }}
-              animate={phase === 'flash' ? { filter: ['drop-shadow(0 0 0px rgba(37,99,235,0))', 'drop-shadow(0 0 30px rgba(37,99,235,1))', 'drop-shadow(0 0 12px rgba(37,99,235,0.5))'] } : {}}
-              transition={{ duration: 0.4 }}
-            />
-            <motion.span
-              style={{
-                fontFamily: 'Satoshi, system-ui, sans-serif',
-                fontWeight: 900,
-                fontSize: 'clamp(3rem, 9vw, 5.5rem)',
-                letterSpacing: '0.12em',
-                color: '#ffffff',
-                lineHeight: 1,
-              }}
-              animate={
-                phase === 'flash'
-                  ? {
-                      textShadow: [
-                        '0 0 0px rgba(37,99,235,0)',
-                        '0 0 50px rgba(37,99,235,1), 0 0 120px rgba(37,99,235,0.4)',
-                        '0 0 10px rgba(37,99,235,0.3)',
-                      ],
-                    }
-                  : {}
-              }
-              transition={{ duration: 0.4 }}
-            >
-              VELORA
-            </motion.span>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            VELORA
+          </span>
+        </div>
+
+        {/* Film-style tag line */}
+        <p
+          style={{
+            fontFamily: 'Satoshi, system-ui, sans-serif',
+            fontSize: '0.65rem',
+            letterSpacing: '0.4em',
+            color: 'rgba(255,255,255,0.35)',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}
+        >
+          Stream Anything
+        </p>
+      </motion.div>
+    </>
   );
 }
