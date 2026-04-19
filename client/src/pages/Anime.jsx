@@ -84,10 +84,10 @@ const stableFetchAnimeAcclaimed = fetchAnimeAcclaimed;
 const stableFetchAnimeShort = fetchAnimeShort;
 
 export default function Anime() {
-  // load trending first — hero depends on it
+  // load trending first for hero
   const trending = useAnimeCollection(stableFetchAnimeTrending);
 
-  // load rest only after trending is done to avoid Jikan rate limits
+  // load rest after trending to respect Jikan rate limits
   const [secondaryReady, setSecondaryReady] = useState(false);
   useEffect(() => {
     if (!trending.loading) setSecondaryReady(true);
@@ -107,6 +107,8 @@ export default function Anime() {
   const [genreItems, setGenreItems] = useState([]);
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [heroDirection, setHeroDirection] = useState(1);
+  const [heroImgError, setHeroImgError] = useState(false);
   const autoAdvanceRef = useRef(null);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
@@ -126,17 +128,21 @@ export default function Anime() {
   const heroAnime = heroItems[heroIndex] || null;
   const hasHero = heroItems.length > 0 && heroAnime;
 
-  const goToSlide = useCallback((index) => { setHeroIndex(index); }, []);
+  const goToSlide = useCallback((idx, dir = 1) => {
+    setHeroDirection(dir);
+    setHeroIndex(idx);
+    setHeroImgError(false);
+  }, []);
 
   const nextSlide = useCallback(() => {
     if (!heroItems.length) return;
-    setHeroIndex((prev) => (prev + 1) % heroItems.length);
-  }, [heroItems.length]);
+    goToSlide((heroIndex + 1) % heroItems.length, 1);
+  }, [heroIndex, heroItems.length, goToSlide]);
 
   const prevSlide = useCallback(() => {
     if (!heroItems.length) return;
-    setHeroIndex((prev) => (prev - 1 + heroItems.length) % heroItems.length);
-  }, [heroItems.length]);
+    goToSlide((heroIndex - 1 + heroItems.length) % heroItems.length, -1);
+  }, [heroIndex, heroItems.length, goToSlide]);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,7 +173,7 @@ export default function Anime() {
     let cancelled = false;
     trailerTimerRef.current = setTimeout(() => {
       if (!cancelled) setTrailerActive(true);
-    }, 5000);
+    }, 6000);
     return () => {
       cancelled = true;
       clearTimeout(trailerTimerRef.current);
@@ -213,10 +219,10 @@ export default function Anime() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* hero — shows loading state or actual hero */}
+      {/* hero — same structure as Home.jsx */}
       {(hasHero || trending.loading) && (
         <section
-          className="relative w-full h-[75vh] sm:h-[85vh] lg:h-[620px] overflow-hidden -mt-20 pt-4"
+          className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20 pt-4"
           style={{ clipPath: 'inset(0)' }}
           onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
           onTouchEnd={(e) => {
@@ -227,29 +233,40 @@ export default function Anime() {
             }
           }}
         >
-          {/* loading placeholder */}
+          {/* loading state */}
           {trending.loading && !hasHero && (
             <div className="absolute inset-0 bg-[#0d1117]" />
           )}
 
-          {/* backdrop */}
+          {/* backdrop — matches Home.jsx AnimatePresence pattern */}
           {hasHero && (
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} custom={heroDirection}>
               {(!trailerActive || trailerEnded) && (
                 <motion.div
                   key={`bg-${heroIndex}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  custom={heroDirection}
+                  variants={{
+                    enter: (d) => ({ x: d > 0 ? '6%' : '-6%', opacity: 0 }),
+                    center: { x: 0, opacity: 1 },
+                    exit: { opacity: 0 },
+                  }}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
                   transition={{ duration: 1.2, ease: [0.32, 0.72, 0, 1] }}
                   className="absolute inset-0 w-full h-full"
                 >
-                  <img
-                    src={heroAnime.animeImage}
-                    alt={heroAnime.title}
-                    className="w-full h-full object-cover opacity-75 scale-[1.06]"
-                    style={{ objectPosition: '50% 20%' }}
-                  />
+                  {!heroImgError ? (
+                    <img
+                      src={heroAnime.animeImage}
+                      alt={heroAnime.title}
+                      className="w-full h-full object-cover opacity-80 scale-[1.05] sm:scale-[1.08]"
+                      style={{ objectPosition: '50% 15%' }}
+                      onError={() => setHeroImgError(true)}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-prime-surface to-black" />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -282,74 +299,89 @@ export default function Anime() {
           )}
 
           {/* gradients */}
-          <div className="absolute inset-0 bg-hero-gradient-x opacity-95 z-[1] pointer-events-none" />
+          <div className="absolute inset-0 bg-hero-gradient-x opacity-90 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          {/* hero content — only when data is ready */}
+          {/* content — matches Home.jsx layout */}
           {hasHero && (
-            <div className="relative z-10 w-full h-full flex flex-col justify-end pt-36 pb-32 sm:pb-36 lg:pb-32">
+            <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-28 pb-32 sm:pb-28">
               <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
-                <div className="w-full md:w-3/4 lg:w-[58%]">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-[13px] font-bold text-red-300 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 uppercase tracking-[0.18em]">
-                      🎌 Seasonal Spotlight
-                    </span>
-                  </div>
-
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.12] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
-                    {heroAnime.title}
-                  </h1>
-
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
-                    <span className="text-[13px] font-bold text-red-300 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
-                      Trending This Season
-                    </span>
-                    {heroAnime.release_date && (
-                      <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                        {heroAnime.release_date.substring(0, 4)}
-                      </span>
-                    )}
-                    {heroAnime.vote_average > 0 && (
-                      <div className="flex items-center gap-1 text-[15px] font-bold text-yellow-400 border-l border-white/20 pl-4">
-                        <Star size={16} fill="currentColor" />
-                        <span>{Number(heroAnime.vote_average).toFixed(1)}</span>
-                      </div>
-                    )}
-                    {heroAnime.episodes && (
-                      <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                        {heroAnime.episodes} Episodes
-                      </span>
-                    )}
-                  </div>
-
-                  <AnimatePresence>
-                    {(!trailerActive || trailerEnded) && heroAnime.overview && (
-                      <motion.p
-                        key="synopsis"
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.8, ease: 'easeInOut' }}
-                        className="text-sm sm:text-base text-white/85 line-clamp-4 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
-                      >
-                        {heroAnime.overview}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-
-                  <Link
-                    to={`/anime/${heroAnime.id}`}
-                    className="btn-primary text-sm sm:text-base hover:scale-105 inline-flex items-center"
+                <AnimatePresence initial={false} custom={heroDirection} mode="wait">
+                  <motion.div
+                    key={`content-${heroIndex}`}
+                    custom={heroDirection}
+                    variants={{
+                      enter: (d) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
+                      center: { x: 0, opacity: 1 },
+                      exit: (d) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
+                    }}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+                    className="w-full md:w-3/4 lg:w-[58%]"
                   >
-                    <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
-                  </Link>
-                </div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-[13px] font-bold text-red-300 bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 uppercase tracking-[0.18em]">
+                        🎌 Seasonal Spotlight
+                      </span>
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.15] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
+                      {heroAnime.title}
+                    </h1>
+
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
+                      <span className="text-[13px] font-bold text-red-300 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
+                        Trending This Season
+                      </span>
+                      {heroAnime.release_date && (
+                        <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                          {heroAnime.release_date.substring(0, 4)}
+                        </span>
+                      )}
+                      {heroAnime.vote_average > 0 && (
+                        <div className="flex items-center gap-1 text-[15px] font-bold text-yellow-400 border-l border-white/20 pl-4">
+                          <Star size={16} fill="currentColor" />
+                          <span>{Number(heroAnime.vote_average).toFixed(1)}</span>
+                        </div>
+                      )}
+                      {heroAnime.episodes && (
+                        <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                          {heroAnime.episodes} Episodes
+                        </span>
+                      )}
+                    </div>
+
+                    <AnimatePresence>
+                      {(!trailerActive || trailerEnded) && heroAnime.overview && (
+                        <motion.p
+                          key="synopsis"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.8, ease: 'easeInOut' }}
+                          className="text-sm sm:text-base text-white/85 line-clamp-3 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
+                        >
+                          {heroAnime.overview}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+
+                    <Link
+                      to={`/anime/${heroAnime.id}`}
+                      className="btn-primary text-sm sm:text-base hover:scale-105 inline-flex items-center"
+                    >
+                      <Play size={20} fill="#000" className="mr-1.5" /> Watch Now
+                    </Link>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           )}
 
-          {/* dots and controls — only when hero is ready */}
+          {/* dots and controls — same as Home.jsx */}
           {hasHero && (
             <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
               <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
@@ -358,7 +390,7 @@ export default function Anime() {
                   {heroItems.map((_, i) => (
                     <button
                       key={i}
-                      onClick={() => goToSlide(i)}
+                      onClick={() => goToSlide(i, i > heroIndex ? 1 : -1)}
                       aria-label={`Slide ${i + 1}`}
                       className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
                       style={{ width: i === heroIndex ? 36 : 14 }}
@@ -397,16 +429,16 @@ export default function Anime() {
                   <button
                     onClick={prevSlide}
                     aria-label="Previous"
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                    className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
                   >
-                    <ChevronLeft size={22} />
+                    <ChevronLeft size={18} />
                   </button>
                   <button
                     onClick={nextSlide}
                     aria-label="Next"
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                    className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
                   >
-                    <ChevronRight size={22} />
+                    <ChevronRight size={18} />
                   </button>
                 </div>
               </div>
@@ -416,7 +448,7 @@ export default function Anime() {
       )}
 
       {/* content */}
-      <div className={`max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 ${(hasHero || trending.loading) ? '-mt-8 pt-4' : 'pt-28'}`}>
+      <div className={`max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 ${(hasHero || trending.loading) ? '-mt-16' : 'pt-28'}`}>
 
         {/* page title */}
         <div>
