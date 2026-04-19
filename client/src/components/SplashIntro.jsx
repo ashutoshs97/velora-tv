@@ -75,7 +75,7 @@ export default function SplashIntro({ onDone }) {
           />
           <span
             style={{
-              fontFamily: '"Cinzel", Georgia, serif',
+              fontFamily: '"Clash Display", system-ui, sans-serif',
               fontWeight: 900,
               fontSize: 'clamp(3.8rem, 11vw, 7rem)',
               letterSpacing: '0.28em',
@@ -97,7 +97,7 @@ export default function SplashIntro({ onDone }) {
           <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, transparent, rgba(140,170,255,0.4))' }} />
           <p
             style={{
-              fontFamily: '"Cinzel", Georgia, serif',
+              fontFamily: '"Clash Display", system-ui, sans-serif',
               fontSize: '0.55rem',
               letterSpacing: '0.6em',
               color: 'rgba(160,190,255,0.45)',
