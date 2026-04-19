@@ -62,16 +62,13 @@ const TMDB_POSTER = 'https://image.tmdb.org/t/p/w300';
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='440' viewBox='0 0 780 440'%3E%3Crect width='780' height='440' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='22' fill='%234b5563'%3ENo Image%3C/text%3E%3C/svg%3E`;
 const POSTER_PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%234b5563'%3EVelora%3C/text%3E%3C/svg%3E`;
 
-// ── Bento layout — each card gets a column-span class for the masonry feel ────
-const SPANS = ['col-span-2', 'col-span-1', 'col-span-1', 'col-span-1', 'col-span-1', 'col-span-2', 'col-span-1', 'col-span-1', 'col-span-2', 'col-span-1', 'col-span-1', 'col-span-1'];
-
 // ── Genre Card ────────────────────────────────────────────────────────────────
-function GenreCard({ genre, cover, span, isSelected, onClick }) {
+function GenreCard({ genre, cover, isSelected, onClick }) {
   return (
     <motion.button
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-2xl ${span} cursor-pointer`}
-      style={{ aspectRatio: span === 'col-span-2' ? '2.4 / 1' : '1.6 / 1' }}
+      className={`group relative overflow-hidden rounded-2xl cursor-pointer`}
+      style={{ aspectRatio: '16 / 9' }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileTap={{ scale: 0.97 }}
@@ -306,14 +303,13 @@ export default function Genres() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="grid grid-cols-4 sm:grid-cols-6 gap-3 sm:gap-4 mb-14"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-14"
           >
             {currentTypeData.genres.map((genre, idx) => (
               <GenreCard
                 key={genre.id}
                 genre={genre}
                 cover={genreCovers[genre.id]}
-                span={SPANS[idx % SPANS.length]}
                 isSelected={selectedGenre?.id === genre.id}
                 onClick={() => handleGenreClick(genre)}
               />
@@ -323,8 +319,8 @@ export default function Genres() {
             {coversLoading && currentTypeData.genres.map((g, idx) => (
               <div
                 key={`sk-${g.id}`}
-                className={`${SPANS[idx % SPANS.length]} rounded-2xl bg-white/5 animate-pulse`}
-                style={{ aspectRatio: SPANS[idx % SPANS.length] === 'col-span-2' ? '2.4 / 1' : '1.6 / 1' }}
+                className="rounded-2xl bg-white/5 animate-pulse"
+                style={{ aspectRatio: '16 / 9' }}
               />
             ))}
           </motion.div>
