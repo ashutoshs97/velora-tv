@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
-import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2 } from 'lucide-react';
+import { Search, X, Menu, Home, ArrowLeft, Dices, Settings, Calendar as CalIcon, Loader2 } from 'lucide-react';
 import SettingsModal from './SettingsModal';
-import { AnimatePresence } from 'framer-motion';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -18,6 +17,7 @@ const NAV_LINKS = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/movies', label: 'Movies' },
   { to: '/shows', label: 'Shows' },
+  { to: '/anime', label: 'Anime' },
   { to: '/genres', label: 'Genres' },
 ];
 
@@ -237,7 +237,7 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Search & Settings */}
+          {/* Search */}
           <div className="flex items-center">
             <Link
               to="/search"
@@ -247,13 +247,6 @@ export default function Navbar() {
             >
               <Search size={18} className="translate-y-[1px]" />
             </Link>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
-              aria-label="Settings"
-            >
-              <Settings size={18} className="translate-y-[1px]" />
-            </button>
           </div>
 
           <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
@@ -270,6 +263,15 @@ export default function Navbar() {
               <Dices size={18} />
             )}
             <span>Surprise</span>
+          </button>
+
+          {/* Settings Gear */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            title="App Settings"
+            className="p-2.5 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+          >
+            <Settings size={18} />
           </button>
         </div>
       </nav>
@@ -362,13 +364,11 @@ export default function Navbar() {
             </div>
           </div>
         )}
-      </nav>
-      {/* Settings Modal */}
-      <AnimatePresence>
-        {settingsOpen && (
-          <SettingsModal onClose={() => setSettingsOpen(false)} />
+          </div>
         )}
-      </AnimatePresence>
+      </nav>
+
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }
