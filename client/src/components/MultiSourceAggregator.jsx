@@ -398,11 +398,7 @@ export default function MultiSourceAggregator({
                 }`}>
                   {server.label}
                 </span>
-                <span className={`text-[9px] truncate mt-0.5 ${
-                  isActive ? 'text-blue-200/70' : 'text-prime-subtext/50'
-                }`}>
-                  {server.sublabel}
-                </span>
+
               </button>
             );
           })}
