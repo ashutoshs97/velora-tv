@@ -1,40 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html { scroll-behavior: smooth; }
-
-  :root {
-    --theme-primary: #00B4FF;
-    --theme-secondary: #00D4FF;
-    --theme-primary-rgb: 0, 180, 255;
-  }
-  :root[data-theme='red'] {
-    --theme-primary: #E50914;
-    --theme-secondary: #FF4B53;
-    --theme-primary-rgb: 229, 9, 20;
-  }
-  :root[data-theme='purple'] {
-    --theme-primary: #a855f7;
-    --theme-secondary: #c084fc;
-    --theme-primary-rgb: 168, 85, 247;
-  }
-  :root[data-theme='green'] {
-    --theme-primary: #10b981;
-    --theme-secondary: #34d399;
-    --theme-primary-rgb: 16, 185, 129;
-  }
-
-  body {
-    background-color: #080E14;
-    color: #FFFFFF;
-    font-family: 'Satoshi', system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
+    background-image: linear-gradient(to top, rgba(8,14,20,0.98), rgba(8,14,20,0.75) 60%, transparent);
+    padding: 0.75rem;
+    padding-top: 2.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
   }
 
   .movie-card-container:hover .movie-card-meta {

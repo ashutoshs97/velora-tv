@@ -1,20 +1,19 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const SettingsContext = createContext();
 
 export function SettingsProvider({ children }) {
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    return localStorage.getItem('velora_reduced_motion') === 'true';
+  });
+  
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('velora_theme') || 'blue';
   });
-  
-  const [reducedMotion, setReducedMotion] = useState(() => {
-    const saved = localStorage.getItem('velora_reduced_motion');
-    if (saved !== null) return saved === 'true';
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-    return false;
-  });
+
+  useEffect(() => {
+    localStorage.setItem('velora_reduced_motion', reducedMotion);
+  }, [reducedMotion]);
 
   useEffect(() => {
     localStorage.setItem('velora_theme', theme);
@@ -22,11 +21,11 @@ export function SettingsProvider({ children }) {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('velora_reduced_motion', String(reducedMotion));
-  }, [reducedMotion]);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
 
   return (
-    <SettingsContext.Provider value={{ theme, setTheme, reducedMotion, setReducedMotion }}>
+    <SettingsContext.Provider value={{ reducedMotion, setReducedMotion, theme, setTheme }}>
       {children}
     </SettingsContext.Provider>
   );
