@@ -684,7 +684,7 @@ export default function Home() {
             </h2>
           </div>
           <div
-            className="flex gap-2 mb-6 overflow-x-auto pb-2"
+            className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {GENRES.map((g) => (
@@ -716,7 +716,7 @@ export default function Home() {
             </h2>
           </div>
           <div
-            className="flex gap-2 mb-6 overflow-x-auto pb-2"
+            className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {MOODS.map((m) => (
