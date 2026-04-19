@@ -232,14 +232,14 @@ export default function CarouselRow({
       {/* Scroll container */}
       <div className="relative group/row">
 
-        {/* Left arrow — visible on hover (desktop) and always on touch ── */}
+        {/* Left arrow */}
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
             aria-label="Scroll left"
-            className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
+            className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md items-center justify-center hover:bg-white/20 transition-all duration-300 opacity-0 group-hover/row:opacity-100 shadow-lg text-white"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={22} className="mr-0.5" />
           </button>
         )}
 
@@ -268,9 +268,9 @@ export default function CarouselRow({
           <button
             onClick={() => scroll('right')}
             aria-label="Scroll right"
-            className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-[#080E14]/90 backdrop-blur border border-white/12 text-white items-center justify-center shadow-xl hover:bg-prime-blue hover:border-prime-blue transition-all duration-200 opacity-0 group-hover/row:opacity-100"
+            className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md items-center justify-center hover:bg-white/20 transition-all duration-300 opacity-0 group-hover/row:opacity-100 shadow-lg text-white"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={22} className="ml-0.5" />
           </button>
         )}
 

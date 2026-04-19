@@ -412,16 +412,16 @@ export default function Anime() {
                   <button
                     onClick={prevSlide}
                     aria-label="Previous anime"
-                    className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-lg text-white"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={22} className="mr-0.5" />
                   </button>
                   <button
                     onClick={nextSlide}
                     aria-label="Next anime"
-                    className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-lg text-white"
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={22} className="ml-0.5" />
                   </button>
                 </div>
               </div>
