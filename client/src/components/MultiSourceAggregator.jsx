@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Server, RefreshCw, AlertCircle, Volume2, VolumeX } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Server, RefreshCw, AlertCircle, Volume2, VolumeX, Zap } from 'lucide-react';
 import { getEnabledMovieProviders } from '../config/movieProviders';
+import { triggerHaptic } from '../utils/haptics';
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -153,6 +155,7 @@ export default function MultiSourceAggregator({
   }, [activeServer]);
 
   const reload = useCallback(() => {
+    triggerHaptic('medium');
     setMirrorIndex(0);
     setIframeKey(k => k + 1);
     setLoading(true);
@@ -206,6 +209,7 @@ export default function MultiSourceAggregator({
   }, []);
 
   const tryNext = useCallback(() => {
+    triggerHaptic('light');
     const next = (activeServer + 1) % providerCount;
     setActiveServer(next);
     setMirrorIndex(0);
@@ -283,8 +287,12 @@ export default function MultiSourceAggregator({
         )}
 
         {src && (
-          <iframe
+          <motion.iframe
             key={iframeKey}
+            initial={{ rotateX: -90, opacity: 0 }}
+            animate={{ rotateX: 0, opacity: 1 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+            style={{ transformOrigin: 'center', perspective: 1000, border: 'none' }}
             src={src}
             title={`${currentServer.name} — ${currentServer.label}`}
             allowFullScreen
@@ -297,7 +305,6 @@ export default function MultiSourceAggregator({
               setLoading(true);
             }}
             className="w-full h-full"
-            style={{ border: 'none' }}
           />
         )}
       </div>
@@ -364,7 +371,10 @@ export default function MultiSourceAggregator({
             return (
               <button
                 key={server.id}
-                onClick={() => switchServer(idx)}
+                onClick={() => {
+                  triggerHaptic('medium');
+                  switchServer(idx);
+                }}
                 className={`relative flex flex-col px-3.5 py-3 rounded-xl text-left transition-all duration-300 ease-out border ${
                   isActive
                     ? 'bg-gradient-to-br from-[#0ea5e9] to-[#2563eb] border-[#38bdf8] shadow-[0_0_20px_rgba(56,189,248,0.4)] text-white scale-[1.02] z-10'
@@ -441,8 +451,10 @@ export default function MultiSourceAggregator({
           step={10}
           value={volume}
           onChange={e => setVolume(Number(e.target.value))}
-          className="flex-1 h-1 accent-prime-blue cursor-pointer"
-          style={{ accentColor: '#2563eb' }}
+          className="flex-1 h-1.5 rounded-full outline-none accent-prime-blue cursor-pointer transition-all"
+          style={{
+            background: `linear-gradient(to right, #2563eb ${(volume / 300) * 100}%, rgba(255,255,255,0.1) ${(volume / 300) * 100}%)`
+          }}
         />
         <span className={`text-xs font-bold w-10 text-right flex-shrink-0 ${
           volume > 100 ? 'text-prime-blue' : 'text-white/60'

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchByGenre, fetchAnimeGenre } from '../api';
 import Navbar from '../components/Navbar';
+import AnimatedImage from '../components/AnimatedImage';
+import { triggerHaptic } from '../utils/haptics';
 import { Loader2, Play, ArrowRight } from 'lucide-react';
 
 // ── Genre definitions ─────────────────────────────────────────────────────────
@@ -63,10 +65,16 @@ const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 const POSTER_PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%234b5563'%3EVelora%3C/text%3E%3C/svg%3E`;
 
 // ── Genre Card ────────────────────────────────────────────────────────────────
-function GenreCard({ genre, cover, isSelected, onClick }) {
+function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd }) {
   return (
     <motion.button
-      onClick={onClick}
+      layout
+      onClick={() => {
+        triggerHaptic('light');
+        onClick();
+      }}
+      onHoverStart={onHoverStart}
+      onHoverEnd={onHoverEnd}
       className={`group relative overflow-hidden rounded-2xl cursor-pointer`}
       style={{ aspectRatio: '16 / 9' }}
       initial={{ opacity: 0, y: 20 }}
@@ -74,12 +82,11 @@ function GenreCard({ genre, cover, isSelected, onClick }) {
       whileTap={{ scale: 0.97 }}
     >
       {/* Backdrop image */}
-      <img
+      <AnimatedImage
         src={cover || PLACEHOLDER}
+        fallbackSrc={PLACEHOLDER}
         alt={genre.label}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-        loading="lazy"
-        onError={e => { e.target.src = PLACEHOLDER; }}
       />
 
       {/* Base dark overlay */}
@@ -151,12 +158,11 @@ function ContentGrid({ items, type }) {
             transition={{ delay: Math.min(idx * 0.02, 0.5) }}
           >
             <Link to={link} className="group block relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5 border border-white/5 hover:border-prime-blue/40 hover:shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all duration-300">
-              <img
+              <AnimatedImage
                 src={img || POSTER_PLACEHOLDER}
+                fallbackSrc={POSTER_PLACEHOLDER}
                 alt={title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-                onError={e => { e.target.src = POSTER_PLACEHOLDER; }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2">
                 <div className="flex justify-end">
@@ -183,6 +189,7 @@ export default function Genres() {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [genreCovers, setGenreCovers]     = useState({});
   const [coversLoading, setCoversLoading] = useState(false);
+  const [hoveredGenreId, setHoveredGenreId] = useState(null);
   const [items, setItems]                 = useState([]);
   const [contentLoading, setContentLoading] = useState(false);
   const contentRef = useRef(null);
@@ -263,10 +270,32 @@ export default function Genres() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060A0F] text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#060A0F] text-white relative overflow-x-hidden">
+      
+      {/* ── Fixed Blur Backdrop Crossfade ── */}
+      <AnimatePresence>
+        {hoveredGenreId && genreCovers[hoveredGenreId] && (
+          <motion.div
+            key={hoveredGenreId}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.35 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.7, ease: 'easeInOut' }}
+            className="fixed inset-0 z-0 pointer-events-none"
+          >
+            <div className="absolute inset-0 bg-[#060A0F]/40 z-10" />
+            <img 
+              src={genreCovers[hoveredGenreId]} 
+              alt="" 
+              className="w-full h-full object-cover blur-[80px] scale-110 mix-blend-screen" 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Navbar />
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-28 pb-24 mt-6">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-28 pb-24 mt-6 relative z-10">
 
         {/* ── Page Header ── */}
         <div className="mb-10">
@@ -298,6 +327,7 @@ export default function Genres() {
         {/* ── Genre bento card grid ── */}
         <AnimatePresence mode="wait">
           <motion.div
+            layout
             key={activeType}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -312,6 +342,8 @@ export default function Genres() {
                 cover={genreCovers[genre.id]}
                 isSelected={selectedGenre?.id === genre.id}
                 onClick={() => handleGenreClick(genre)}
+                onHoverStart={() => setHoveredGenreId(genre.id)}
+                onHoverEnd={() => setHoveredGenreId(null)}
               />
             ))}
 
