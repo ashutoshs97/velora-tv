@@ -46,15 +46,23 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
   }
 
-  /* Premium thin scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(var(--color-primary-rgb), 0.2);
-    border-radius: 99px;
+  /* Premium thin scrollbar ONLY for desktop (mouse) users */
+  @media (hover: hover) and (pointer: fine) {
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(var(--color-primary-rgb), 0.2);
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(var(--color-primary-rgb), 0.5);
+    }
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--color-primary-rgb), 0.5);
+
+  /* Completely kill native scrollbars on Touch/TV devices (Android Wrapper) */
+  @media (hover: none), (pointer: coarse) {
+    ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+    * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
   }
 
   /* Selection color */
