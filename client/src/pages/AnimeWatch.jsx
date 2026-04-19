@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { AlertCircle, Calendar, ChevronLeft, ChevronRight, Globe, Star, Tv } from 'lucide-react';
 import { fetchAnimeDetail, fetchAnimeEpisodes, fetchAnimeStream } from '../api';
-import ErrorDisplay from '../components/ErrorDisplay';
 import CommentsSection from '../components/CommentsSection';
 
 const EPISODES_PER_PAGE = 50;
