@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">VeloraTV</string>
-    <string name="title_activity_main">VeloraTV</string>
-    <string name="package_name">com.velora.tv</string>
-    <string name="custom_url_scheme">com.velora.tv</string>
-</resources>
