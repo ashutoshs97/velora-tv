@@ -302,7 +302,7 @@ export default function MultiSourceAggregator({
             <AlertCircle size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-blue-400/80 text-xs leading-relaxed">
               <strong className="text-blue-400">iOS Tip:</strong> Use{' '}
-              <strong className="text-blue-300">Server 1 (VidLink)</strong> for
+              <strong className="text-blue-300">Server 3 (VidLink)</strong> for
               the best playback on Apple devices. Watch in landscape for the
               best experience.
             </p>
