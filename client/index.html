@@ -28,6 +28,16 @@
     <meta name="twitter:title"       content="Velora - Stream Anything" />
     <meta name="twitter:description" content="Velora is a cinematic streaming platform to watch movies and TV series instantly. Enjoy multi-server playback, mood-based collections, and a premium Prime-style experience." />
     <meta name="twitter:image"       content="https://veloratv.in/og-image.png" />
+
+    <!-- Android WebView Scrollbar Nuke -->
+    <script>
+      if (navigator.userAgent.includes('Android') || navigator.userAgent.includes('Mobile')) {
+        const style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = '::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; } * { scrollbar-width: none !important; -ms-overflow-style: none !important; }';
+        document.head.appendChild(style);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
