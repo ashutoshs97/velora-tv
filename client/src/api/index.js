@@ -23,6 +23,7 @@ export const searchMovies = (q, page = 1) => api.get('/movies/search', { params:
 export const fetchMovieDetail = (id) => api.get(`/movies/${id}`);
 export const fetchTVDetail = (id) => api.get(`/movies/tv/${id}`);
 export const fetchPerson = (id) => api.get(`/movies/person/${id}`);
+export const fetchYtsMagnet = (imdbId) => api.get(`/movies/yts/${imdbId}`);
 
 // ── Anime (Jikan) ──────────────────────────────────────────────────────────
 export const fetchAnimeSchedule  = () => api.get('/anime/schedule');

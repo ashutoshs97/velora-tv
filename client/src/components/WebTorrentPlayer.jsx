@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, AlertCircle, Link } from 'lucide-react';
-import { fetchMovieDetail } from '../api';
+import { fetchMovieDetail, fetchYtsMagnet } from '../api';
 
 export default function WebTorrentPlayer({ tmdbId }) {
   const videoRef = useRef(null);
@@ -76,27 +76,13 @@ export default function WebTorrentPlayer({ tmdbId }) {
         
         if (!imdb_id) throw new Error("No IMDb ID found for this title.");
         
-        // 2. Fetch Magnet from multiple YTS mirrors
+        // 2. Fetch Magnet securely bypassing ISP blocks
         setStatus('Searching P2P network...');
-        const mirrors = ['yts.mx', 'yts.rs', 'yts.do', 'yts.pm', 'yts.lt'];
-        let ytsData = null;
         
-        for (const mirror of mirrors) {
-          try {
-            const res = await fetch(`https://${mirror}/api/v2/list_movies.json?query_term=${imdb_id}`);
-            if (res.ok) {
-               const data = await res.json();
-               if (data.status === 'ok') {
-                 ytsData = data;
-                 break;
-               }
-            }
-          } catch(e) {
-            continue; // if fetch fails (cors, dns block), try next mirror
-          }
-        }
+        const ytsRes = await fetchYtsMagnet(imdb_id);
+        const ytsData = ytsRes.data;
         
-        if (!ytsData) throw new Error("Auto-search blocked by ISP or Network.");
+        if (!ytsData || ytsData.status !== 'ok') throw new Error("Auto-search blocked by ISP or Network.");
 
         const movie = ytsData?.data?.movies?.[0];
         if (!movie) throw new Error("Movie not found on the auto-P2P network.");

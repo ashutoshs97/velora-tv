@@ -346,6 +346,18 @@ router.get('/person/:id', async (req, res) => {
   }
 });
 
+// GET /api/movies/yts/:imdb_id — securely fetch YTS data bypassing ISP blocks
+router.get('/yts/:imdb_id', async (req, res) => {
+  const { imdb_id } = req.params;
+  try {
+    const response = await fetch(`https://yts.mx/api/v2/list_movies.json?query_term=${imdb_id}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────
 // ⚠️  Wildcard routes — MUST be last
 // ─────────────────────────────────────────────────────────────────────────
