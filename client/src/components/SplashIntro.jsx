@@ -43,6 +43,7 @@ export default function SplashIntro({ onDone }) {
       {/* ── Logo — centered between the two bars ────────────────────────── */}
       <motion.div
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-none select-none gap-3"
+        style={{ willChange: 'transform, opacity' }}
         initial={{ opacity: 0, scale: 0.85 }}
         animate={
           isWiping
@@ -50,16 +51,26 @@ export default function SplashIntro({ onDone }) {
             : { opacity: 1, scale: 1,    transition: { duration: 0.5,  ease: 'easeOut', delay: 0.15 } }
         }
       >
+        {/* Hardware-accelerated radial glow (replaces expensive CSS drop-shadows) */}
+        <div 
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ zIndex: -1 }}
+        >
+          <div 
+            style={{
+              width: '80vw',
+              height: '40vh',
+              background: 'radial-gradient(ellipse at center, rgba(37,99,235,0.25) 0%, rgba(37,99,235,0.05) 40%, transparent 65%)',
+            }}
+          />
+        </div>
+
         {/* Velora icon + wordmark */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-5 relative">
           <img
             src="/velora-icon.svg"
             alt="Velora"
-            style={{
-              width: 60,
-              height: 60,
-              filter: 'drop-shadow(0 0 28px rgba(37,99,235,1)) drop-shadow(0 0 70px rgba(37,99,235,0.45))',
-            }}
+            style={{ width: 60, height: 60 }}
           />
           <span
             style={{
@@ -72,8 +83,7 @@ export default function SplashIntro({ onDone }) {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              filter: 'drop-shadow(0 2px 24px rgba(37,99,235,0.55)) drop-shadow(0 0 80px rgba(37,99,235,0.2))',
-              WebkitTextStroke: '0px transparent', // reset
+              // filter removed for performance: drop-shadow during transform/opacity causes stutter on low-end
             }}
           >
             VELORA
