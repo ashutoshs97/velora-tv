@@ -68,46 +68,47 @@ export default function SplashIntro({ onDone }) {
             src="/velora-icon.svg"
             alt="Velora"
             style={{
-              width: 56,
-              height: 56,
-              filter: 'drop-shadow(0 0 24px rgba(37,99,235,0.95)) drop-shadow(0 0 60px rgba(37,99,235,0.4))',
+              width: 60,
+              height: 60,
+              filter: 'drop-shadow(0 0 28px rgba(37,99,235,1)) drop-shadow(0 0 70px rgba(37,99,235,0.45))',
             }}
           />
           <span
             style={{
-              fontFamily: 'Satoshi, system-ui, sans-serif',
+              fontFamily: '"Cinzel", Georgia, serif',
               fontWeight: 900,
-              fontSize: 'clamp(3.5rem, 10vw, 6.5rem)',
-              letterSpacing: '0.22em',
+              fontSize: 'clamp(3.8rem, 11vw, 7rem)',
+              letterSpacing: '0.28em',
               lineHeight: 1,
-              background: 'linear-gradient(160deg, #ffffff 0%, #c8d8ff 35%, #ffffff 55%, #ddeeff 100%)',
+              background: 'linear-gradient(170deg, #f0f4ff 0%, #c2d5ff 25%, #ffffff 50%, #a8c4f8 75%, #e8efff 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              filter: 'drop-shadow(0 0 30px rgba(37,99,235,0.5))',
+              filter: 'drop-shadow(0 2px 24px rgba(37,99,235,0.55)) drop-shadow(0 0 80px rgba(37,99,235,0.2))',
+              WebkitTextStroke: '0px transparent', // reset
             }}
           >
             VELORA
           </span>
         </div>
 
-        {/* Film-style tag line */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-          <div style={{ width: 32, height: 1, background: 'rgba(255,255,255,0.2)' }} />
+        {/* Film-style tagline */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px' }}>
+          <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, transparent, rgba(140,170,255,0.4))' }} />
           <p
             style={{
-              fontFamily: 'Satoshi, system-ui, sans-serif',
-              fontSize: '0.6rem',
-              letterSpacing: '0.5em',
-              color: 'rgba(180,200,255,0.5)',
+              fontFamily: '"Cinzel", Georgia, serif',
+              fontSize: '0.55rem',
+              letterSpacing: '0.6em',
+              color: 'rgba(160,190,255,0.45)',
               textTransform: 'uppercase',
-              fontWeight: 600,
+              fontWeight: 900,
               margin: 0,
             }}
           >
             Stream Anything
           </p>
-          <div style={{ width: 32, height: 1, background: 'rgba(255,255,255,0.2)' }} />
+          <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, rgba(140,170,255,0.4), transparent)' }} />
         </div>
       </motion.div>
     </>
