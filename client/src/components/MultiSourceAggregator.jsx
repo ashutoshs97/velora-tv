@@ -287,17 +287,6 @@ export default function MultiSourceAggregator({
                   <RefreshCw size={12} className="inline mr-1.5" />
                   Start Over
                 </button>
-                {type === 'movie' && (
-                  <button
-                    onClick={() => {
-                      triggerHaptic('heavy');
-                      setUseP2P(true);
-                    }}
-                    className="px-5 py-2.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/40 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2"
-                  >
-                    🚀 Try P2P Torrent (Beta)
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -384,14 +373,15 @@ export default function MultiSourceAggregator({
 
 
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
           {providers.map((server, idx) => {
-            const isActive = activeServer === idx;
+            const isActive = activeServer === idx && !useP2P;
             return (
               <button
                 key={server.id}
                 onClick={() => {
                   triggerHaptic('medium');
+                  setUseP2P(false);
                   switchServer(idx);
                 }}
                 className={`relative flex flex-col px-3.5 py-3 rounded-xl text-left transition-all duration-300 ease-out border ${
@@ -431,6 +421,41 @@ export default function MultiSourceAggregator({
               </button>
             );
           })}
+
+          {type === 'movie' && (
+              <button
+                onClick={() => {
+                  triggerHaptic('medium');
+                  setUseP2P(true);
+                  setActiveServer(-1);
+                }}
+                className={`relative flex flex-col px-3.5 py-3 rounded-xl text-left transition-all duration-300 ease-out border ${
+                  useP2P
+                    ? 'bg-gradient-to-br from-[#10b981] to-[#047857] border-[#34d399] shadow-[0_0_20px_rgba(52,211,153,0.4)] text-white scale-[1.02] z-10'
+                    : 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400/90 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                    useP2P ? 'bg-white animate-pulse' : 'bg-emerald-500/50'
+                  }`} />
+                  <span className={`text-xs font-bold truncate ${useP2P ? 'text-white' : 'text-emerald-400'}`}>
+                    WebTorrent
+                  </span>
+                  <div className="ml-auto flex items-center gap-1">
+                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${
+                      useP2P ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                    }`}>
+                      P2P
+                    </span>
+                  </div>
+                </div>
+                <span className={`text-[11px] font-semibold truncate ${useP2P ? 'text-white' : 'text-emerald-400/70'}`}>
+                  Direct Stream
+                </span>
+              </button>
+          )}
+
         </div>
       </div>
 
