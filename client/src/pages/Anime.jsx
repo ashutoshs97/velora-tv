@@ -33,7 +33,6 @@ const GENRES = [
   { id: 30, label: 'Sports' },
 ];
 
-// normalize Jikan API response to our common movie shape
 function norm(anime) {
   const img =
     anime.images?.webp?.large_image_url ||
@@ -59,11 +58,9 @@ function toAnimeItems(response) {
   return (response?.data?.data || []).map(norm);
 }
 
-// stable hook — apiCall must be a stable reference (useCallback)
 function useAnimeCollection(apiCall) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -73,11 +70,9 @@ function useAnimeCollection(apiCall) {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [apiCall]);
-
   return { items, loading };
 }
 
-// stable api call refs so useAnimeCollection doesn't re-fire
 const stableFetchAnimeTrending = fetchAnimeTrending;
 const stableFetchAnimeTop = fetchAnimeTop;
 const stableFetchAnimePopular = fetchAnimePopular;
@@ -104,8 +99,6 @@ export default function Anime() {
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [heroIndex, setHeroIndex] = useState(0);
   const autoAdvanceRef = useRef(null);
-
-  // touch tracking as refs — no re-render needed
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -121,12 +114,10 @@ export default function Anime() {
     () => trending.items.filter((item) => item.animeImage).slice(0, 6),
     [trending.items]
   );
-
   const heroAnime = heroItems[heroIndex] || null;
+  const hasHero = heroItems.length > 0 && heroAnime;
 
-  const goToSlide = useCallback((index) => {
-    setHeroIndex(index);
-  }, []);
+  const goToSlide = useCallback((index) => { setHeroIndex(index); }, []);
 
   const nextSlide = useCallback(() => {
     if (!heroItems.length) return;
@@ -138,7 +129,6 @@ export default function Anime() {
     setHeroIndex((prev) => (prev - 1 + heroItems.length) % heroItems.length);
   }, [heroItems.length]);
 
-  // genre fetch
   useEffect(() => {
     let cancelled = false;
     setLoadingGenre(true);
@@ -149,16 +139,14 @@ export default function Anime() {
     return () => { cancelled = true; };
   }, [selectedGenre]);
 
-  // auto-advance — pauses when trailer is active
   useEffect(() => {
     clearInterval(autoAdvanceRef.current);
     if (!heroItems.length) return;
-    if (trailerActive && !trailerEnded) return; // pause during trailer
+    if (trailerActive && !trailerEnded) return;
     autoAdvanceRef.current = setInterval(nextSlide, 10000);
     return () => clearInterval(autoAdvanceRef.current);
   }, [heroItems.length, nextSlide, trailerActive, trailerEnded]);
 
-  // trailer fetch on hero change
   useEffect(() => {
     setTrailerKey(null);
     setTrailerActive(false);
@@ -184,7 +172,6 @@ export default function Anime() {
     replayTimerRef.current = setTimeout(() => setTrailerActive(true), 100);
   }, []);
 
-  // cleanup all timers on unmount
   useEffect(() => {
     return () => {
       clearTimeout(replayTimerRef.current);
@@ -217,8 +204,8 @@ export default function Anime() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* hero */}
-      {heroAnime && (
+      {/* hero — only when data is ready */}
+      {hasHero && (
         <section
           className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] overflow-hidden -mt-20 pt-4"
           style={{ clipPath: 'inset(0)' }}
@@ -231,7 +218,6 @@ export default function Anime() {
             }
           }}
         >
-          {/* backdrop */}
           <AnimatePresence initial={false}>
             {(!trailerActive || trailerEnded) && (
               <motion.div
@@ -252,7 +238,6 @@ export default function Anime() {
             )}
           </AnimatePresence>
 
-          {/* trailer */}
           <AnimatePresence>
             {trailerActive && trailerKey && !trailerEnded && (
               <motion.div
@@ -276,12 +261,10 @@ export default function Anime() {
             )}
           </AnimatePresence>
 
-          {/* gradients */}
           <div className="absolute inset-0 bg-hero-gradient-x opacity-95 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          {/* content */}
           <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[620px] flex flex-col justify-end pt-28 pb-32 sm:pb-36 lg:pb-32">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
               <div className="w-full md:w-3/4 lg:w-[58%]">
@@ -343,7 +326,6 @@ export default function Anime() {
             </div>
           </div>
 
-          {/* dots + controls */}
           <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
               <div className="hidden sm:block w-10" />
@@ -352,7 +334,7 @@ export default function Anime() {
                   <button
                     key={i}
                     onClick={() => goToSlide(i)}
-                    aria-label={`Go to anime slide ${i + 1}`}
+                    aria-label={`Slide ${i + 1}`}
                     className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
                     style={{ width: i === heroIndex ? 36 : 14 }}
                   >
@@ -369,7 +351,6 @@ export default function Anime() {
                   </button>
                 ))}
               </div>
-
               <div className="hidden sm:flex ml-auto items-center gap-2 pointer-events-auto">
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
@@ -408,21 +389,21 @@ export default function Anime() {
         </section>
       )}
 
-      {/* page header */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-8 pb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-4xl">🎌</span>
-          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
-            Anime
-          </h1>
-        </div>
-        <p className="text-prime-subtext font-medium mt-1 text-lg max-w-2xl">
-          Explore thousands of anime from timeless classics to the latest seasonal releases.
-        </p>
-      </div>
+      {/* content — title inside the main container so it aligns with everything */}
+      <div className={`max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 ${hasHero ? '-mt-8 pt-4' : 'pt-28'}`}>
 
-      {/* content rows */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 mt-4">
+        {/* page title */}
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-4xl">🎌</span>
+            <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
+              Anime
+            </h1>
+          </div>
+          <p className="text-prime-subtext font-medium mt-1 text-lg max-w-2xl">
+            Explore thousands of anime from timeless classics to the latest seasonal releases.
+          </p>
+        </div>
 
         <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <PrimeCarouselRow
@@ -471,7 +452,6 @@ export default function Anime() {
           />
         </div>
 
-        {/* genre filter */}
         <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">

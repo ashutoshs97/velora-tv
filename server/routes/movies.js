@@ -44,7 +44,6 @@ function getSafeType(raw) {
   return raw === 'tv' ? 'tv' : 'movie';
 }
 
-// digits only, no minus sign, no letters
 function isValidId(id) {
   if (!/^\d+$/.test(String(id))) return false;
   return Number(id) > 0;
@@ -52,6 +51,11 @@ function isValidId(id) {
 
 function clientError(err) {
   return IS_PROD ? 'Something went wrong — please try again' : err.message;
+}
+
+// tells Cloudflare and browsers how long to cache
+function setCacheHeaders(res, seconds = 300) {
+  res.set('Cache-Control', `public, max-age=${seconds}, s-maxage=${seconds}`);
 }
 
 function filterUnreleased(results) {
@@ -96,7 +100,7 @@ async function tmdbFetch(path, params = {}, useCache = true) {
   }
 }
 
-// specific routes must come before wildcard routes
+// specific routes first
 
 router.get('/surprise', async (req, res) => {
   try {
@@ -121,7 +125,9 @@ router.get('/surprise', async (req, res) => {
 
 router.get('/trending', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/trending/movie/week'));
+    const data = await tmdbFetch('/trending/movie/week');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -129,7 +135,9 @@ router.get('/trending', async (req, res) => {
 
 router.get('/trending-tv', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/trending/tv/week'));
+    const data = await tmdbFetch('/trending/tv/week');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -137,7 +145,9 @@ router.get('/trending-tv', async (req, res) => {
 
 router.get('/popular', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/movie/popular'));
+    const data = await tmdbFetch('/movie/popular');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -145,7 +155,9 @@ router.get('/popular', async (req, res) => {
 
 router.get('/popular-tv', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/tv/popular'));
+    const data = await tmdbFetch('/tv/popular');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -153,7 +165,9 @@ router.get('/popular-tv', async (req, res) => {
 
 router.get('/top-rated', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/movie/top_rated'));
+    const data = await tmdbFetch('/movie/top_rated');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -161,7 +175,9 @@ router.get('/top-rated', async (req, res) => {
 
 router.get('/top-rated-tv', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/tv/top_rated'));
+    const data = await tmdbFetch('/tv/top_rated');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -169,13 +185,14 @@ router.get('/top-rated-tv', async (req, res) => {
 
 router.get('/on-air-tv', async (req, res) => {
   try {
-    res.json(await tmdbFetch('/tv/on_the_air'));
+    const data = await tmdbFetch('/tv/on_the_air');
+    setCacheHeaders(res, 600);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
 });
 
-// new releases uses TV shows — movies are CAM quality when newly released
 router.get('/new-releases', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -187,6 +204,7 @@ router.get('/new-releases', async (req, res) => {
       sort_by: 'popularity.desc',
       'vote_count.gte': 20,
     });
+    setCacheHeaders(res, 600);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
@@ -208,7 +226,6 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// supports ?type=tv for TV genre browsing
 router.get('/genre/:id', async (req, res) => {
   const { id } = req.params;
   const { type = 'movie' } = req.query;
@@ -222,6 +239,7 @@ router.get('/genre/:id', async (req, res) => {
       sort_by: 'popularity.desc',
       'vote_count.gte': 50,
     });
+    setCacheHeaders(res, 1800);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
@@ -239,7 +257,6 @@ const MOOD_GENRES = {
   documentary: [99],
 };
 
-// pipe | means OR between genres
 router.get('/mood/:mood', async (req, res) => {
   const { mood } = req.params;
   const genres = MOOD_GENRES[mood?.toLowerCase()];
@@ -256,6 +273,7 @@ router.get('/mood/:mood', async (req, res) => {
       'vote_count.gte': 100,
       'vote_average.gte': 6.0,
     });
+    setCacheHeaders(res, 1800);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
@@ -278,6 +296,7 @@ router.get('/tv/:id', async (req, res) => {
     const creditsData = credits.status === 'fulfilled'
       ? credits.value
       : { cast: [], crew: [] };
+    setCacheHeaders(res, 3600);
     res.json({ ...detail.value, credits: creditsData });
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
@@ -291,6 +310,7 @@ router.get('/person/:id', async (req, res) => {
   }
   try {
     const data = await tmdbFetch(`/person/${id}`, { append_to_response: 'combined_credits' });
+    setCacheHeaders(res, 3600);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
@@ -307,7 +327,9 @@ router.get('/:id/similar', async (req, res) => {
   }
   try {
     const path = type === 'tv' ? `/tv/${id}/similar` : `/movie/${id}/similar`;
-    res.json(await tmdbFetch(path));
+    const data = await tmdbFetch(path);
+    setCacheHeaders(res, 1800);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
@@ -321,13 +343,15 @@ router.get('/:id/recommendations', async (req, res) => {
   }
   try {
     const path = type === 'tv' ? `/tv/${id}/recommendations` : `/movie/${id}/recommendations`;
-    res.json(await tmdbFetch(path));
+    const data = await tmdbFetch(path);
+    setCacheHeaders(res, 1800);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }
 });
 
-// must be last — catches all /:id requests
+// must be last
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   if (!isValidId(id)) {
@@ -344,6 +368,7 @@ router.get('/:id', async (req, res) => {
     const creditsData = credits.status === 'fulfilled'
       ? credits.value
       : { cast: [], crew: [] };
+    setCacheHeaders(res, 3600);
     res.json({ ...detail.value, credits: creditsData });
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
