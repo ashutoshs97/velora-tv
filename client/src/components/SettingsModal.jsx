@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Moon, Zap, Paintbrush } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
@@ -11,6 +12,15 @@ const THEMES = [
 
 export default function SettingsModal({ onClose }) {
   const { reducedMotion, setReducedMotion, theme, setTheme } = useSettings();
+
+  // close on Escape key
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   return (
     <motion.div
@@ -27,35 +37,43 @@ export default function SettingsModal({ onClose }) {
         onClick={(e) => e.stopPropagation()}
         className="bg-[#0f172a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
       >
+        {/* header */}
         <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/5">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Zap size={20} className="text-[var(--color-primary, #2563eb)]" style={{ color: 'var(--color-primary, #2563eb)' }} />
+            <Zap size={20} style={{ color: 'var(--color-primary, #2563eb)' }} />
             App Settings
           </h2>
-          <button onClick={onClose} className="p-2 -mr-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Close settings"
+            className="p-2 -mr-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 space-y-8">
-          
-          {/* Reduced Motion Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
+
+          {/* reduced motion */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
               <h3 className="text-white font-semibold flex items-center gap-2 mb-1">
                 <Moon size={16} className="text-white/50" />
                 Reduced Motion
               </h3>
-              <p className="text-xs text-white/50 w-4/5 leading-relaxed">
-                Disables heavy animations across the site. Recommended for older devices to save battery and improve performance.
+              <p className="text-xs text-white/50 leading-relaxed">
+                Disables heavy animations. Recommended for older devices to save battery and improve performance.
               </p>
             </div>
             <button
               onClick={() => setReducedMotion(!reducedMotion)}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-                reducedMotion ? 'bg-[var(--color-primary)]' : 'bg-white/20'
-              }`}
-              style={{ backgroundColor: reducedMotion ? 'var(--color-primary, #2563eb)' : '' }}
+              aria-label={reducedMotion ? 'Disable reduced motion' : 'Enable reduced motion'}
+              className="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none"
+              style={{
+                backgroundColor: reducedMotion
+                  ? 'var(--color-primary, #2563eb)'
+                  : 'rgba(255,255,255,0.2)',
+              }}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -65,7 +83,7 @@ export default function SettingsModal({ onClose }) {
             </button>
           </div>
 
-          {/* Theme Selector */}
+          {/* theme selector */}
           <div>
             <h3 className="text-white font-semibold flex items-center gap-2 mb-3">
               <Paintbrush size={16} className="text-white/50" />
@@ -76,13 +94,17 @@ export default function SettingsModal({ onClose }) {
                 <button
                   key={t.id}
                   onClick={() => setTheme(t.id)}
+                  aria-label={`Select ${t.name} theme`}
                   className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                     theme === t.id
                       ? 'bg-white/10 border-white/30'
                       : 'bg-white/5 border-white/5 opacity-60 hover:opacity-100 hover:bg-white/10'
                   }`}
                 >
-                  <div className="w-4 h-4 rounded-full shadow-inner" style={{ backgroundColor: t.color }} />
+                  <div
+                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: t.color }}
+                  />
                   <span className="text-sm font-medium text-white">{t.name}</span>
                 </button>
               ))}
@@ -91,8 +113,11 @@ export default function SettingsModal({ onClose }) {
 
         </div>
 
+        {/* footer */}
         <div className="p-5 border-t border-white/5 bg-black/20 text-center">
-          <p className="text-[11px] text-white/30 uppercase tracking-widest font-semibold">Velora UI/UX Engine</p>
+          <p className="text-[11px] text-white/30 uppercase tracking-widest font-semibold">
+            Velora UI/UX Engine
+          </p>
         </div>
       </motion.div>
     </motion.div>

@@ -1,82 +1,66 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
-  Play, Plus, Share2, Award, CheckCircle2,
-  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check
-} from 'lucide-react';
-import {
-  fetchTrendingTV, fetchTopRatedTV, fetchPopularTV, fetchHistory,
-  fetchOnAirTV, fetchByGenre, fetchByMood, fetchSimilar, fetchTVDetail
+  fetchTrendingTV, fetchTopRatedTV, fetchOnAirTV,
+  fetchByGenre, fetchByMood, fetchSimilar
 } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
+import { getHistory } from '../utils/watchHistory';
 
 const GENRES = [
-  { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
-  { id: 18, label: 'Drama' }, { id: 27, label: 'Horror' },
-  { id: 878, label: 'Sci-Fi' }, { id: 10749, label: 'Romance' },
-  { id: 16, label: 'Animation' }, { id: 99, label: 'Documentary' },
-  { id: 53, label: 'Thriller' }, { id: 10751, label: 'Family' },
+  { id: 10759, label: 'Action & Adventure' },
+  { id: 35, label: 'Comedy' },
+  { id: 18, label: 'Drama' },
+  { id: 9648, label: 'Mystery' },
+  { id: 10765, label: 'Sci-Fi & Fantasy' },
+  { id: 80, label: 'Crime' },
+  { id: 10751, label: 'Family' },
+  { id: 10762, label: 'Kids' },
+  { id: 10764, label: 'Reality' },
+  { id: 10767, label: 'Talk' },
 ];
 
 const MOODS = [
-  { key: 'action', emoji: '💥', label: 'Adrenaline Rush' },
-  { key: 'comedy', emoji: '😂', label: 'Feel-Good Vibes' },
-  { key: 'horror', emoji: '👻', label: 'Late Night Scare' },
-  { key: 'romance', emoji: '💕', label: 'Date Night' },
-  { key: 'scifi', emoji: '🚀', label: 'Mind-Bending' },
-  { key: 'animated', emoji: '✨', label: 'Family Fun' },
+  { key: 'action', label: 'Action' },
+  { key: 'comedy', label: 'Comedy' },
+  { key: 'horror', label: 'Horror' },
+  { key: 'romance', label: 'Romance' },
+  { key: 'scifi', label: 'Sci-Fi' },
+  { key: 'animated', label: 'Animated' },
 ];
 
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
-
-// ── Safe media type helper ────────────────────────────────────────────────
-function getSafeType(movie) {
-  if (!movie) return 'movie';
-  if (movie.media_type === 'tv') return 'tv';
-  if (movie.media_type === 'movie') return 'movie';
-  if (movie.type === 'tv') return 'tv';
-  if (movie.name && !movie.title) return 'tv';
-  return 'movie';
+function getHistoryType(item) {
+  if (!item) return 'tv';
+  if (item.type === 'tv') return 'tv';
+  if (item.media_type === 'tv') return 'tv';
+  return 'tv';
 }
 
 export default function Shows() {
-  // ── Data states ───────────────────────────────────────────────────────
   const [trending, setTrending] = useState([]);
   const [topRated, setTopRated] = useState([]);
   const [history, setHistory] = useState([]);
-  const [newReleases, setNewReleases] = useState([]);
-  const [genreMovies, setGenreMovies] = useState([]);
-  const [moodMovies, setMoodMovies] = useState([]);
+  const [onAir, setOnAir] = useState([]);
+  const [genreShows, setGenreShows] = useState([]);
+  const [moodShows, setMoodShows] = useState([]);
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
   const [becauseTitle, setBecauseTitle] = useState('');
 
-  // ── Loading states ────────────────────────────────────────────────────
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
-  const [loadingNew, setLoadingNew] = useState(true);
+  const [loadingOnAir, setLoadingOnAir] = useState(true);
   const [loadingGenre, setLoadingGenre] = useState(false);
   const [loadingMood, setLoadingMood] = useState(false);
 
-  // ── Filter/selection states ───────────────────────────────────────────
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
 
-
-  // ── History loader ────────────────────────────────────────────────────
-  const loadHistory = useCallback(async () => {
-    try {
-      const res = await fetchHistory();
-      setHistory(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      // DB unavailable — history stays empty, app still works
-      setHistory([]);
-    }
+  const loadHistory = useCallback(() => {
+    setHistory(getHistory());
   }, []);
 
-  // ── Initial data load ────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -91,8 +75,6 @@ export default function Shows() {
       }
     };
 
-
-
     const loadTopRated = async () => {
       try {
         const res = await fetchTopRatedTV();
@@ -104,35 +86,34 @@ export default function Shows() {
       }
     };
 
-    const loadNewReleases = async () => {
+    const loadOnAir = async () => {
       try {
         const res = await fetchOnAirTV();
-        if (!cancelled) setNewReleases(res.data?.results || []);
+        if (!cancelled) setOnAir(res.data?.results || []);
       } catch {
-        if (!cancelled) setNewReleases([]);
+        if (!cancelled) setOnAir([]);
       } finally {
-        if (!cancelled) setLoadingNew(false);
+        if (!cancelled) setLoadingOnAir(false);
       }
     };
 
     loadTrending();
     loadTopRated();
-    loadNewReleases();
+    loadOnAir();
     loadHistory();
 
     return () => { cancelled = true; };
   }, [loadHistory]);
 
-  // ── Genre movies ──────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoadingGenre(true);
-    fetchByGenre(selectedGenre.id)
+    fetchByGenre(selectedGenre.id, 'tv')
       .then(res => {
-        if (!cancelled) setGenreMovies(res.data?.results || []);
+        if (!cancelled) setGenreShows(res.data?.results || []);
       })
       .catch(() => {
-        if (!cancelled) setGenreMovies([]);
+        if (!cancelled) setGenreShows([]);
       })
       .finally(() => {
         if (!cancelled) setLoadingGenre(false);
@@ -140,16 +121,15 @@ export default function Shows() {
     return () => { cancelled = true; };
   }, [selectedGenre]);
 
-  // ── Mood movies ───────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoadingMood(true);
     fetchByMood(selectedMood.key)
       .then(res => {
-        if (!cancelled) setMoodMovies(res.data?.results || []);
+        if (!cancelled) setMoodShows(res.data?.results || []);
       })
       .catch(() => {
-        if (!cancelled) setMoodMovies([]);
+        if (!cancelled) setMoodShows([]);
       })
       .finally(() => {
         if (!cancelled) setLoadingMood(false);
@@ -157,15 +137,16 @@ export default function Shows() {
     return () => { cancelled = true; };
   }, [selectedMood]);
 
-  // ── Because You Watched ───────────────────────────────────────────────
   useEffect(() => {
     if (!history?.length) return;
     let cancelled = false;
     const latest = history[0];
     if (!latest?.tmdbId) return;
 
-    setBecauseTitle(latest.title || 'your last watch');
-    fetchSimilar(latest.tmdbId, latest.type || 'movie')
+    const safeType = getHistoryType(latest);
+    setBecauseTitle(latest.title || latest.name || 'your last watch');
+
+    fetchSimilar(latest.tmdbId, safeType)
       .then(res => {
         if (!cancelled) setBecauseYouWatched(res.data?.results || []);
       })
@@ -176,8 +157,6 @@ export default function Shows() {
     return () => { cancelled = true; };
   }, [history]);
 
-
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -186,24 +165,22 @@ export default function Shows() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* ── Page Header ── */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 pb-4">
         <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
           TV Shows
         </h1>
         <p className="text-prime-subtext font-medium mt-3 text-lg max-w-2xl">
-          Binge your favorite series, discover trending exclusives, and catch up on new seasonal releases.
+          Binge your favorite series, discover trending exclusives, and catch up on new releases.
         </p>
       </div>
 
-      {/* ── Content Swimlanes ── */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 mt-8">
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
           <CarouselRow
             title="Trending Series"
             badge="Popular"
@@ -214,7 +191,7 @@ export default function Shows() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
           <PrimeCarouselRow
             title="Critically Acclaimed"
             badge="Top Rated"
@@ -223,19 +200,17 @@ export default function Shows() {
           />
         </div>
 
-
-
-        <div className="animate-fade-up" style={{ animationDelay: '0.7s' }}>
+        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
           <PrimeCarouselRow
-            title="Fresh Drops"
-            badge="New This Month"
-            movies={newReleases}
-            loading={loadingNew}
+            title="Currently Airing"
+            badge="On Air"
+            movies={onAir}
+            loading={loadingOnAir}
           />
         </div>
 
         {becauseYouWatched.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '0.75s' }}>
+          <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
             <CarouselRow
               title={`Because You Watched "${becauseTitle}"`}
               movies={becauseYouWatched}
@@ -244,11 +219,71 @@ export default function Shows() {
           </div>
         )}
 
-        {/* ── Bottom ambient glow ── */}
-        <div className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-      </div>
+        {/* browse by genre */}
+        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+          <div className="flex items-center gap-3 mb-5 px-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Browse by Genre
+            </h2>
+          </div>
+          <div
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {GENRES.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => setSelectedGenre(g)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                  selectedGenre.id === g.id
+                    ? 'bg-prime-blue text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
+                }`}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+          <PrimeCarouselRow
+            title=""
+            movies={genreShows}
+            loading={loadingGenre}
+          />
+        </div>
 
+        {/* browse by mood */}
+        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.6s' }}>
+          <div className="flex items-center gap-3 mb-5 px-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Browse by Mood
+            </h2>
+          </div>
+          <div
+            className="flex gap-2 mb-6 overflow-x-auto pb-2"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {MOODS.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setSelectedMood(m)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                  selectedMood.key === m.key
+                    ? 'bg-prime-blue text-white'
+                    : 'bg-white/5 text-prime-subtext hover:text-white'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <PrimeCarouselRow
+            title=""
+            movies={moodShows}
+            loading={loadingMood}
+          />
+        </div>
+
+      </div>
     </motion.div>
   );
 }

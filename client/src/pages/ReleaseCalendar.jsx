@@ -1,133 +1,158 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchAnimeSchedule } from '../api';
-import Navbar from '../components/Navbar';
-import AnimeCard from '../components/AnimeCard';
-import { Calendar, Loader2 } from 'lucide-react';
+import { fetchTrendingTV, fetchOnAirTV, fetchTopRated } from '../api';
+import { Calendar, Tv, Film, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const DAYS = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays', 'Unknown'];
+const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='342' height='513' viewBox='0 0 342 513'%3E%3Crect width='342' height='513' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
 
-export default function ReleaseCalendar() {
-  const [schedule, setSchedule] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [activeDay, setActiveDay] = useState('');
+const TABS = [
+  { key: 'airing', label: 'On Air Now', icon: Tv },
+  { key: 'trending', label: 'Trending', icon: Star },
+  { key: 'movies', label: 'Top Movies', icon: Film },
+];
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-
-    const loadSettings = async () => {
-      try {
-        const res = await fetchAnimeSchedule();
-        const items = res.data?.data || [];
-        
-        // Group by day
-        const grouped = {
-          Mondays: [], Tuesdays: [], Wednesdays: [],
-          Thursdays: [], Fridays: [], Saturdays: [], Sundays: [],
-          Unknown: []
-        };
-
-        items.forEach(anime => {
-          let day = anime.broadcast?.day || 'Unknown';
-          // Clean up string like "Sundays"
-          day = day.split(' ')[0];
-          if (!grouped[day]) day = 'Unknown';
-          if (anime.images?.jpg?.image_url) {
-            grouped[day].push({
-              ...anime,
-              animeImage: anime.images.jpg.image_url,
-              animeId: anime.mal_id
-            });
-          }
-        });
-
-        setSchedule(grouped);
-        
-        // Default to current day
-        const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long' }) + 's';
-        setActiveDay(grouped[todayStr] ? todayStr : 'Mondays');
-
-      } catch (err) {
-        console.error('Failed to load schedule', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSettings();
-  }, []);
+function ContentCard({ item, type = 'tv' }) {
+  const [imgError, setImgError] = useState(false);
+  const id = item.id;
+  const title = item.name || item.title || 'Unknown';
+  const poster = !imgError && item.poster_path
+    ? `${POSTER_BASE}${item.poster_path}`
+    : PLACEHOLDER;
+  const rating = item.vote_average > 0
+    ? Number(item.vote_average).toFixed(1)
+    : null;
+  const year = (item.first_air_date || item.release_date || '').substring(0, 4);
+  const watchLink = `/watch/${id}?type=${type}`;
 
   return (
-    <div className="min-h-screen bg-[#060A0F] text-white selection:bg-prime-blue/30 overflow-x-hidden">
-      <Navbar />
+    <Link to={watchLink} className="group block">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-prime-surface mb-2">
+        <img
+          src={poster}
+          alt={title}
+          loading="lazy"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={() => setImgError(true)}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        {rating && (
+          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-[11px] font-bold text-yellow-400">
+            ★ {rating}
+          </div>
+        )}
+      </div>
+      <p className="text-white text-xs font-bold line-clamp-1 group-hover:text-prime-blue transition-colors">
+        {title}
+      </p>
+      {year && (
+        <p className="text-prime-subtext text-[10px] mt-0.5">{year}</p>
+      )}
+    </Link>
+  );
+}
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-28 pb-20 mt-10">
-        <div className="flex items-center gap-3 mb-8">
-          <Calendar className="text-prime-blue w-8 h-8" />
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-display">
-            Release Schedule
+export default function ReleaseCalendar() {
+  const [activeTab, setActiveTab] = useState('airing');
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setItems([]);
+
+    const fetchers = {
+      airing:   fetchOnAirTV,
+      trending: fetchTrendingTV,
+      movies:   fetchTopRated,
+    };
+
+    fetchers[activeTab]()
+      .then((res) => {
+        if (!cancelled) setItems(res.data?.results || []);
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  const itemType = activeTab === 'movies' ? 'movie' : 'tv';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="min-h-screen pb-16"
+    >
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 pb-4">
+        <div className="flex items-center gap-3 mb-2">
+          <Calendar size={32} className="text-prime-blue" />
+          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight font-display">
+            What's On
           </h1>
         </div>
+        <p className="text-prime-subtext font-medium mt-3 text-lg max-w-2xl">
+          Currently airing shows, trending content and top rated movies.
+        </p>
+      </div>
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-[50vh] text-white/50">
-            <Loader2 className="w-8 h-8 animate-spin text-prime-blue mb-4" />
-            <p>Loading simulcast calendar...</p>
-          </div>
-        ) : (
-          <>
-            {/* Days Tabs */}
-            <div className="flex overflow-x-auto gap-2 pb-4 mb-8" style={{ scrollbarWidth: 'none' }}>
-              {DAYS.map(day => {
-                if (!schedule[day] || schedule[day].length === 0) return null;
-                const isActive = activeDay === day;
-                return (
-                  <button
-                    key={day}
-                    onClick={() => setActiveDay(day)}
-                    className={`px-6 py-2.5 rounded-full font-semibold transition-all whitespace-nowrap ${
-                      isActive 
-                      ? 'bg-prime-blue text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]' 
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    {day.replace('s', '')}
-                  </button>
-                );
-              })}
-            </div>
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 mt-8">
+        {/* tabs */}
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
+                activeTab === key
+                  ? 'bg-prime-blue text-white'
+                  : 'bg-white/5 text-prime-subtext hover:text-white'
+              }`}
+            >
+              <Icon size={15} />
+              {label}
+            </button>
+          ))}
+        </div>
 
-            {/* Grid */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeDay}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6"
-              >
-                {schedule[activeDay]?.map((anime, idx) => (
-                  <motion.div
-                    key={anime.mal_id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: idx * 0.03 }}
-                  >
-                    <AnimeCard anime={anime} />
-                  </motion.div>
+        {/* grid */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            {loading ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <div key={i} className="aspect-[2/3] rounded-xl skeleton" />
                 ))}
-              </motion.div>
-            </AnimatePresence>
-
-            {(!schedule[activeDay] || schedule[activeDay].length === 0) && (
-              <div className="text-center text-white/50 py-20">
-                No airing anime found for this day.
+              </div>
+            ) : items.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                {items.map((item) => (
+                  <ContentCard key={item.id} item={item} type={itemType} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-prime-subtext py-20">
+                No content found.
               </div>
             )}
-          </>
-        )}
-      </main>
-    </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }

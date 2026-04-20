@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Server, RefreshCw, AlertCircle, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Server, RefreshCw, AlertCircle, Volume2, Zap } from 'lucide-react';
 import { getEnabledMovieProviders } from '../config/movieProviders';
 import { triggerHaptic } from '../utils/haptics';
 
@@ -16,7 +15,6 @@ function getSafeType(raw) {
 
 function getProviderUrls(provider, id, type, season, episode) {
   if (!provider || typeof provider.getUrls !== 'function') return [];
-
   try {
     const urls = provider.getUrls(id, type, season, episode);
     if (!Array.isArray(urls)) return [];
@@ -42,11 +40,9 @@ export default function MultiSourceAggregator({
   const [retryCount, setRetryCount] = useState(0);
   const [allFailed, setAllFailed] = useState(false);
   const loadTimerRef = useRef(null);
-  const audioCtxRef  = useRef(null);
-  const gainNodeRef  = useRef(null);
-  const [volume, setVolume] = useState(100);
   const ios = isIOS();
   const providerCount = providers.length;
+
   const safeType = getSafeType(type);
   const safeSeason = Math.max(1, Number(season) || 1);
   const safeEpisode = Math.max(1, Number(episode) || 1);
@@ -61,7 +57,7 @@ export default function MultiSourceAggregator({
     : [];
   const src = urls[mirrorIndex] || urls[0] || '';
 
-  // ── Reset on content change ───────────────────────────────────────────
+  // reset on content change
   useEffect(() => {
     setActiveServer(0);
     setMirrorIndex(0);
@@ -73,7 +69,7 @@ export default function MultiSourceAggregator({
     setAllFailed(false);
   }, [tmdbId, safeType, safeSeason, safeEpisode]);
 
-  // ── Loading timeout — mirror → next server → eventually stop ─────────
+  // loading timeout — mirror → next server → stop
   useEffect(() => {
     clearTimeout(loadTimerRef.current);
 
@@ -84,7 +80,6 @@ export default function MultiSourceAggregator({
     }
 
     if (!tmdbId || !currentServer) return;
-
     if (!loading) return;
 
     if (retryCount >= maxRetries) {
@@ -94,11 +89,7 @@ export default function MultiSourceAggregator({
     }
 
     const currentUrls = getProviderUrls(
-      currentServer,
-      tmdbId,
-      safeType,
-      safeSeason,
-      safeEpisode,
+      currentServer, tmdbId, safeType, safeSeason, safeEpisode
     );
 
     if (currentUrls.length === 0) {
@@ -115,15 +106,12 @@ export default function MultiSourceAggregator({
 
     loadTimerRef.current = setTimeout(() => {
       setRetryCount(c => c + 1);
-
       if (mirrorIndex < currentUrls.length - 1) {
-        // Try mirror
         setMirrorIndex(m => m + 1);
         setIframeKey(k => k + 1);
         setLoading(true);
         setUsingMirror(true);
       } else {
-        // All mirrors tried — next server
         const next = (activeServer + 1) % providerCount;
         setActiveServer(next);
         setMirrorIndex(0);
@@ -135,15 +123,20 @@ export default function MultiSourceAggregator({
     }, 10000);
 
     return () => clearTimeout(loadTimerRef.current);
-  }, [loading, iframeKey, mirrorIndex, activeServer, retryCount,
-    currentServer, tmdbId, safeType, safeSeason, safeEpisode, maxRetries, providerCount]);
+  }, [
+    loading, iframeKey, mirrorIndex, activeServer, retryCount,
+    currentServer, tmdbId, safeType, safeSeason, safeEpisode,
+    maxRetries, providerCount,
+  ]);
 
+  // cleanup on unmount
   useEffect(() => {
     return () => clearTimeout(loadTimerRef.current);
   }, []);
 
   const switchServer = useCallback((idx) => {
     if (idx === activeServer) return;
+    triggerHaptic('medium');
     setActiveServer(idx);
     setMirrorIndex(0);
     setIframeKey(k => k + 1);
@@ -162,50 +155,6 @@ export default function MultiSourceAggregator({
     setUsingMirror(false);
     setRetryCount(0);
     setAllFailed(false);
-  }, []);
-
-  // ── Volume Boost via Web Audio API ─────────────────────────────────────────
-  useEffect(() => {
-    const gain = volume / 100;
-    // Try to connect to any audio/video elements on the page
-    const tryBoost = () => {
-      try {
-        const mediaEls = Array.from(document.querySelectorAll('audio, video'));
-        if (mediaEls.length === 0) return;
-        if (!audioCtxRef.current) {
-          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (!gainNodeRef.current) {
-          gainNodeRef.current = audioCtxRef.current.createGain();
-          gainNodeRef.current.connect(audioCtxRef.current.destination);
-        }
-        gainNodeRef.current.gain.value = gain;
-        mediaEls.forEach(el => {
-          if (!el._boosted) {
-            try {
-              const src = audioCtxRef.current.createMediaElementSource(el);
-              src.connect(gainNodeRef.current);
-              el._boosted = true;
-            } catch (_) { /* cross-origin or already connected */ }
-          }
-        });
-      } catch (_) { /* AudioContext not supported */ }
-    };
-    tryBoost();
-    // Re-scan after iframe loads
-    const t = setTimeout(tryBoost, 2000);
-    return () => clearTimeout(t);
-  }, [volume]);
-
-  // Cleanup audio context on unmount
-  useEffect(() => {
-    return () => {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => {});
-        audioCtxRef.current = null;
-        gainNodeRef.current = null;
-      }
-    };
   }, []);
 
   const tryNext = useCallback(() => {
@@ -232,7 +181,7 @@ export default function MultiSourceAggregator({
   if (!providerCount) {
     return (
       <div className="rounded-xl border border-white/10 bg-prime-surface p-8 text-center">
-        <p className="text-prime-subtext text-sm">No enabled movie providers configured</p>
+        <p className="text-prime-subtext text-sm">No streaming servers configured</p>
       </div>
     );
   }
@@ -240,8 +189,12 @@ export default function MultiSourceAggregator({
   return (
     <div className="space-y-3">
 
-      {/* ── Player ── */}
-      <div className="player-wrapper relative" style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.7)' }}>
+      {/* player */}
+      <div
+        className="player-wrapper relative"
+        style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.7)' }}
+      >
+        {/* loading overlay */}
         {loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-3">
             <div className="relative">
@@ -251,20 +204,20 @@ export default function MultiSourceAggregator({
               </div>
             </div>
             <div className="text-center">
-              <p className="text-white text-sm font-bold">{currentServer.name}</p>
+              <p className="text-white text-sm font-bold">{currentServer?.name}</p>
               <p className="text-prime-subtext text-xs mt-0.5">
                 {usingMirror
-                  ? `Trying alternate route…`
-                  : `Connecting to ${currentServer.label}…`}
+                  ? 'Trying alternate route…'
+                  : `Connecting to ${currentServer?.label}…`}
               </p>
-              {activeServer === 0 && (
+              {activeServer === 2 && (
                 <p className="text-amber-400/70 text-[10px] mt-1">Powered by JW Player</p>
               )}
             </div>
           </div>
         )}
 
-        {/* All servers exhausted — manual selection */}
+        {/* all servers exhausted */}
         {allFailed && !loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-4 p-4">
             <AlertCircle size={36} className="text-amber-400" />
@@ -275,47 +228,39 @@ export default function MultiSourceAggregator({
               <p className="text-prime-subtext text-xs mb-4">
                 Auto-switching tried all available routes. Please select a server manually.
               </p>
-              <div className="flex gap-3 justify-center items-center">
-                <button
-                  onClick={reload}
-                  className="px-5 py-2.5 bg-prime-blue hover:bg-prime-blue/80 text-white text-xs font-semibold rounded-lg transition-colors"
-                  style={{ backgroundColor: 'var(--color-primary, #2563eb)' }}
-                >
-                  <RefreshCw size={12} className="inline mr-1.5" />
-                  Start Over
-                </button>
-              </div>
+              <button
+                onClick={reload}
+                className="px-5 py-2.5 bg-prime-blue hover:bg-prime-blue/80 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <RefreshCw size={12} className="inline mr-1.5" />
+                Start Over
+              </button>
             </div>
           </div>
         )}
 
+        {/* iframe — no 3D animation, plain load */}
         {src && (
-          <motion.iframe
+          <iframe
             key={iframeKey}
-            initial={{ rotateX: -90, opacity: 0 }}
-            animate={{ rotateX: 0, opacity: 1 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-            style={{ transformOrigin: 'center', perspective: 1000, border: 'none' }}
             src={src}
-            title={`${currentServer.name} — ${currentServer.label}`}
+            title={`${currentServer?.name} — ${currentServer?.label}`}
             allowFullScreen
-            allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share; xr-spatial-tracking"
+            allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share"
             onLoad={() => {
               setLoading(false);
               setAllFailed(false);
             }}
-            onError={() => {
-              setLoading(true);
-            }}
             className="w-full h-full"
+            style={{ border: 'none' }}
           />
         )}
       </div>
 
-      {/* ── Server Toolbar ── */}
+      {/* server toolbar */}
       <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.5)] relative overflow-hidden">
-        {/* Subtle glass sheen edge */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-60" />
+
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Server size={14} className="text-prime-blue flex-shrink-0" />
           <span className="text-xs font-bold text-prime-subtext uppercase tracking-wider">
@@ -323,7 +268,7 @@ export default function MultiSourceAggregator({
           </span>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-prime-subtext hidden sm:block">
-              {currentServer.name} · {currentServer.label}
+              {currentServer?.name} · {currentServer?.label}
             </span>
             <button
               onClick={reload}
@@ -340,7 +285,7 @@ export default function MultiSourceAggregator({
           <div className="mb-3 bg-prime-blue/10 border border-prime-blue/20 rounded-lg px-3 py-2 flex items-center gap-2">
             <Zap size={13} className="text-prime-blue flex-shrink-0" />
             <p className="text-prime-blue text-xs font-medium">
-              Auto-switched to {currentServer.name} · {currentServer.label}
+              Auto-switched to {currentServer?.name} · {currentServer?.label}
             </p>
           </div>
         )}
@@ -349,7 +294,7 @@ export default function MultiSourceAggregator({
           <div className="mb-3 bg-white/5 border border-white/10 rounded-lg px-3 py-2 flex items-center gap-2">
             <RefreshCw size={13} className="text-prime-subtext flex-shrink-0 animate-spin" />
             <p className="text-prime-subtext text-xs">
-              Trying alternate route for {currentServer.label}…
+              Trying alternate route for {currentServer?.label}…
             </p>
           </div>
         )}
@@ -366,18 +311,13 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
-
-
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {providers.map((server, idx) => {
             const isActive = activeServer === idx;
             return (
               <button
                 key={server.id}
-                onClick={() => {
-                  triggerHaptic('medium');
-                  switchServer(idx);
-                }}
+                onClick={() => switchServer(idx)}
                 className={`relative flex flex-col px-3.5 py-3 rounded-xl text-left transition-all duration-300 ease-out border ${
                   isActive
                     ? 'bg-gradient-to-br from-[#0ea5e9] to-[#2563eb] border-[#38bdf8] shadow-[0_0_20px_rgba(56,189,248,0.4)] text-white scale-[1.02] z-10'
@@ -386,7 +326,9 @@ export default function MultiSourceAggregator({
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                    isActive ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)] animate-pulse' : 'bg-white/20'
+                    isActive
+                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)] animate-pulse'
+                      : 'bg-white/20'
                   }`} />
                   <span className="text-xs font-bold text-white truncate">
                     {server.name}
@@ -394,8 +336,12 @@ export default function MultiSourceAggregator({
                   <div className="ml-auto flex items-center gap-1">
                     <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${
                       server.badge === '4K'
-                        ? isActive ? 'bg-white/20 text-white' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                        : isActive ? 'bg-white/20 text-white' : 'bg-prime-blue/10 text-prime-blue border border-prime-blue/20'
+                        ? isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                        : isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-prime-blue/10 text-prime-blue border border-prime-blue/20'
                     }`}>
                       {server.badge}
                     </span>
@@ -411,14 +357,13 @@ export default function MultiSourceAggregator({
                 }`}>
                   {server.label}
                 </span>
-
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── Hint ── */}
+      {/* hint */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-prime-surface/80 to-transparent border border-white/10 text-xs text-white/75 backdrop-blur-md shadow-lg relative overflow-hidden">
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400/80 rounded-l-xl" />
         <AlertCircle size={16} className="flex-shrink-0 mt-0.5 text-yellow-400 ml-1" />
@@ -431,48 +376,30 @@ export default function MultiSourceAggregator({
         <button
           onClick={tryNext}
           disabled={providerCount < 2}
-          className="ml-auto flex-shrink-0 text-prime-blue hover:text-white text-xs font-semibold whitespace-nowrap transition-colors"
+          className="ml-auto flex-shrink-0 text-prime-blue hover:text-white text-xs font-semibold whitespace-nowrap transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Try next →
         </button>
       </div>
 
-      {/* ── Volume Boost ── */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
-        <button
-          onClick={() => setVolume(v => v === 0 ? 100 : 0)}
-          title={volume === 0 ? 'Unmute' : 'Mute'}
-          className="text-white/60 hover:text-white transition-colors flex-shrink-0"
-        >
-          {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-        </button>
-        <span className="text-xs text-white/50 font-semibold flex-shrink-0 w-16">Volume Boost</span>
-        <input
-          type="range"
-          min={0}
-          max={300}
-          step={10}
-          value={volume}
-          onChange={e => setVolume(Number(e.target.value))}
-          className="flex-1 h-1.5 rounded-full outline-none accent-prime-blue cursor-pointer transition-all"
-          style={{
-            background: `linear-gradient(to right, #2563eb ${(volume / 300) * 100}%, rgba(255,255,255,0.1) ${(volume / 300) * 100}%)`
-          }}
-        />
-        <span className={`text-xs font-bold w-10 text-right flex-shrink-0 ${
-          volume > 100 ? 'text-prime-blue' : 'text-white/60'
-        }`}>
-          {volume}%
-        </span>
-        {volume !== 100 && (
-          <button
-            onClick={() => setVolume(100)}
-            className="text-[10px] text-white/40 hover:text-white/80 transition-colors flex-shrink-0 underline"
+      {/* volume note — replaces broken volume boost */}
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-prime-subtext">
+        <Volume2 size={14} className="flex-shrink-0 text-white/40" />
+        <span>
+          Use your <strong className="text-white">system volume</strong> or browser tab volume to adjust audio.
+          For louder audio, try the{' '}
+          <a
+            href="https://chrome.google.com/webstore/detail/volume-master/jghecgabfgfdldnmbfkhmffcabddioke"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-prime-blue hover:text-white transition-colors underline"
           >
-            Reset
-          </button>
-        )}
+            Volume Master
+          </a>
+          {' '}extension.
+        </span>
       </div>
+
     </div>
   );
 }

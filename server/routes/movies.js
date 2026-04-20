@@ -53,7 +53,6 @@ function clientError(err) {
   return IS_PROD ? 'Something went wrong — please try again' : err.message;
 }
 
-// tells Cloudflare and browsers how long to cache
 function setCacheHeaders(res, seconds = 300) {
   res.set('Cache-Control', `public, max-age=${seconds}, s-maxage=${seconds}`);
 }
@@ -312,33 +311,6 @@ router.get('/person/:id', async (req, res) => {
     const data = await tmdbFetch(`/person/${id}`, { append_to_response: 'combined_credits' });
     setCacheHeaders(res, 3600);
     res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: clientError(err) });
-  }
-});
-
-// convert MAL ID to TMDB ID for anime
-router.get('/mal-to-tmdb/:malId', async (req, res) => {
-  const { malId } = req.params;
-  if (!isValidId(malId)) {
-    return res.status(400).json({ error: 'Invalid MAL ID' });
-  }
-  try {
-    const data = await tmdbFetch(`/find/${malId}`, {
-      external_source: 'myanimelist',
-    });
-    const tvResult = data?.tv_results?.[0];
-    const movieResult = data?.movie_results?.[0];
-    const result = tvResult || movieResult;
-    if (!result) {
-      return res.status(404).json({ error: 'No TMDB match found for this MAL ID' });
-    }
-    setCacheHeaders(res, 86400); // 24 hours — this mapping never changes
-    res.json({
-      tmdbId: result.id,
-      type: tvResult ? 'tv' : 'movie',
-      title: result.name || result.title,
-    });
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }

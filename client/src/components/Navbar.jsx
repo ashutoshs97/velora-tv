@@ -21,9 +21,12 @@ const NAV_LINKS = [
   { to: '/genres', label: 'Genres' },
 ];
 
-const MAX_QUERY_LENGTH = 150; // ← prevent absurdly long queries
+const MAX_QUERY_LENGTH = 150;
 
 export default function Navbar() {
+  const navigate = useNavigate(); // moved to top
+  const location = useLocation();
+
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -33,37 +36,19 @@ export default function Navbar() {
   const [hintVisible, setHintVisible] = useState(true);
   const [surprising, setSurprising] = useState(false);
 
-  const handleSurprise = async () => {
-    if (surprising) return;
-    setSurprising(true);
-    try {
-      const res = await fetchSurprise();
-      const item = res.data;
-      if (item && item.id) {
-        navigate(`/watch/${item.id}?type=${item.media_type}`);
-        setMenuOpen(false);
-      }
-    } catch(err) {
-      console.error(err);
-    } finally {
-      setSurprising(false);
-    }
-  };
-
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isRootPath = ['/', '/movies', '/shows', '/anime'].includes(location.pathname);
+  // removed /anime from root paths since anime is disabled
+  const isRootPath = ['/', '/movies', '/shows'].includes(location.pathname);
 
   const inputRef = useRef(null);
-  const hintTimerRef = useRef(null); // ← track setTimeout for cleanup
-  const scrollTimerRef = useRef(null); // ← throttle scroll
+  const hintTimerRef = useRef(null);
+  const scrollTimerRef = useRef(null);
 
-  // ── Close menu on route change ────────────────────────────────────────
+  // close menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // ── Throttled scroll listener ─────────────────────────────────────────
+  // throttled scroll listener
   useEffect(() => {
     const onScroll = () => {
       if (scrollTimerRef.current) return;
@@ -79,10 +64,9 @@ export default function Navbar() {
     };
   }, []);
 
-  // ── Cycling placeholder ───────────────────────────────────────────────
+  // cycling placeholder
   useEffect(() => {
     if (query || searchFocused) return;
-
     const interval = setInterval(() => {
       setHintVisible(false);
       hintTimerRef.current = setTimeout(() => {
@@ -90,34 +74,46 @@ export default function Navbar() {
         setHintVisible(true);
       }, 350);
     }, 3000);
-
     return () => {
       clearInterval(interval);
-      clearTimeout(hintTimerRef.current); // ← clean up inner setTimeout
+      clearTimeout(hintTimerRef.current);
     };
   }, [query, searchFocused]);
 
-  // ── Close menu on outside click ───────────────────────────────────────
+  // close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
-
     const handleOutsideClick = (e) => {
-      if (!e.target.closest('nav')) {
-        setMenuOpen(false);
-      }
+      if (!e.target.closest('nav')) setMenuOpen(false);
     };
-
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [menuOpen]);
 
-  // ── Cleanup all timers on unmount ─────────────────────────────────────
+  // cleanup timers on unmount
   useEffect(() => {
     return () => {
       clearTimeout(hintTimerRef.current);
       clearTimeout(scrollTimerRef.current);
     };
   }, []);
+
+  const handleSurprise = useCallback(async () => {
+    if (surprising) return;
+    setSurprising(true);
+    try {
+      const res = await fetchSurprise();
+      const item = res.data;
+      if (item?.id) {
+        navigate(`/watch/${item.id}?type=${item.media_type}`);
+        setMenuOpen(false);
+      }
+    } catch (err) {
+      console.error('Surprise failed:', err);
+    } finally {
+      setSurprising(false);
+    }
+  }, [surprising, navigate]);
 
   const handleSearch = useCallback((e) => {
     e.preventDefault();
@@ -131,11 +127,8 @@ export default function Navbar() {
   }, [query, navigate]);
 
   const handleQueryChange = useCallback((e) => {
-    // Enforce max length
     const val = e.target.value;
-    if (val.length <= MAX_QUERY_LENGTH) {
-      setQuery(val);
-    }
+    if (val.length <= MAX_QUERY_LENGTH) setQuery(val);
   }, []);
 
   const isActive = useCallback(
@@ -174,15 +167,16 @@ export default function Navbar() {
         }
       `}</style>
 
-      {/* Desktop Header Container */}
+      {/* desktop header */}
       <header className="fixed top-0 left-0 right-0 z-[100] pt-6 pointer-events-none hidden md:block transition-all duration-500">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
-          
-          {/* Logo */}
+
+          {/* logo */}
           <div className="pointer-events-auto transition-transform duration-500 hover:scale-105 flex items-center gap-2">
             {!isRootPath && (
               <button
                 onClick={() => navigate(-1)}
+                aria-label="Go back"
                 className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all"
               >
                 <ArrowLeft size={20} />
@@ -198,85 +192,83 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Navigation Pill */}
+          {/* navigation pill */}
           <nav
             className={`pointer-events-auto transition-all duration-500 ease-out max-w-fit rounded-full select-none ${
-              scrolled ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10' : 'nav-pill-bg border border-transparent shadow-lg'
+              scrolled
+                ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10'
+                : 'nav-pill-bg border border-transparent shadow-lg'
             }`}
           >
-        <div className="flex items-center px-3 py-2 gap-2 sm:gap-6">
-          {/* Desktop nav links */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {NAV_LINKS.map(({ to, label, icon: Icon }) => {
-              const active = isActive(to);
-              
-              if (active) {
-                return (
-                  <Link
-                    key={to}
-                    to={to}
-                    className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] shadow-lg shadow-white/10 transition-transform hover:scale-105"
-                  >
-                    {Icon && <Icon size={18} strokeWidth={2.5} />}
-                    <span>{label}</span>
-                  </Link>
-                );
-              }
+            <div className="flex items-center px-3 py-2 gap-2 sm:gap-6">
+              {/* nav links */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                {NAV_LINKS.map(({ to, label, icon: Icon }) => {
+                  const active = isActive(to);
+                  if (active) {
+                    return (
+                      <Link
+                        key={to}
+                        to={to}
+                        className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] shadow-lg shadow-white/10 transition-transform hover:scale-105"
+                      >
+                        {Icon && <Icon size={18} strokeWidth={2.5} />}
+                        <span>{label}</span>
+                      </Link>
+                    );
+                  }
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full transition-colors duration-200 text-prime-subtext hover:text-white"
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
 
-              return (
+              {/* search + settings */}
+              <div className="flex items-center">
                 <Link
-                  key={to}
-                  to={to}
-                  onClick={(e) => { if (to.startsWith('#')) e.preventDefault(); }}
-                  className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full
-                             transition-colors duration-200 text-prime-subtext hover:text-white"
+                  to="/search"
+                  onClick={() => setMenuOpen(false)}
+                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
+                  aria-label="Search"
                 >
-                  {label}
+                  <Search size={18} className="translate-y-[1px]" />
                 </Link>
-              );
-            })}
-          </div>
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
+                  aria-label="Open settings"
+                >
+                  <Settings size={18} className="translate-y-[1px]" />
+                </button>
+              </div>
 
-          {/* Search & Settings */}
-          <div className="flex items-center">
-            <Link
-              to="/search"
-              onClick={() => setMenuOpen(false)}
-              className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
-              aria-label="Search"
-            >
-              <Search size={18} className="translate-y-[1px]" />
-            </Link>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
-              aria-label="Settings"
-            >
-              <Settings size={18} className="translate-y-[1px]" />
-            </button>
-          </div>
+              <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
 
-          <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
-
-          <button
-            onClick={handleSurprise}
-            disabled={surprising}
-            title="Surprise Me!"
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/40 hover:to-pink-500/40 border border-purple-500/30 rounded-full text-white font-bold transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
-          >
-            {surprising ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Dices size={18} />
-            )}
-            <span>Surprise</span>
-          </button>
-        </div>
-      </nav>
+              <button
+                onClick={handleSurprise}
+                disabled={surprising}
+                title="Surprise Me!"
+                className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/40 hover:to-pink-500/40 border border-purple-500/30 rounded-full text-white font-bold transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+              >
+                {surprising ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Dices size={18} />
+                )}
+                <span>Surprise</span>
+              </button>
+            </div>
+          </nav>
         </div>
       </header>
 
-      {/* Mobile Navbar */}
+      {/* mobile navbar */}
       <nav
         className={`fixed top-0 left-0 right-0 z-[100] flex md:hidden flex-col transition-[background-color,backdrop-filter] duration-500 ${
           scrolled || menuOpen
@@ -289,6 +281,7 @@ export default function Navbar() {
             {!isRootPath && (
               <button
                 onClick={() => navigate(-1)}
+                aria-label="Go back"
                 className="p-2 -ml-2 text-white/50 hover:text-white rounded-full transition-all"
               >
                 <ArrowLeft size={18} />
@@ -304,16 +297,19 @@ export default function Navbar() {
             </Link>
           </div>
           <button
-            className="text-white p-2"
             onClick={() => setMenuOpen((o) => !o)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            className="text-white p-2"
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
-        {/* Mobile dropdown */}
+        {/* mobile dropdown */}
         {menuOpen && (
           <div className="glass-card mb-3 overflow-hidden">
+            {/* search form */}
             <form onSubmit={handleSearch} className="p-4 border-b border-white/5 bg-black/20">
               <div className="flex gap-2">
                 <input
@@ -331,39 +327,59 @@ export default function Navbar() {
                   Go
                 </button>
               </div>
+            </form>
 
+            {/* surprise button — outside form to avoid submit */}
+            <div className="px-4 pb-2 pt-2 border-b border-white/5 bg-black/20">
               <button
+                type="button"
                 onClick={handleSurprise}
                 disabled={surprising}
-                className="w-full flex items-center justify-center gap-2 mt-4 px-4 py-3.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl text-white font-bold transition-all hover:from-purple-500/40 hover:to-pink-500/40 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl text-white font-bold transition-all hover:from-purple-500/40 hover:to-pink-500/40 disabled:opacity-50"
               >
                 {surprising ? (
                   <Loader2 size={20} className="animate-spin" />
                 ) : (
                   <Dices size={20} />
                 )}
-                Surprise Me (Random)
+                Surprise Me
               </button>
-            </form>
+            </div>
+
+            {/* nav links */}
             <div className="p-2">
               {NAV_LINKS.map(({ to, label }) => (
                 <Link
                   key={to}
                   to={to}
-                  onClick={(e) => { 
-                    if (to.startsWith('#')) e.preventDefault(); 
-                    else setMenuOpen(false); 
-                  }}
-                  className="flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all text-prime-subtext hover:text-white hover:bg-white/6"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all ${
+                    isActive(to)
+                      ? 'bg-white/10 text-white'
+                      : 'text-prime-subtext hover:text-white hover:bg-white/6'
+                  }`}
                 >
                   {label}
                 </Link>
               ))}
+
+              {/* settings in mobile menu */}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  setSettingsOpen(true);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all text-prime-subtext hover:text-white hover:bg-white/6"
+              >
+                <Settings size={16} />
+                Settings
+              </button>
             </div>
           </div>
         )}
       </nav>
-      {/* Settings Modal */}
+
+      {/* settings modal */}
       <AnimatePresence>
         {settingsOpen && (
           <SettingsModal onClose={() => setSettingsOpen(false)} />

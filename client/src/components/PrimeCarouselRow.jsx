@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Plus, Info, CheckCircle2 } from 'lucide-react';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
@@ -15,41 +15,46 @@ function getMediaType(movie) {
   return 'movie';
 }
 
-function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false, watchPrefix = '/watch' }) {
+function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false }) {
   const [imgError, setImgError] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    const onTouch = () => setIsTouchDevice(true);
+    window.addEventListener('touchstart', onTouch, { once: true });
+    return () => window.removeEventListener('touchstart', onTouch);
+  }, []);
+
   const id = movie.tmdbId || movie.id;
   const mediaType = getMediaType(movie);
-  const watchLink = watchPrefix === '/anime'
-    ? `/anime/${id}`
-    : id ? `/watch/${id}?type=${mediaType}` : '/';
+  const watchLink = id ? `/watch/${id}?type=${mediaType}` : '/';
   const title = movie.title || movie.name || 'Unknown Title';
   const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
 
-  // Support both TMDB relative paths and full Jikan image URLs
-  const resolveImg = (path, base) =>
-    !path ? null : path.startsWith('http') ? path : `${base}${path}`;
+  const posterSrc = movie.poster_path
+    ? `${POSTER_BASE}${movie.poster_path}`
+    : PLACEHOLDER_SVG;
+  const backdropSrc = movie.backdrop_path
+    ? `${BACKDROP_BASE}${movie.backdrop_path}`
+    : posterSrc;
 
-  const posterSrc = resolveImg(movie.poster_path, POSTER_BASE) || resolveImg(movie.animeImage, '') || PLACEHOLDER_SVG;
-  const backdropSrc = resolveImg(movie.backdrop_path, BACKDROP_BASE) || resolveImg(movie.animeImage, '') || posterSrc;
-
-  const navigate = useNavigate();
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const shouldExpand = isHovered && !disableExpand && !isMobile;
+  const shouldExpand = isHovered && !disableExpand && !isTouchDevice;
   const displaySrc = imgError
     ? PLACEHOLDER_SVG
     : shouldExpand ? backdropSrc : posterSrc;
 
+  const CardWrapper = isTouchDevice ? Link : 'div';
+  const wrapperProps = isTouchDevice
+    ? { to: watchLink }
+    : {
+        onMouseEnter: onHover,
+        onMouseLeave: onLeave,
+      };
+
   return (
-    <div
-      onMouseEnter={onHover}
-      onMouseLeave={onLeave}
-      onTouchStart={onHover}
-      onClick={() => {
-        if (isMobile) {
-          navigate(watchLink);
-        }
-      }}
-      className={`relative flex-shrink-0 transition-all overflow-hidden duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] group cursor-pointer ${
+    <CardWrapper
+      {...wrapperProps}
+      className={`relative flex-shrink-0 transition-all overflow-hidden duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] group cursor-pointer block ${
         shouldExpand
           ? 'w-[260px] sm:w-[440px] md:w-[540px] z-30 shadow-2xl shadow-black ring-2 ring-white/20 rounded-xl'
           : 'w-[140px] sm:w-[170px] md:w-[190px] z-10 shadow-lg opacity-80 hover:opacity-100 rounded-lg'
@@ -67,6 +72,7 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false, 
         loading="lazy"
       />
 
+      {/* unhovered — title on poster */}
       <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${
         !shouldExpand ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'
       }`}>
@@ -79,65 +85,79 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false, 
         )}
       </div>
 
-      <div
-        className={`absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent flex flex-col justify-end p-4 sm:p-6 transition-opacity duration-500 ${
-          shouldExpand ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        {shouldExpand && (
-          <div className="animate-fade-up">
-            <h3 className="text-white text-lg sm:text-2xl font-black mb-2 line-clamp-2 drop-shadow-md tracking-tight">
+      {/* mobile — always show title */}
+      {isTouchDevice && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-2">
+            <p className="text-white text-xs font-bold line-clamp-1 drop-shadow">
               {title}
-            </h3>
-
-            <div className="flex items-center gap-2 mb-4">
-              <Link
-                to={watchLink}
-                className="bg-white text-black px-4 py-1.5 sm:py-2 rounded-lg font-bold text-sm sm:text-base flex items-center hover:bg-white/90 transition-colors shadow-lg"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Play size={16} fill="currentColor" className="mr-1.5" /> Play
-              </Link>
-              <button
-                className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"
-                onClick={(e) => e.preventDefault()}
-                title="Add to Watchlist"
-              >
-                <Plus size={18} />
-              </button>
-              <Link
-                to={watchLink}
-                className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"
-                onClick={(e) => e.stopPropagation()}
-                title="More Info"
-              >
-                <Info size={18} />
-              </Link>
-            </div>
-
-            <div className="flex flex-col gap-1 text-[11px] sm:text-xs text-white/80 font-medium">
-              <div className="flex items-center gap-1.5 text-green-400 font-bold">
-                <CheckCircle2 size={12} /> Included with Velora
-              </div>
-              <div className="flex items-center gap-1.5">
-                {year && (
-                  <span className="bg-white/10 px-1.5 rounded">{year}</span>
-                )}
-                <span>
-                  {movie.vote_average > 0
-                    ? `${Number(movie.vote_average).toFixed(1)} Rating`
-                    : 'New'}
-                </span>
-                <span>·</span>
-                <span className="capitalize">
-                  {mediaType === 'tv' ? 'Series' : 'Movie'}
-                </span>
-              </div>
-            </div>
+            </p>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {/* expanded details — desktop only */}
+      {!isTouchDevice && (
+        <div
+          className={`absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent flex flex-col justify-end p-4 sm:p-6 transition-opacity duration-500 ${
+            shouldExpand ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          {shouldExpand && (
+            <div className="animate-fade-up">
+              <h3 className="text-white text-lg sm:text-2xl font-black mb-2 line-clamp-2 drop-shadow-md tracking-tight">
+                {title}
+              </h3>
+
+              <div className="flex items-center gap-2 mb-4">
+                <Link
+                  to={watchLink}
+                  className="bg-white text-black px-4 py-1.5 sm:py-2 rounded-lg font-bold text-sm sm:text-base flex items-center hover:bg-white/90 transition-colors shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Play size={16} fill="currentColor" className="mr-1.5" /> Play
+                </Link>
+                <button
+                  className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"
+                  onClick={(e) => e.preventDefault()}
+                  title="Add to Watchlist"
+                >
+                  <Plus size={18} />
+                </button>
+                <Link
+                  to={watchLink}
+                  className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"
+                  onClick={(e) => e.stopPropagation()}
+                  title="More Info"
+                >
+                  <Info size={18} />
+                </Link>
+              </div>
+
+              <div className="flex flex-col gap-1 text-[11px] sm:text-xs text-white/80 font-medium">
+                <div className="flex items-center gap-1.5 text-green-400 font-bold">
+                  <CheckCircle2 size={12} /> Included with Velora
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {year && (
+                    <span className="bg-white/10 px-1.5 rounded">{year}</span>
+                  )}
+                  <span>
+                    {movie.vote_average > 0
+                      ? `${Number(movie.vote_average).toFixed(1)} Rating`
+                      : 'New'}
+                  </span>
+                  <span>·</span>
+                  <span className="capitalize">
+                    {mediaType === 'tv' ? 'Series' : 'Movie'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </CardWrapper>
   );
 }
 
@@ -147,7 +167,6 @@ export default function PrimeCarouselRow({
   movies,
   loading,
   titleLink,
-  watchPrefix = '/watch',
 }) {
   const rowRef = useRef(null);
   const [hoveredId, setHoveredId] = useState(null);
@@ -165,19 +184,19 @@ export default function PrimeCarouselRow({
   }, []);
 
   const checkScroll = useCallback(() => {
-  const el = rowRef.current;
-  if (!el) return;
-  setCanScrollLeft(el.scrollLeft > 10);
-  setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10);
-}, []);
+    const el = rowRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10);
+  }, []);
 
-useEffect(() => {
-  const el = rowRef.current;
-  if (!el) return;
-  checkScroll();
-  el.addEventListener('scroll', checkScroll, { passive: true });
-  return () => el.removeEventListener('scroll', checkScroll);
-}, [checkScroll, movies]);
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    return () => el.removeEventListener('scroll', checkScroll);
+  }, [checkScroll, movies]);
 
   const clearHover = useCallback(() => setHoveredId(null), []);
 
@@ -204,7 +223,6 @@ useEffect(() => {
 
   return (
     <section className="relative group" onMouseLeave={clearHover}>
-      {/* Title — UNTOUCHED from original */}
       {title && (
         <div className="flex items-end justify-between mb-4 sm:mb-5 pr-4 sm:pr-0">
           <div className="flex items-center gap-3">
@@ -247,13 +265,10 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Grid View — UNTOUCHED from original */}
       {expanded ? (
         <div
           className="grid gap-3 sm:gap-4"
-          style={{
-            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-          }}
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
         >
           {safeMovies.map((movie, idx) => (
             <div key={movie._id || movie.id || `movie-${idx}`}>
@@ -263,62 +278,58 @@ useEffect(() => {
                 onHover={() => {}}
                 onLeave={() => {}}
                 disableExpand
-                watchPrefix={watchPrefix}
               />
             </div>
           ))}
         </div>
       ) : (
         <div className="relative -ml-4 sm:-ml-6 lg:-ml-12 pl-4 sm:pl-6 lg:pl-12">
+          {canScrollLeft && (
+            <div
+              onClick={() => scroll(-1)}
+              className="hidden sm:flex absolute left-4 sm:left-6 lg:left-12 top-0 bottom-8 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-r from-[#080E14] to-transparent"
+              role="button"
+              aria-label="Scroll left"
+            >
+              <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
+                <ChevronLeft size={20} className="text-white" />
+              </div>
+            </div>
+          )}
 
-  {canScrollLeft && (
-    <div
-      onClick={() => scroll(-1)}
-      className="hidden sm:flex absolute left-4 sm:left-6 lg:left-12 top-0 bottom-8 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-r from-[#080E14] to-transparent"
-      role="button"
-      aria-label="Scroll left"
-    >
-      <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
-        <ChevronLeft size={20} className="text-white" />
-      </div>
-    </div>
-  )}
+          <div
+            ref={rowRef}
+            className="flex gap-3 sm:gap-4 overflow-x-auto pb-8 pt-4 pr-12 snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {safeMovies.map((movie, idx) => (
+              <div
+                key={movie._id || movie.id || `movie-${idx}`}
+                className={`snap-start pt-2 ${idx === 0 ? 'pl-3 sm:pl-4' : ''}`}
+              >
+                <PrimeCard
+                  movie={movie}
+                  isHovered={hoveredId === (movie._id || movie.id)}
+                  onHover={() => setHoveredId(movie._id || movie.id)}
+                  onLeave={() => setHoveredId(null)}
+                />
+              </div>
+            ))}
+          </div>
 
-  <div
-    ref={rowRef}
-    className="flex gap-3 sm:gap-4 overflow-x-auto pb-8 pt-4 pr-12 snap-x snap-mandatory"
-    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-  >
-    {safeMovies.map((movie, idx) => (
-      <div
-        key={movie._id || movie.id || `movie-${idx}`}
-        className={`snap-start pt-2 ${idx === 0 ? 'pl-3 sm:pl-4' : ''}`}
-      >
-        <PrimeCard
-          movie={movie}
-          isHovered={hoveredId === (movie._id || movie.id)}
-          onHover={() => setHoveredId(movie._id || movie.id)}
-          onLeave={() => setHoveredId(null)}
-          watchPrefix={watchPrefix}
-        />
-      </div>
-    ))}
-  </div>
-
-  {canScrollRight && (
-    <div
-      onClick={() => scroll(1)}
-      className="hidden sm:flex absolute right-0 top-0 bottom-8 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-l from-[#080E14] to-transparent"
-      role="button"
-      aria-label="Scroll right"
-    >
-      <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
-        <ChevronRight size={20} className="text-white" />
-      </div>
-    </div>
-  )}
-
-</div>
+          {canScrollRight && (
+            <div
+              onClick={() => scroll(1)}
+              className="hidden sm:flex absolute right-0 top-0 bottom-8 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-l from-[#080E14] to-transparent"
+              role="button"
+              aria-label="Scroll right"
+            >
+              <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
+                <ChevronRight size={20} className="text-white" />
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </section>
   );

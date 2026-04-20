@@ -1,30 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
-const EASE_CURTAIN = [0.76, 0, 0.24, 1]; // cinematic cubic-bezier
+const EASE_CURTAIN = [0.76, 0, 0.24, 1];
 
 export default function SplashIntro({ onDone }) {
-  const [phase, setPhase] = useState('hold'); // hold → wipe → done
+  const [phase, setPhase] = useState('hold');
+  const [done, setDone] = useState(false);
+
+  const handleDone = useCallback(() => {
+    sessionStorage.setItem('velora_intro_shown', '1');
+    setDone(true);
+    onDone?.();
+  }, [onDone]);
 
   useEffect(() => {
-    // Logo fades in immediately, bars start wiping after a hold
-    const wipeTimer = setTimeout(() => setPhase('wipe'), 1300);
+    let cancelled = false;
+
+    const wipeTimer = setTimeout(() => {
+      if (!cancelled) setPhase('wipe');
+    }, 1300);
+
     const doneTimer = setTimeout(() => {
-      sessionStorage.setItem('velora_intro_shown', '1');
-      onDone();
+      if (!cancelled) handleDone();
     }, 2700);
 
     return () => {
+      cancelled = true;
       clearTimeout(wipeTimer);
       clearTimeout(doneTimer);
     };
-  }, [onDone]);
+  }, [handleDone]);
+
+  // nothing to render once done
+  if (done) return null;
 
   const isWiping = phase === 'wipe';
 
   return (
     <>
-      {/* ── Top curtain bar ─────────────────────────────────────────────── */}
+      {/* top curtain */}
       <motion.div
         className="fixed top-0 left-0 right-0 z-[9999]"
         style={{ height: '50vh', background: '#000', originY: 0 }}
@@ -32,7 +46,7 @@ export default function SplashIntro({ onDone }) {
         transition={{ duration: 1.0, ease: EASE_CURTAIN }}
       />
 
-      {/* ── Bottom curtain bar ──────────────────────────────────────────── */}
+      {/* bottom curtain */}
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-[9999]"
         style={{ height: '50vh', background: '#000', originY: 1 }}
@@ -40,23 +54,19 @@ export default function SplashIntro({ onDone }) {
         transition={{ duration: 1.0, ease: EASE_CURTAIN }}
       />
 
-      {/* ── Logo — centered between the two bars ────────────────────────── */}
+      {/* logo */}
       <motion.div
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-none select-none gap-3"
-        style={{ willChange: 'transform, opacity' }}
         initial={{ opacity: 0, scale: 0.85 }}
         animate={
           isWiping
             ? { opacity: 0, scale: 1.08, transition: { duration: 0.45, ease: 'easeIn' } }
-            : { opacity: 1, scale: 1,    transition: { duration: 0.5,  ease: 'easeOut', delay: 0.15 } }
+            : { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut', delay: 0.15 } }
         }
       >
-        {/* Hardware-accelerated radial glow (replaces expensive CSS drop-shadows) */}
-        <div 
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ zIndex: -1 }}
-        >
-          <div 
+        {/* background glow */}
+        <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: -1 }}>
+          <div
             style={{
               width: '80vw',
               height: '40vh',
@@ -65,12 +75,14 @@ export default function SplashIntro({ onDone }) {
           />
         </div>
 
-        {/* Velora icon + wordmark */}
+        {/* icon + wordmark */}
         <div className="flex items-center gap-5 relative">
           <img
             src="/velora-icon.svg"
             alt="Velora"
-            style={{ width: 60, height: 60 }}
+            width={60}
+            height={60}
+            onError={(e) => { e.target.style.display = 'none'; }}
           />
           <span
             style={{
@@ -83,14 +95,13 @@ export default function SplashIntro({ onDone }) {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              // filter removed for performance: drop-shadow during transform/opacity causes stutter on low-end
             }}
           >
             VELORA
           </span>
         </div>
 
-        {/* Film-style tagline */}
+        {/* tagline */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px' }}>
           <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, transparent, rgba(140,170,255,0.4))' }} />
           <p

@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchByGenre, fetchAnimeGenre } from '../api';
-import Navbar from '../components/Navbar';
-import AnimatedImage from '../components/AnimatedImage';
+import { fetchByGenre } from '../api';
 import { triggerHaptic } from '../utils/haptics';
 import { Loader2, Play, ArrowRight } from 'lucide-react';
 
-// ── Genre definitions ─────────────────────────────────────────────────────────
 const MOVIE_GENRES = [
   { id: 28,    label: 'Action' },
   { id: 35,    label: 'Comedy' },
@@ -32,31 +29,13 @@ const TV_GENRES = [
   { id: 80,    label: 'Crime' },
   { id: 10768, label: 'War & Politics' },
   { id: 10762, label: 'Kids' },
-  { id: 10763, label: 'News' },
   { id: 10764, label: 'Reality' },
-  { id: 10766, label: 'Soap' },
   { id: 10767, label: 'Talk' },
-];
-
-const ANIME_GENRES = [
-  { id: 1,   label: 'Action' },
-  { id: 4,   label: 'Comedy' },
-  { id: 8,   label: 'Drama' },
-  { id: 14,  label: 'Horror' },
-  { id: 24,  label: 'Sci-Fi' },
-  { id: 22,  label: 'Romance' },
-  { id: 10,  label: 'Fantasy' },
-  { id: 37,  label: 'Supernatural' },
-  { id: 40,  label: 'Psychological' },
-  { id: 27,  label: 'Shounen' },
-  { id: 36,  label: 'Slice of Life' },
-  { id: 62,  label: 'Isekai' },
 ];
 
 const TYPES = [
   { key: 'movie', label: 'Movies',   genres: MOVIE_GENRES },
   { key: 'tv',    label: 'TV Shows', genres: TV_GENRES },
-  { key: 'anime', label: 'Anime',    genres: ANIME_GENRES },
 ];
 
 const TMDB_IMG    = 'https://image.tmdb.org/t/p/w780';
@@ -64,7 +43,6 @@ const TMDB_POSTER = 'https://image.tmdb.org/t/p/w300';
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='440' viewBox='0 0 780 440'%3E%3Crect width='780' height='440' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='22' fill='%234b5563'%3ENo Image%3C/text%3E%3C/svg%3E`;
 const POSTER_PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%234b5563'%3EVelora%3C/text%3E%3C/svg%3E`;
 
-// ── Genre Card ────────────────────────────────────────────────────────────────
 function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd }) {
   return (
     <motion.button
@@ -75,30 +53,26 @@ function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd
       }}
       onHoverStart={onHoverStart}
       onHoverEnd={onHoverEnd}
-      className={`group relative overflow-hidden rounded-2xl cursor-pointer`}
+      className="group relative overflow-hidden rounded-2xl cursor-pointer"
       style={{ aspectRatio: '16 / 9' }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileTap={{ scale: 0.97 }}
     >
-      {/* Backdrop image */}
-      <AnimatedImage
-        src={cover || PLACEHOLDER}
-        fallbackSrc={PLACEHOLDER}
-        alt={genre.label}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-      />
+      {cover ? (
+        <img
+          src={cover}
+          alt={genre.label}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-prime-surface" />
+      )}
 
-      {/* Base dark overlay */}
       <div className="absolute inset-0 bg-black/50" />
-
-      {/* Cinematic gradient from bottom */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
-      {/* Hover brightening */}
       <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors duration-300" />
 
-      {/* Selected ring */}
       {isSelected && (
         <motion.div
           layoutId="genre-ring"
@@ -107,14 +81,13 @@ function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd
         />
       )}
 
-      {/* Genre label */}
       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 flex items-end justify-between">
-        <div>
-          <h3 className="text-white font-black text-lg sm:text-xl lg:text-2xl tracking-tight drop-shadow-lg leading-none">
-            {genre.label}
-          </h3>
-        </div>
-        <div className={`p-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 ${isSelected ? 'bg-prime-blue/80 border-prime-blue' : 'opacity-0 group-hover:opacity-100'}`}>
+        <h3 className="text-white font-black text-lg sm:text-xl lg:text-2xl tracking-tight drop-shadow-lg leading-none">
+          {genre.label}
+        </h3>
+        <div className={`p-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 ${
+          isSelected ? 'bg-prime-blue/80 border-prime-blue' : 'opacity-0 group-hover:opacity-100'
+        }`}>
           <ArrowRight size={16} className="text-white" />
         </div>
       </div>
@@ -122,20 +95,6 @@ function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd
   );
 }
 
-// ── Helper links/images for the content grid ──────────────────────────────────
-function getItemLink(item, type)  { return type === 'anime' ? `/anime/${item.mal_id}` : `/watch/${item.id}?type=${type}`; }
-function getItemImg(item, type)   {
-  if (type === 'anime') return item.images?.jpg?.large_image_url || item.images?.jpg?.image_url;
-  const p = item.poster_path;
-  return p ? `${TMDB_POSTER}${p}` : null;
-}
-function getItemTitle(item, type) { return type === 'anime' ? (item.title_english || item.title) : (item.title || item.name); }
-function getItemRating(item, type){ 
-  const v = type === 'anime' ? item.score : item.vote_average;
-  return v > 0 ? Number(v).toFixed(1) : null;
-}
-
-// ── Content Grid ─────────────────────────────────────────────────────────────
 function ContentGrid({ items, type }) {
   return (
     <motion.div
@@ -146,23 +105,33 @@ function ContentGrid({ items, type }) {
       className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-3"
     >
       {items.map((item, idx) => {
-        const link   = getItemLink(item, type);
-        const img    = getItemImg(item, type);
-        const title  = getItemTitle(item, type);
-        const rating = getItemRating(item, type);
+        const id = item.id;
+        const title = item.title || item.name || 'Unknown';
+        const poster = item.poster_path
+          ? `${TMDB_POSTER}${item.poster_path}`
+          : null;
+        const rating = item.vote_average > 0
+          ? Number(item.vote_average).toFixed(1)
+          : null;
+        const watchLink = `/watch/${id}?type=${type}`;
+
         return (
           <motion.div
-            key={item.id || item.mal_id}
+            key={id}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: Math.min(idx * 0.02, 0.5) }}
           >
-            <Link to={link} className="group block relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5 border border-white/5 hover:border-prime-blue/40 hover:shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all duration-300">
-              <AnimatedImage
-                src={img || POSTER_PLACEHOLDER}
-                fallbackSrc={POSTER_PLACEHOLDER}
+            <Link
+              to={watchLink}
+              className="group block relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5 border border-white/5 hover:border-prime-blue/40 hover:shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all duration-300"
+            >
+              <img
+                src={poster || POSTER_PLACEHOLDER}
                 alt={title}
+                loading="lazy"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => { e.target.src = POSTER_PLACEHOLDER; }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2">
                 <div className="flex justify-end">
@@ -183,22 +152,19 @@ function ContentGrid({ items, type }) {
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
 export default function Genres() {
-  const [activeType, setActiveType]       = useState('movie');
+  const [activeType, setActiveType] = useState('movie');
   const [selectedGenre, setSelectedGenre] = useState(null);
-  const [genreCovers, setGenreCovers]     = useState({});
+  const [genreCovers, setGenreCovers] = useState({});
   const [coversLoading, setCoversLoading] = useState(false);
   const [hoveredGenreId, setHoveredGenreId] = useState(null);
-  const [items, setItems]                 = useState([]);
+  const [items, setItems] = useState([]);
   const [contentLoading, setContentLoading] = useState(false);
   const contentRef = useRef(null);
-  // Cache covers per type so we don't re-fetch on type switch
   const coverCache = useRef({});
 
   const currentTypeData = TYPES.find(t => t.key === activeType);
 
-  // Load backdrop art for each genre card
   const loadCovers = useCallback(async (typeKey) => {
     if (coverCache.current[typeKey]) {
       setGenreCovers(coverCache.current[typeKey]);
@@ -206,27 +172,19 @@ export default function Genres() {
     }
     setCoversLoading(true);
     const typeData = TYPES.find(t => t.key === typeKey);
-    const results  = {};
+    const results = {};
 
     await Promise.allSettled(
       typeData.genres.map(async (genre) => {
         try {
-          if (typeKey === 'anime') {
-            const res = await fetchAnimeGenre(genre.id);
-            const items = res.data?.data || [];
-            // pick a mid-list item for variety, not always [0]
-            const pick = items[2] || items[1] || items[0];
-            if (pick) results[genre.id] = pick.images?.jpg?.large_image_url;
-          } else {
-            const res = await fetchByGenre(genre.id, typeKey);
-            const arr = res.data?.results || [];
-            const pick = arr[1] || arr[0]; // skip [0] - it's always the same popular movie
-            if (pick) {
-              const path = pick.backdrop_path || pick.poster_path;
-              results[genre.id] = path ? `${TMDB_IMG}${path}` : null;
-            }
+          const res = await fetchByGenre(genre.id, typeKey);
+          const arr = res.data?.results || [];
+          const pick = arr[1] || arr[0];
+          if (pick) {
+            const path = pick.backdrop_path || pick.poster_path;
+            results[genre.id] = path ? `${TMDB_IMG}${path}` : null;
           }
-        } catch (_) { /* silently fail */ }
+        } catch { /* silently fail */ }
       })
     );
 
@@ -241,10 +199,6 @@ export default function Genres() {
     setItems([]);
   }, [activeType, loadCovers]);
 
-  const handleTypeChange = (typeKey) => {
-    setActiveType(typeKey);
-  };
-
   const handleGenreClick = async (genre) => {
     setSelectedGenre(genre);
     setContentLoading(true);
@@ -255,13 +209,8 @@ export default function Genres() {
     }, 150);
 
     try {
-      if (activeType === 'anime') {
-        const res = await fetchAnimeGenre(genre.id);
-        setItems(res.data?.data || []);
-      } else {
-        const res = await fetchByGenre(genre.id, activeType);
-        setItems(res.data?.results || []);
-      }
+      const res = await fetchByGenre(genre.id, activeType);
+      setItems(res.data?.results || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -270,9 +219,14 @@ export default function Genres() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060A0F] text-white relative overflow-x-hidden">
-      
-      {/* ── Fixed Blur Backdrop Crossfade ── */}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="min-h-screen pb-16 relative overflow-x-hidden"
+    >
+      {/* background blur on hover */}
       <AnimatePresence>
         {hoveredGenreId && genreCovers[hoveredGenreId] && (
           <motion.div
@@ -284,35 +238,32 @@ export default function Genres() {
             className="fixed inset-0 z-0 pointer-events-none"
           >
             <div className="absolute inset-0 bg-[#060A0F]/40 z-10" />
-            <img 
-              src={genreCovers[hoveredGenreId]} 
-              alt="" 
-              className="w-full h-full object-cover blur-[80px] scale-110 mix-blend-screen" 
+            <img
+              src={genreCovers[hoveredGenreId]}
+              alt=""
+              className="w-full h-full object-cover blur-[80px] scale-110"
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <Navbar />
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 pb-4 relative z-10">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight font-display mb-3 bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent">
+          Browse by Genre
+        </h1>
+        <p className="text-white/40 text-lg font-medium">
+          Discover your next obsession.
+        </p>
+      </div>
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-28 pb-24 mt-6 relative z-10">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 mt-8 relative z-10">
 
-        {/* ── Page Header ── */}
-        <div className="mb-10">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight font-display mb-3 bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent">
-            Browse by Genre
-          </h1>
-          <p className="text-white/40 text-lg font-medium">
-            Discover your next obsession.
-          </p>
-        </div>
-
-        {/* ── Type toggle ── */}
+        {/* type toggle */}
         <div className="flex gap-2 mb-10 bg-white/5 border border-white/10 p-1.5 rounded-2xl w-fit">
           {TYPES.map(t => (
             <button
               key={t.key}
-              onClick={() => handleTypeChange(t.key)}
+              onClick={() => setActiveType(t.key)}
               className={`px-7 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
                 activeType === t.key
                   ? 'bg-prime-blue text-white shadow-[0_0_20px_rgba(37,99,235,0.5)]'
@@ -324,10 +275,9 @@ export default function Genres() {
           ))}
         </div>
 
-        {/* ── Genre bento card grid ── */}
+        {/* genre grid */}
         <AnimatePresence mode="wait">
           <motion.div
-            layout
             key={activeType}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -335,7 +285,7 @@ export default function Genres() {
             transition={{ duration: 0.25 }}
             className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-14"
           >
-            {currentTypeData.genres.map((genre, idx) => (
+            {currentTypeData.genres.map((genre) => (
               <GenreCard
                 key={genre.id}
                 genre={genre}
@@ -346,9 +296,7 @@ export default function Genres() {
                 onHoverEnd={() => setHoveredGenreId(null)}
               />
             ))}
-
-            {/* Skeleton shimmer while covers load */}
-            {coversLoading && currentTypeData.genres.map((g, idx) => (
+            {coversLoading && currentTypeData.genres.map((g) => (
               <div
                 key={`sk-${g.id}`}
                 className="rounded-2xl bg-white/5 animate-pulse"
@@ -358,7 +306,7 @@ export default function Genres() {
           </motion.div>
         </AnimatePresence>
 
-        {/* ── Selected Genre Content ── */}
+        {/* content */}
         <div ref={contentRef}>
           <AnimatePresence mode="wait">
             {selectedGenre && (
@@ -369,7 +317,6 @@ export default function Genres() {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Content header */}
                 <div className="flex items-center gap-4 mb-6 pb-5 border-b border-white/10">
                   <div className="w-1 h-8 rounded-full bg-prime-blue" />
                   <div>
@@ -396,7 +343,7 @@ export default function Genres() {
             )}
           </AnimatePresence>
         </div>
-      </main>
-    </div>
+      </div>
+    </motion.div>
   );
 }
