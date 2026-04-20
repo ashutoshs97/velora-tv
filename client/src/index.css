@@ -32,36 +32,54 @@
   }
 
   /* ── Color modes ─────────────────────────────────────────────────────────── */
-  :root {
-    --bg-primary:   #080E14;
-    --bg-surface:   #0F1923;
-    --bg-card:      #111D28;
-    --text-primary: #FFFFFF;
-    --text-sub:     #6B8499;
+
+  /* DARK (default) — no changes needed, site is dark-first */
+  [data-mode="dark"] #root,
+  :not([data-mode]) #root {
+    filter: none;
   }
 
-  [data-mode="dark"] {
-    --bg-primary:   #080E14;
-    --bg-surface:   #0F1923;
-    --bg-card:      #111D28;
-    --text-primary: #FFFFFF;
-    --text-sub:     #6B8499;
-  }
-
-  [data-mode="amoled"] {
-    --bg-primary:   #000000;
-    --bg-surface:   #050505;
-    --bg-card:      #0a0a0a;
-    --text-primary: #FFFFFF;
-    --text-sub:     #5a7a8f;
-  }
-
+  /* LIGHT — CSS filter trick: invert the whole UI, re-invert media so images stay normal */
   [data-mode="light"] {
-    --bg-primary:   #f0f4f8;
-    --bg-surface:   #ffffff;
-    --bg-card:      #e8edf3;
-    --text-primary: #0a1929;
-    --text-sub:     #4a6278;
+    background-color: #e8edf3 !important;
+  }
+  [data-mode="light"] #root {
+    filter: invert(0.92) hue-rotate(180deg);
+    background-color: #e8edf3;
+    min-height: 100vh;
+  }
+  /* Re-invert media so posters/backdrops look normal */
+  [data-mode="light"] #root img,
+  [data-mode="light"] #root video,
+  [data-mode="light"] #root iframe,
+  [data-mode="light"] #root [style*="background-image"] {
+    filter: invert(1) hue-rotate(180deg);
+  }
+  /* Keep accent colors vivid — re-apply primary hue */
+  [data-mode="light"] #root svg {
+    filter: none;
+  }
+
+  /* AMOLED — true black, override the dark navy backgrounds */
+  [data-mode="amoled"] {
+    background-color: #000000 !important;
+  }
+  [data-mode="amoled"] #root {
+    background-color: #000000;
+  }
+  [data-mode="amoled"] body {
+    background-color: #000000 !important;
+  }
+  /* Force all major surface/card backgrounds to pure black in AMOLED */
+  [data-mode="amoled"] .bg-\[\#0f172a\],
+  [data-mode="amoled"] .bg-\[\#0b1120\],
+  [data-mode="amoled"] .bg-\[\#080E14\],
+  [data-mode="amoled"] .bg-\[\#141d26\],
+  [data-mode="amoled"] .bg-\[\#111D28\] {
+    background-color: #000000 !important;
+  }
+  [data-mode="amoled"] nav {
+    background-color: rgba(0,0,0,0.97) !important;
   }
 
   /* ── Font sizes ─────────────────────────────────────────────────────────── */
@@ -81,7 +99,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
-    /* Subtle noise texture overlay for cinematic depth */
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
   }
 
