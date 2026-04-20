@@ -5,10 +5,10 @@ import {
   Home as HomeIcon, Play, Star, EyeOff, Filter,
   Server, SkipForward, Subtitles, Clapperboard,
   Search, History, BarChart2, Trash2, Download, Upload,
-  ChevronDown,
+  ChevronDown, FileText, Film,
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
-import { addToHistory } from '../api';
+import { addToHistory, fetchHistory, searchMovies } from '../api';
 
 const THEMES = [
   { id: 'blue',   name: 'Velora Blue',  color: '#2563eb' },
@@ -255,11 +255,64 @@ function GeneralTab({ s }) {
   );
 }
 
+// ── CSV helpers ───────────────────────────────────────────────────────────────
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = splitCSVLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = splitCSVLine(line);
+    return Object.fromEntries(headers.map((h, i) => [h, (vals[i] ?? '').trim()]));
+  }).filter(row => Object.values(row).some(v => v));
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuote && line[i + 1] === '"') { current += '"'; i++; }
+      else inQuote = !inQuote;
+    } else if (ch === ',' && !inQuote) {
+      result.push(current); current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function isLetterboxdCSV(headers) {
+  return headers.includes('Letterboxd URI') || (headers.includes('Name') && headers.includes('Year') && headers.includes('Date'));
+}
+
+function historyToCSV(items) {
+  const headers = ['tmdbId', 'title', 'year', 'rating', 'overview', 'posterPath', 'backdropPath'];
+  const rows = items.map(item => [
+    item.tmdbId || item.id || '',
+    `"${(item.title || '').replace(/"/g, '""')}"`,
+    item.year || '',
+    item.rating || '',
+    `"${(item.overview || '').replace(/"/g, '""')}"`,
+    item.posterPath || '',
+    item.backdropPath || '',
+  ].join(','));
+  return [headers.join(','), ...rows].join('\n');
+}
+
 function DataTab({ s }) {
+  const [importFormat, setImportFormat] = useState('json'); // 'json' | 'csv' | 'letterboxd'
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
-  const [importStatus, setImportStatus] = useState(null); // null | 'success' | 'error'
+  const [importStatus, setImportStatus] = useState(null);
+  const [progress, setProgress] = useState(null); // { done, total } | null
   const fileRef = useRef(null);
+  const lbFileRef = useRef(null);
+  const csvFileRef = useRef(null);
 
   const handleClear = async () => {
     if (!window.confirm('Clear your entire watch history? This cannot be undone.')) return;
@@ -267,11 +320,30 @@ function DataTab({ s }) {
     setImportStatus(null);
   };
 
-  const handleImport = async () => {
+  // ── Export ──────────────────────────────────────────────────────────────────
+  const handleExportCSV = async () => {
+    try {
+      const res = await fetchHistory();
+      const data = res.data || [];
+      const csv = historyToCSV(data);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `velora-history-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* silent */ }
+  };
+
+  // ── Import: JSON paste ───────────────────────────────────────────────────────
+  const handleImportJSON = async () => {
     try {
       const parsed = JSON.parse(importText);
       if (!Array.isArray(parsed)) throw new Error('Not an array');
-      for (const item of parsed) {
+      setProgress({ done: 0, total: parsed.length });
+      for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i];
         if (item.tmdbId || item.id) {
           await addToHistory({
             tmdbId: item.tmdbId || item.id,
@@ -283,6 +355,7 @@ function DataTab({ s }) {
             overview: item.overview,
           }).catch(() => {});
         }
+        setProgress({ done: i + 1, total: parsed.length });
       }
       setImportStatus('success');
       setImportText('');
@@ -290,60 +363,263 @@ function DataTab({ s }) {
       window.dispatchEvent(new CustomEvent('velora:history-cleared'));
     } catch {
       setImportStatus('error');
+    } finally {
+      setProgress(null);
     }
   };
+
+  // ── Import: Velora CSV file ──────────────────────────────────────────────────
+  const handleVeloraCSVFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const rows = parseCSV(ev.target.result);
+        setProgress({ done: 0, total: rows.length });
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (r.tmdbId) {
+            await addToHistory({
+              tmdbId: Number(r.tmdbId),
+              title: r.title,
+              year: r.year,
+              rating: r.rating ? Number(r.rating) : undefined,
+              overview: r.overview,
+              posterPath: r.posterPath,
+              backdropPath: r.backdropPath,
+            }).catch(() => {});
+          }
+          setProgress({ done: i + 1, total: rows.length });
+        }
+        setImportStatus('success');
+        window.dispatchEvent(new CustomEvent('velora:history-cleared'));
+      } catch {
+        setImportStatus('error');
+      } finally {
+        setProgress(null);
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // ── Import: Letterboxd CSV ───────────────────────────────────────────────────
+  const handleLetterboxdFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const rows = parseCSV(ev.target.result);
+        const headers = Object.keys(rows[0] || {});
+        if (!isLetterboxdCSV(headers)) {
+          setImportStatus('errorFormat');
+          return;
+        }
+        setProgress({ done: 0, total: rows.length });
+        let matched = 0;
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          const name = r['Name'] || r['title'] || '';
+          const year = r['Year'] || r['year'] || '';
+          if (!name) { setProgress({ done: i + 1, total: rows.length }); continue; }
+          try {
+            const res = await searchMovies(name);
+            const results = res.data?.results || [];
+            // Best match: same year, or first result
+            const match = results.find(m => {
+              const y = (m.release_date || m.first_air_date || '').substring(0, 4);
+              return y === String(year);
+            }) || results[0];
+            if (match?.id) {
+              await addToHistory({
+                tmdbId: match.id,
+                title: match.title || match.name,
+                year: (match.release_date || match.first_air_date || '').substring(0, 4),
+                rating: match.vote_average,
+                overview: match.overview,
+                posterPath: match.poster_path,
+                backdropPath: match.backdrop_path,
+              }).catch(() => {});
+              matched++;
+            }
+          } catch { /* skip this entry */ }
+          setProgress({ done: i + 1, total: rows.length });
+        }
+        setImportStatus({ type: 'letterboxd', matched, total: rows.length });
+        window.dispatchEvent(new CustomEvent('velora:history-cleared'));
+      } catch {
+        setImportStatus('error');
+      } finally {
+        setProgress(null);
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const resetImport = () => { setImporting(false); setImportStatus(null); setImportText(''); setProgress(null); };
 
   return (
     <div>
       <SectionTitle>Watch History</SectionTitle>
 
-      <div className="flex gap-2 mb-4">
+      {/* Export row */}
+      <div className="grid grid-cols-3 gap-2 mb-6">
         <button
           onClick={s.exportWatchHistory}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-all"
+          className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/70 hover:bg-white/10 hover:text-white transition-all"
         >
-          <Download size={14} /> Export JSON
+          <Download size={14} />
+          JSON
+        </button>
+        <button
+          onClick={handleExportCSV}
+          className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/70 hover:bg-white/10 hover:text-white transition-all"
+        >
+          <FileText size={14} />
+          CSV
         </button>
         <button
           onClick={handleClear}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 hover:bg-red-500/20 transition-all"
+          className="flex flex-col items-center gap-1.5 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 hover:bg-red-500/20 transition-all"
         >
-          <Trash2 size={14} /> Clear All
+          <Trash2 size={14} />
+          Clear All
         </button>
       </div>
 
-      <SectionTitle>Import Watchlist</SectionTitle>
-      <p className="text-[11px] text-white/40 mb-3 leading-relaxed">
-        Paste a JSON array exported from Velora (or a compatible format) to import your watch history.
-      </p>
+      {/* Import section */}
+      <SectionTitle>Import</SectionTitle>
 
-      {!importing ? (
-        <button
-          onClick={() => { setImporting(true); setImportStatus(null); }}
-          className="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-all"
-        >
-          <Upload size={14} /> Import from JSON
-        </button>
-      ) : (
-        <div className="space-y-2">
-          <textarea
-            value={importText}
-            onChange={(e) => setImportText(e.target.value)}
-            placeholder='[{"tmdbId": 123, "title": "Movie Name", ...}]'
-            rows={5}
-            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-white/25 focus:outline-none focus:border-white/30 resize-none font-mono"
-          />
-          <div className="flex gap-2">
-            <button onClick={handleImport} className="flex-1 py-2 rounded-xl bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-              Import
+      {/* Format switcher */}
+      <div className="flex gap-1 p-1 bg-white/5 rounded-xl mb-4">
+        {[
+          { id: 'json',       label: 'Velora JSON' },
+          { id: 'csv',        label: 'Velora CSV' },
+          { id: 'letterboxd', label: '📽 Letterboxd' },
+        ].map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => { setImportFormat(id); setImportStatus(null); setImporting(false); setImportText(''); setProgress(null); }}
+            className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+              importFormat === id
+                ? 'bg-white/15 text-white'
+                : 'text-white/40 hover:text-white/70'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── JSON import ── */}
+      {importFormat === 'json' && (
+        <div>
+          <p className="text-[11px] text-white/40 mb-3 leading-relaxed">
+            Paste a JSON array exported from Velora to restore your watch history.
+          </p>
+          {!importing ? (
+            <button
+              onClick={() => { setImporting(true); setImportStatus(null); }}
+              className="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Upload size={14} /> Paste JSON
             </button>
-            <button onClick={() => { setImporting(false); setImportStatus(null); setImportText(''); }} className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white transition-colors">
-              Cancel
-            </button>
-          </div>
-          {importStatus === 'success' && <p className="text-xs text-green-400">✓ Imported successfully!</p>}
-          {importStatus === 'error' && <p className="text-xs text-red-400">✗ Invalid JSON. Check the format and try again.</p>}
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder='[{"tmdbId": 123, "title": "Movie Name", ...}]'
+                rows={5}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-white/25 focus:outline-none focus:border-white/30 resize-none font-mono"
+              />
+              {progress && (
+                <div className="w-full bg-white/10 rounded-full h-1.5">
+                  <div className="h-1.5 rounded-full transition-all" style={{ width: `${(progress.done / progress.total) * 100}%`, backgroundColor: 'var(--color-primary)' }} />
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={handleImportJSON} disabled={!!progress} className="flex-1 py-2 rounded-xl bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity">
+                  {progress ? `${progress.done}/${progress.total}…` : 'Import'}
+                </button>
+                <button onClick={resetImport} className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white transition-colors">Cancel</button>
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* ── Velora CSV import ── */}
+      {importFormat === 'csv' && (
+        <div>
+          <p className="text-[11px] text-white/40 mb-3 leading-relaxed">
+            Upload a <code className="text-white/60">.csv</code> file exported from Velora. All columns must match the Velora CSV format.
+          </p>
+          <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleVeloraCSVFile} />
+          <button
+            onClick={() => csvFileRef.current?.click()}
+            disabled={!!progress}
+            className="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-all"
+          >
+            <Upload size={14} /> Choose CSV file
+          </button>
+          {progress && (
+            <div className="mt-3 space-y-1">
+              <div className="w-full bg-white/10 rounded-full h-1.5">
+                <div className="h-1.5 rounded-full transition-all" style={{ width: `${(progress.done / progress.total) * 100}%`, backgroundColor: 'var(--color-primary)' }} />
+              </div>
+              <p className="text-[11px] text-white/40">{progress.done} of {progress.total} entries imported…</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Letterboxd CSV import ── */}
+      {importFormat === 'letterboxd' && (
+        <div>
+          <p className="text-[11px] text-white/40 mb-2 leading-relaxed">
+            Upload your <strong className="text-white/60">watched.csv</strong> from Letterboxd.
+            Each title will be matched to TMDB via search.
+          </p>
+          <p className="text-[10px] text-white/30 mb-3 leading-relaxed">
+            To export from Letterboxd: <em>Profile → Settings → Import &amp; Export → Export Your Data</em>
+          </p>
+          <input ref={lbFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleLetterboxdFile} />
+          <button
+            onClick={() => { setImportStatus(null); lbFileRef.current?.click(); }}
+            disabled={!!progress}
+            className="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-all"
+          >
+            <Film size={14} /> Choose watched.csv
+          </button>
+          {progress && (
+            <div className="mt-3 space-y-1">
+              <div className="w-full bg-white/10 rounded-full h-1.5">
+                <div className="h-1.5 rounded-full transition-all" style={{ width: `${(progress.done / progress.total) * 100}%`, backgroundColor: 'var(--color-primary)' }} />
+              </div>
+              <p className="text-[11px] text-white/40">Searching TMDB… {progress.done}/{progress.total}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Status messages */}
+      {importStatus === 'success' && (
+        <p className="text-xs text-green-400 mt-3">✓ Imported successfully!</p>
+      )}
+      {importStatus === 'error' && (
+        <p className="text-xs text-red-400 mt-3">✗ Something went wrong. Check the file format and try again.</p>
+      )}
+      {importStatus === 'errorFormat' && (
+        <p className="text-xs text-red-400 mt-3">✗ This doesn't look like a Letterboxd CSV. Make sure you're using <em>watched.csv</em>.</p>
+      )}
+      {importStatus?.type === 'letterboxd' && (
+        <p className="text-xs text-green-400 mt-3">
+          ✓ Done — matched {importStatus.matched} of {importStatus.total} titles on TMDB.
+        </p>
       )}
     </div>
   );
