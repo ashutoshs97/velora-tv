@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Play, Plus, Info, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Info, CheckCircle2 } from 'lucide-react';
+import WatchlistButton from './WatchlistButton';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
@@ -117,13 +118,12 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false }
                 >
                   <Play size={16} fill="currentColor" className="mr-1.5" /> Play
                 </Link>
-                <button
-                  className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"
-                  onClick={(e) => e.preventDefault()}
-                  title="Add to Watchlist"
-                >
-                  <Plus size={18} />
-                </button>
+                <WatchlistButton
+                  movie={movie}
+                  type={mediaType}
+                  className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20 flex items-center justify-center"
+                  size={18}
+                />
                 <Link
                   to={watchLink}
                   className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"

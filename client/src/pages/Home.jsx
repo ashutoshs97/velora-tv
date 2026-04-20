@@ -12,6 +12,7 @@ import {
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
+import WatchlistButton from '../components/WatchlistButton';
 import { useSettings } from '../contexts/SettingsContext';
 
 const GENRES = [
@@ -530,9 +531,12 @@ export default function Home() {
                     >
                       <Play size={20} fill="#000" className="mr-1.5" /> Play
                     </Link>
-                    <button title="Add to Watchlist" className="btn-secondary">
-                      <Plus size={22} />
-                    </button>
+                    <WatchlistButton 
+                      movie={heroMovie} 
+                      type={getSafeType(heroMovie)} 
+                      className="btn-secondary" 
+                      size={22}
+                    />
                     <button
                       onClick={handleShare}
                       title="Share"
