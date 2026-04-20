@@ -264,8 +264,11 @@ function splitCSVLine(line) {
   return result;
 }
 
-function isLetterboxdCSV(headers) {
-  return headers.includes('Letterboxd URI') || (headers.includes('Name') && headers.includes('Year') && headers.includes('Date'));
+function isExternalCSV(headers) {
+  return headers.includes('Letterboxd URI') || 
+         (headers.includes('Name') && headers.includes('Year')) || 
+         (headers.includes('Title') && headers.includes('Year')) ||
+         headers.includes('Const');
 }
 
 function historyToCSV(items) {
@@ -391,7 +394,7 @@ function DataTab({ s }) {
       try {
         const rows = parseCSV(ev.target.result);
         const headers = Object.keys(rows[0] || {});
-        if (!isLetterboxdCSV(headers)) {
+        if (!isExternalCSV(headers)) {
           setImportStatus('errorFormat');
           return;
         }
@@ -399,7 +402,7 @@ function DataTab({ s }) {
         let matched = 0;
         for (let i = 0; i < rows.length; i++) {
           const r = rows[i];
-          const name = r['Name'] || r['title'] || '';
+          const name = r['Name'] || r['Title'] || r['title'] || '';
           const year = r['Year'] || r['year'] || '';
           if (!name) { setProgress({ done: i + 1, total: rows.length }); continue; }
           try {
@@ -476,7 +479,7 @@ function DataTab({ s }) {
         {[
           { id: 'json',       label: 'Velora JSON' },
           { id: 'csv',        label: 'Velora CSV' },
-          { id: 'letterboxd', label: '📽 Letterboxd' },
+          { id: 'letterboxd', label: '📽 Letterboxd / IMDb' },
         ].map(({ id, label }) => (
           <button
             key={id}
@@ -555,22 +558,23 @@ function DataTab({ s }) {
         </div>
       )}
 
-      {/* ── Letterboxd CSV import ── */}
+      {/* ── External CSV import ── */}
       {importFormat === 'letterboxd' && (
         <div>
           <p className="text-[11px] text-white/40 mb-2 leading-relaxed">
-            Upload your <strong className="text-white/60">watched.csv</strong> from Letterboxd to import into your watchlist.
+            Upload your <strong className="text-white/60">watched.csv</strong> or <strong className="text-white/60">watchlist.csv</strong> from Letterboxd or IMDb.
           </p>
           <p className="text-[10px] text-white/30 mb-3 leading-relaxed">
-            To export from Letterboxd: <em>Profile → Settings → Import &amp; Export → Export Your Data</em>
+            To export from Letterboxd: <em>Profile → Settings → Import &amp; Export → Export Your Data</em><br/>
+            To export from IMDb: <em>Your lists → Click ⠇ → Export</em>
           </p>
           <input ref={lbFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleLetterboxdFile} />
           <button
             onClick={() => { setImportStatus(null); lbFileRef.current?.click(); }}
             disabled={!!progress}
-            className="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-all"
+            className="flex items-center justify-center w-full gap-2 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-50 transition-all font-semibold"
           >
-            <Film size={14} /> Choose watched.csv
+            <Film size={14} /> Choose CSV File
           </button>
           {progress && (
             <div className="mt-3 space-y-1">
