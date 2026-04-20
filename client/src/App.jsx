@@ -23,9 +23,9 @@ function ScrollToTop() {
 
 export default function App() {
   const location = useLocation();
-  const { reducedMotion } = useSettings();
+  const { reducedMotion, showSplash } = useSettings();
   const [showIntro, setShowIntro] = useState(
-    () => !sessionStorage.getItem('velora_intro_shown')
+    () => showSplash && !sessionStorage.getItem('velora_intro_shown')
   );
   const handleIntroDone = useCallback(() => setShowIntro(false), []);
 

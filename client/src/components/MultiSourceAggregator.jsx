@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Server, RefreshCw, AlertCircle, Volume2, Zap } from 'lucide-react';
 import { getEnabledMovieProviders } from '../config/movieProviders';
 import { triggerHaptic } from '../utils/haptics';
+import { useSettings } from '../contexts/SettingsContext';
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -30,8 +31,11 @@ export default function MultiSourceAggregator({
   season = 1,
   episode = 1,
 }) {
+  const { defaultServer } = useSettings();
   const providers = getEnabledMovieProviders();
-  const [activeServer, setActiveServer] = useState(0);
+  // Find the index of the user's preferred server, fallback to 0
+  const preferredIdx = providers.findIndex(p => p.id === defaultServer);
+  const [activeServer, setActiveServer] = useState(preferredIdx >= 0 ? preferredIdx : 0);
   const [mirrorIndex, setMirrorIndex] = useState(0);
   const [iframeKey, setIframeKey] = useState(0);
   const [loading, setLoading] = useState(true);

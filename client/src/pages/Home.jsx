@@ -12,6 +12,7 @@ import {
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
+import { useSettings } from '../contexts/SettingsContext';
 
 const GENRES = [
   { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
@@ -68,6 +69,7 @@ function getHistoryType(item) {
 }
 
 export default function Home() {
+  const { heroAutoplay, trailerAutoplay, minRating, hideWatched } = useSettings();
   const [trending, setTrending] = useState([]);
   const [trendingTV, setTrendingTV] = useState([]);
   const [topRated, setTopRated] = useState([]);
@@ -309,13 +311,13 @@ export default function Home() {
   }, [heroIndex, heroMovies.length, goToSlide]);
 
   useEffect(() => {
-    if (trailerActive && !trailerEnded) {
+    if (!heroAutoplay || (trailerActive && !trailerEnded)) {
       clearInterval(autoAdvanceRef.current);
       return;
     }
     autoAdvanceRef.current = setInterval(nextSlide, 10000);
     return () => clearInterval(autoAdvanceRef.current);
-  }, [nextSlide, trailerActive, trailerEnded]);
+  }, [nextSlide, trailerActive, trailerEnded, heroAutoplay]);
 
   useEffect(() => {
     setTrailerKey(null);
@@ -335,9 +337,11 @@ export default function Home() {
           || videos.find(v => v.site === 'YouTube');
         if (trailer?.key && typeof trailer.key === 'string' && trailer.key.trim()) {
           setTrailerKey(trailer.key.trim());
-          trailerTimerRef.current = setTimeout(() => {
-            if (!cancelled) setTrailerActive(true);
-          }, 6000);
+          if (trailerAutoplay) {
+            trailerTimerRef.current = setTimeout(() => {
+              if (!cancelled) setTrailerActive(true);
+            }, 6000);
+          }
         }
       })
       .catch(() => {});
@@ -379,6 +383,18 @@ export default function Home() {
       return newMuted;
     });
   }, []);
+
+  // ── Settings-based filters ────────────────────────────────────────────────
+  const watchedIds = useMemo(() => new Set(history.map(h => h.tmdbId || h.id)), [history]);
+
+  const filterItems = useCallback((arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(m => {
+      if (minRating > 0 && (m.vote_average || 0) < minRating) return false;
+      if (hideWatched && watchedIds.has(m.id)) return false;
+      return true;
+    });
+  }, [minRating, hideWatched, watchedIds]);
 
   return (
     <motion.div
@@ -611,7 +627,7 @@ export default function Home() {
           <CarouselRow
             title="Top 10 Movies"
             badge="Trending"
-            movies={trending}
+            movies={filterItems(trending)}
             loading={loadingTrending}
             ranked
             usePoster
@@ -622,7 +638,7 @@ export default function Home() {
           <CarouselRow
             title="Top 10 TV Shows"
             badge="Popular"
-            movies={trendingTV}
+            movies={filterItems(trendingTV)}
             loading={loadingTrendingTV}
             ranked
             usePoster
@@ -642,7 +658,7 @@ export default function Home() {
           <PrimeCarouselRow
             title="Critically Acclaimed"
             badge="Top Rated"
-            movies={topRated}
+            movies={filterItems(topRated)}
             loading={loadingTopRated}
           />
         </div>
@@ -651,7 +667,7 @@ export default function Home() {
           <CarouselRow
             title="Binge-Worthy TV Shows"
             badge="Series"
-            movies={trendingTV}
+            movies={filterItems(trendingTV)}
             loading={loadingTrendingTV}
             usePoster
           />
@@ -661,7 +677,7 @@ export default function Home() {
           <PrimeCarouselRow
             title="Fresh Drops"
             badge="New This Month"
-            movies={newReleases}
+            movies={filterItems(newReleases)}
             loading={loadingNew}
           />
         </div>
@@ -670,7 +686,7 @@ export default function Home() {
           <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
             <CarouselRow
               title={`Because You Watched "${becauseTitle}"`}
-              movies={becauseYouWatched}
+              movies={filterItems(becauseYouWatched)}
               usePoster
             />
           </div>
@@ -703,7 +719,7 @@ export default function Home() {
           </div>
           <PrimeCarouselRow
             title=""
-            movies={genreMovies}
+            movies={filterItems(genreMovies)}
             loading={loadingGenre}
           />
         </div>
@@ -735,7 +751,7 @@ export default function Home() {
           </div>
           <PrimeCarouselRow
             title=""
-            movies={moodMovies}
+            movies={filterItems(moodMovies)}
             loading={loadingMood}
           />
         </div>

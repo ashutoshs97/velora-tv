@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
@@ -42,15 +43,22 @@ function RankBadge({ rank }) {
 
 function CarouselCard({ movie, rank, usePoster = false }) {
   const [imgError, setImgError] = useState(false);
+  const { ratingSystem } = useSettings();
 
   const id = movie.tmdbId || movie.id;
   const mediaType = getMediaType(movie);
   const watchLink = id ? `/watch/${id}?type=${mediaType}` : '/';
   const title = movie.title || movie.name || 'Unknown Title';
   const year = (movie.release_date || movie.first_air_date || '').substring(0, 4);
-  const rating = movie.vote_average
-    ? Number(movie.vote_average).toFixed(1)
-    : null;
+  const rawRating = movie.vote_average ? Number(movie.vote_average) : null;
+
+  const formatRating = (r) => {
+    if (!r) return null;
+    if (ratingSystem === 'percent') return `${Math.round(r * 10)}%`;
+    if (ratingSystem === 'stars') return '★'.repeat(Math.round(r / 2));
+    return r.toFixed(1);
+  };
+  const rating = formatRating(rawRating);
 
   const imgSrc = imgError
     ? PLACEHOLDER_SVG

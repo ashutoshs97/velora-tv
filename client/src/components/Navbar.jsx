@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
-import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2 } from 'lucide-react';
+import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2, Clock } from 'lucide-react';
 import SettingsModal from './SettingsModal';
 import { AnimatePresence } from 'framer-motion';
+import { useSettings } from '../contexts/SettingsContext';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -24,8 +25,9 @@ const NAV_LINKS = [
 const MAX_QUERY_LENGTH = 150;
 
 export default function Navbar() {
-  const navigate = useNavigate(); // moved to top
+  const navigate = useNavigate();
   const location = useLocation();
+  const { searchSuggestions, searchHistoryEnabled } = useSettings();
 
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -35,6 +37,10 @@ export default function Navbar() {
   const [hintIndex, setHintIndex] = useState(0);
   const [hintVisible, setHintVisible] = useState(true);
   const [surprising, setSurprising] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('velora_recent_searches') || '[]'); }
+    catch { return []; }
+  });
 
   // removed /anime from root paths since anime is disabled
   const isRootPath = ['/', '/movies', '/shows'].includes(location.pathname);
@@ -66,7 +72,7 @@ export default function Navbar() {
 
   // cycling placeholder
   useEffect(() => {
-    if (query || searchFocused) return;
+    if (!searchSuggestions || query || searchFocused) return;
     const interval = setInterval(() => {
       setHintVisible(false);
       hintTimerRef.current = setTimeout(() => {
@@ -78,7 +84,7 @@ export default function Navbar() {
       clearInterval(interval);
       clearTimeout(hintTimerRef.current);
     };
-  }, [query, searchFocused]);
+  }, [query, searchFocused, searchSuggestions]);
 
   // close menu on outside click
   useEffect(() => {
@@ -119,12 +125,20 @@ export default function Navbar() {
     e.preventDefault();
     const trimmed = query.trim();
     if (trimmed) {
+      // Save to recent searches
+      if (searchHistoryEnabled) {
+        setRecentSearches(prev => {
+          const updated = [trimmed, ...prev.filter(s => s !== trimmed)].slice(0, 8);
+          localStorage.setItem('velora_recent_searches', JSON.stringify(updated));
+          return updated;
+        });
+      }
       navigate(`/search?q=${encodeURIComponent(trimmed)}`);
       setQuery('');
       setMenuOpen(false);
       inputRef.current?.blur();
     }
-  }, [query, navigate]);
+  }, [query, navigate, searchHistoryEnabled]);
 
   const handleQueryChange = useCallback((e) => {
     const val = e.target.value;

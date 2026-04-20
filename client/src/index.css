@@ -31,6 +31,45 @@
     --color-primary-rgb: 124, 58, 237;
   }
 
+  /* ── Color modes ─────────────────────────────────────────────────────────── */
+  :root {
+    --bg-primary:   #080E14;
+    --bg-surface:   #0F1923;
+    --bg-card:      #111D28;
+    --text-primary: #FFFFFF;
+    --text-sub:     #6B8499;
+  }
+
+  [data-mode="dark"] {
+    --bg-primary:   #080E14;
+    --bg-surface:   #0F1923;
+    --bg-card:      #111D28;
+    --text-primary: #FFFFFF;
+    --text-sub:     #6B8499;
+  }
+
+  [data-mode="amoled"] {
+    --bg-primary:   #000000;
+    --bg-surface:   #050505;
+    --bg-card:      #0a0a0a;
+    --text-primary: #FFFFFF;
+    --text-sub:     #5a7a8f;
+  }
+
+  [data-mode="light"] {
+    --bg-primary:   #f0f4f8;
+    --bg-surface:   #ffffff;
+    --bg-card:      #e8edf3;
+    --text-primary: #0a1929;
+    --text-sub:     #4a6278;
+  }
+
+  /* ── Font sizes ─────────────────────────────────────────────────────────── */
+  [data-font="sm"] { font-size: 13px; }
+  [data-font="md"] { font-size: 16px; }
+  [data-font="lg"] { font-size: 19px; }
+
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html { scroll-behavior: smooth; }
