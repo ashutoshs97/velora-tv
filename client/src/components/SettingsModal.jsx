@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, Zap, Paintbrush, Type,
+  X, Zap, Paintbrush, Type, Moon,
   Home as HomeIcon, Play, Star, EyeOff, Filter,
   Server, SkipForward, Subtitles, Clapperboard,
   Search, History, BarChart2, Trash2, Download, Upload,
