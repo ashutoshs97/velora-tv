@@ -31,56 +31,7 @@
     --color-primary-rgb: 124, 58, 237;
   }
 
-  /* ── Color modes ─────────────────────────────────────────────────────────── */
 
-  /* DARK (default) — no changes needed, site is dark-first */
-  [data-mode="dark"] #root,
-  :not([data-mode]) #root {
-    filter: none;
-  }
-
-  /* LIGHT — CSS filter trick: invert the whole UI, re-invert media so images stay normal */
-  [data-mode="light"] {
-    background-color: #e8edf3 !important;
-  }
-  [data-mode="light"] #root {
-    filter: invert(0.92) hue-rotate(180deg);
-    background-color: #e8edf3;
-    min-height: 100vh;
-  }
-  /* Re-invert media so posters/backdrops look normal */
-  [data-mode="light"] #root img,
-  [data-mode="light"] #root video,
-  [data-mode="light"] #root iframe,
-  [data-mode="light"] #root [style*="background-image"] {
-    filter: invert(1) hue-rotate(180deg);
-  }
-  /* Keep accent colors vivid — re-apply primary hue */
-  [data-mode="light"] #root svg {
-    filter: none;
-  }
-
-  /* AMOLED — true black, override the dark navy backgrounds */
-  [data-mode="amoled"] {
-    background-color: #000000 !important;
-  }
-  [data-mode="amoled"] #root {
-    background-color: #000000;
-  }
-  [data-mode="amoled"] body {
-    background-color: #000000 !important;
-  }
-  /* Force all major surface/card backgrounds to pure black in AMOLED */
-  [data-mode="amoled"] .bg-\[\#0f172a\],
-  [data-mode="amoled"] .bg-\[\#0b1120\],
-  [data-mode="amoled"] .bg-\[\#080E14\],
-  [data-mode="amoled"] .bg-\[\#141d26\],
-  [data-mode="amoled"] .bg-\[\#111D28\] {
-    background-color: #000000 !important;
-  }
-  [data-mode="amoled"] nav {
-    background-color: rgba(0,0,0,0.97) !important;
-  }
 
   /* ── Font sizes ─────────────────────────────────────────────────────────── */
   [data-font="sm"] { font-size: 13px; }

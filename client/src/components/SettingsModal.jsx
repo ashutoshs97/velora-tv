@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, Zap, Paintbrush, Moon, Sun, Monitor, Type,
+  X, Zap, Paintbrush, Type,
   Home as HomeIcon, Play, Star, EyeOff, Filter,
   Server, SkipForward, Subtitles, Clapperboard,
   Search, History, BarChart2, Trash2, Download, Upload,
@@ -76,28 +76,6 @@ function SectionTitle({ children }) {
 function AppearanceTab({ s }) {
   return (
     <div>
-      <SectionTitle>Color Mode</SectionTitle>
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        {[
-          { id: 'dark',   label: 'Dark',   icon: Moon },
-          { id: 'light',  label: 'Light',  icon: Sun },
-          { id: 'amoled', label: 'AMOLED', icon: Monitor },
-        ].map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => s.setColorMode(id)}
-            className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all ${
-              s.colorMode === id
-                ? 'bg-white/10 border-white/30 text-white'
-                : 'bg-white/5 border-white/5 text-white/50 hover:bg-white/8 hover:text-white/80'
-            }`}
-          >
-            <Icon size={16} />
-            {label}
-          </button>
-        ))}
-      </div>
-
       <SectionTitle>Font Size</SectionTitle>
       <div className="grid grid-cols-3 gap-2 mb-6">
         {[{ id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }].map(({ id, label }) => (

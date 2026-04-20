@@ -21,7 +21,6 @@ export function SettingsProvider({ children }) {
   const [theme, setTheme] = usePersisted('velora_theme', 'blue');
 
   // ── Appearance ────────────────────────────────────────────────────────────
-  const [colorMode, setColorMode] = usePersisted('velora_color_mode', 'dark');   // 'dark' | 'light' | 'amoled'
   const [fontSize, setFontSize] = usePersisted('velora_font_size', 'md');         // 'sm' | 'md' | 'lg'
 
   // ── Home ──────────────────────────────────────────────────────────────────
@@ -45,7 +44,6 @@ export function SettingsProvider({ children }) {
   // ── Apply side-effects ────────────────────────────────────────────────────
   useEffect(() => { localStorage.setItem('velora_reduced_motion', JSON.stringify(reducedMotion)); }, [reducedMotion]);
   useEffect(() => { localStorage.setItem('velora_theme', JSON.stringify(theme)); document.documentElement.setAttribute('data-theme', theme); }, [theme]);
-  useEffect(() => { localStorage.setItem('velora_color_mode', JSON.stringify(colorMode)); document.documentElement.setAttribute('data-mode', colorMode); }, [colorMode]);
   useEffect(() => { localStorage.setItem('velora_font_size', JSON.stringify(fontSize)); document.documentElement.setAttribute('data-font', fontSize); }, [fontSize]);
   useEffect(() => { localStorage.setItem('velora_hero_autoplay', JSON.stringify(heroAutoplay)); }, [heroAutoplay]);
   useEffect(() => { localStorage.setItem('velora_trailer_autoplay', JSON.stringify(trailerAutoplay)); }, [trailerAutoplay]);
@@ -63,7 +61,6 @@ export function SettingsProvider({ children }) {
   // Apply on initial mount
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.setAttribute('data-mode', colorMode);
     document.documentElement.setAttribute('data-font', fontSize);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -93,7 +90,6 @@ export function SettingsProvider({ children }) {
       reducedMotion, setReducedMotion,
       theme, setTheme,
       // appearance
-      colorMode, setColorMode,
       fontSize, setFontSize,
       // home
       heroAutoplay, setHeroAutoplay,
