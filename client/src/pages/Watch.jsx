@@ -2,9 +2,14 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, Star, Plus, Share2, ListVideo, Play as PlayIcon, Check, CheckCircle2
+  ArrowLeft, Star, Plus, Share2, ListVideo, Play as PlayIcon, CheckCircle2,
+  Bookmark, Check,
 } from 'lucide-react';
-import { fetchMovieDetail, fetchTVDetail, addToHistory, fetchSimilar, fetchRecommendations } from '../api';
+import { 
+  fetchMovieDetail, fetchTVDetail, 
+  fetchSimilar, fetchRecommendations, 
+  addToHistory, fetchWatchlist, addToWatchlist, deleteWatchlistItem 
+} from '../api';
 import MultiSourceAggregator from '../components/MultiSourceAggregator';
 import TrailerModal from '../components/TrailerModal';
 import AmbientBackground from '../components/AmbientBackground';
@@ -35,7 +40,9 @@ export default function Watch() {
   const [copied, setCopied] = useState(false);
   const [similar, setSimilar] = useState([]);
   const [recommended, setRecommended] = useState([]);
-  const [showColdStartWarning, setShowColdStartWarning] = useState(false); // ← MOVED UP
+  const [showColdStartWarning, setShowColdStartWarning] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchlistId, setWatchlistId] = useState(null);
 
   // ── All useEffect hooks together after useState ────────────────────────
 
@@ -115,7 +122,51 @@ export default function Watch() {
     return () => { cancelled = true; };
   }, [id, type]);
 
+  useEffect(() => {
+    // Check if in watchlist
+    if (!id) return;
+    fetchWatchlist().then(res => {
+      const list = res.data || [];
+      const item = list.find(w => String(w.tmdbId) === String(id));
+      if (item) {
+        setInWatchlist(true);
+        setWatchlistId(item._id || item.tmdbId);
+      } else {
+        setInWatchlist(false);
+        setWatchlistId(null);
+      }
+    }).catch(() => {});
+  }, [id, movie]);
+
   // ── useCallback hooks ─────────────────────────────────────────────────
+
+  const handleWatchlistToggle = async () => {
+    if (!movie) return;
+    
+    try {
+      if (inWatchlist) {
+        setInWatchlist(false);
+        await deleteWatchlistItem(watchlistId || id);
+      } else {
+        setInWatchlist(true);
+        const res = await addToWatchlist({
+          tmdbId: Number(id),
+          title: movie.title || movie.name,
+          posterPath: movie.poster_path,
+          backdropPath: movie.backdrop_path,
+          year: (movie.release_date || movie.first_air_date || '').substring(0, 4),
+          rating: movie.vote_average,
+          overview: movie.overview,
+          type: type === 'tv' ? 'tv' : 'movie'
+        });
+        setWatchlistId(res.data?._id || id);
+      }
+      window.dispatchEvent(new CustomEvent('velora:watchlist-updated'));
+    } catch (err) {
+      // Optimistic revert
+      setInWatchlist(!inWatchlist);
+    }
+  };
 
   // Share handler with fallback for browsers that don't support clipboard API
   const handleShare = useCallback(() => {
@@ -342,8 +393,12 @@ export default function Watch() {
                   <PlayIcon size={16} fill="currentColor" /> Watch Trailer
                 </button>
               )}
-              <button title="Watchlist" className="btn-secondary !p-4">
-                <Plus size={20} />
+              <button 
+                onClick={handleWatchlistToggle}
+                title={inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+                className={`btn-secondary !p-4 transition-all ${inWatchlist ? 'text-[var(--color-primary)] border-[var(--color-primary)] bg-[var(--color-primary)]/10' : ''}`}
+              >
+                {inWatchlist ? <Check size={20} /> : <Bookmark size={20} />}
               </button>
               <button
                 onClick={handleShare}

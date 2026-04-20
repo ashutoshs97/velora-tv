@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import SplashIntro from './components/SplashIntro';
 import Home from './pages/Home';
 import Search from './pages/Search';
+import Watchlist from './pages/Watchlist';
 import Watch from './pages/Watch';
 import Person from './pages/Person';
 import Movies from './pages/Movies';
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/calendar"  element={<ReleaseCalendar />} />
               <Route path="/genres"    element={<Genres />} />
               <Route path="/search"    element={<Search />} />
+              <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/watch/:id" element={<Watch />} />
               <Route path="/person/:id" element={<Person />} />
             </Routes>

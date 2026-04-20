@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
-import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2, Clock } from 'lucide-react';
+import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2, Clock, Bookmark } from 'lucide-react';
 import SettingsModal from './SettingsModal';
 import { AnimatePresence } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { to: '/movies', label: 'Movies' },
   { to: '/shows', label: 'Shows' },
   { to: '/genres', label: 'Genres' },
+  { to: '/watchlist', label: 'Watchlist', icon: Bookmark },
 ];
 
 const MAX_QUERY_LENGTH = 150;

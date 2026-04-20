@@ -8,7 +8,7 @@ import {
   ChevronDown, FileText, Film,
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
-import { addToHistory, fetchHistory, searchMovies } from '../api';
+import { addToWatchlist, fetchHistory, searchMovies } from '../api';
 
 const THEMES = [
   { id: 'blue',   name: 'Velora Blue',  color: '#2563eb' },
@@ -65,9 +65,9 @@ function Row({ icon: Icon, title, description, children }) {
   );
 }
 
-function SectionTitle({ children }) {
+function SectionTitle({ children, className = "" }) {
   return (
-    <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3 mt-1">{children}</p>
+    <p className={`text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3 mt-1 ${className}`}>{children}</p>
   );
 }
 
@@ -323,7 +323,7 @@ function DataTab({ s }) {
       for (let i = 0; i < parsed.length; i++) {
         const item = parsed[i];
         if (item.tmdbId || item.id) {
-          await addToHistory({
+          await addToWatchlist({
             tmdbId: item.tmdbId || item.id,
             title: item.title || item.name,
             posterPath: item.posterPath || item.poster_path,
@@ -338,7 +338,7 @@ function DataTab({ s }) {
       setImportStatus('success');
       setImportText('');
       setImporting(false);
-      window.dispatchEvent(new CustomEvent('velora:history-cleared'));
+      window.dispatchEvent(new CustomEvent('velora:watchlist-updated'));
     } catch {
       setImportStatus('error');
     } finally {
@@ -358,7 +358,7 @@ function DataTab({ s }) {
         for (let i = 0; i < rows.length; i++) {
           const r = rows[i];
           if (r.tmdbId) {
-            await addToHistory({
+            await addToWatchlist({
               tmdbId: Number(r.tmdbId),
               title: r.title,
               year: r.year,
@@ -371,7 +371,7 @@ function DataTab({ s }) {
           setProgress({ done: i + 1, total: rows.length });
         }
         setImportStatus('success');
-        window.dispatchEvent(new CustomEvent('velora:history-cleared'));
+        window.dispatchEvent(new CustomEvent('velora:watchlist-updated'));
       } catch {
         setImportStatus('error');
       } finally {
@@ -411,7 +411,7 @@ function DataTab({ s }) {
               return y === String(year);
             }) || results[0];
             if (match?.id) {
-              await addToHistory({
+              await addToWatchlist({
                 tmdbId: match.id,
                 title: match.title || match.name,
                 year: (match.release_date || match.first_air_date || '').substring(0, 4),
@@ -426,7 +426,7 @@ function DataTab({ s }) {
           setProgress({ done: i + 1, total: rows.length });
         }
         setImportStatus({ type: 'letterboxd', matched, total: rows.length });
-        window.dispatchEvent(new CustomEvent('velora:history-cleared'));
+        window.dispatchEvent(new CustomEvent('velora:watchlist-updated'));
       } catch {
         setImportStatus('error');
       } finally {
@@ -469,7 +469,7 @@ function DataTab({ s }) {
       </div>
 
       {/* Import section */}
-      <SectionTitle>Import</SectionTitle>
+      <SectionTitle>Import to Watchlist</SectionTitle>
 
       {/* Format switcher */}
       <div className="flex gap-1 p-1 bg-white/5 rounded-xl mb-4">
@@ -496,7 +496,7 @@ function DataTab({ s }) {
       {importFormat === 'json' && (
         <div>
           <p className="text-[11px] text-white/40 mb-3 leading-relaxed">
-            Paste a JSON array exported from Velora to restore your watch history.
+            Paste a JSON array to import items into your watchlist.
           </p>
           {!importing ? (
             <button
@@ -534,7 +534,7 @@ function DataTab({ s }) {
       {importFormat === 'csv' && (
         <div>
           <p className="text-[11px] text-white/40 mb-3 leading-relaxed">
-            Upload a <code className="text-white/60">.csv</code> file exported from Velora. All columns must match the Velora CSV format.
+            Upload a <code className="text-white/60">.csv</code> file to import items into your watchlist.
           </p>
           <input ref={csvFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleVeloraCSVFile} />
           <button
@@ -559,8 +559,7 @@ function DataTab({ s }) {
       {importFormat === 'letterboxd' && (
         <div>
           <p className="text-[11px] text-white/40 mb-2 leading-relaxed">
-            Upload your <strong className="text-white/60">watched.csv</strong> from Letterboxd.
-            Each title will be matched to TMDB via search.
+            Upload your <strong className="text-white/60">watched.csv</strong> from Letterboxd to import into your watchlist.
           </p>
           <p className="text-[10px] text-white/30 mb-3 leading-relaxed">
             To export from Letterboxd: <em>Profile → Settings → Import &amp; Export → Export Your Data</em>

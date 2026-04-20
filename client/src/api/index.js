@@ -30,6 +30,12 @@ export const addToHistory = (movie) => api.post('/history', movie);
 export const deleteHistoryItem = (id) => api.delete(`/history/${id}`);
 export const clearHistory = () => api.delete('/history');
 
+// watchlist
+export const fetchWatchlist = () => api.get('/watchlist');
+export const addToWatchlist = (movie) => api.post('/watchlist', movie);
+export const deleteWatchlistItem = (id) => api.delete(`/watchlist/${id}`);
+export const clearWatchlist = () => api.delete('/watchlist');
+
 // comments
 export const fetchComments = (mediaType, mediaId) => api.get(`/comments/${mediaType}/${mediaId}`);
 export const postComment = (mediaType, mediaId, content) => api.post('/comments', { mediaType, mediaId, content });

@@ -3,6 +3,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import moviesRouter from './routes/movies.js';
 import historyRouter from './routes/history.js';
+import watchlistRouter from './routes/watchlist.js';
 import commentsRouter from './routes/comments.js';
 
 const app = express();
@@ -47,6 +48,7 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/movies', moviesRouter);
 app.use('/api/history', historyRouter);
+app.use('/api/watchlist', watchlistRouter);
 app.use('/api/comments', commentsRouter);
 
 app.get('/api/health', (req, res) => {
