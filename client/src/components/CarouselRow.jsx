@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
+import FocusableLink from './FocusableLink';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
@@ -67,10 +68,10 @@ function CarouselCard({ movie, rank, usePoster = false }) {
       : (movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : PLACEHOLDER_SVG);
 
   return (
-    <div className={`carousel-card group relative flex-shrink-0 ${
+    <div className={`carousel-card relative flex-shrink-0 ${
       usePoster ? 'w-36 sm:w-44 md:w-48' : 'w-60 sm:w-72 md:w-80'
     } ${rank ? 'ml-6 sm:ml-8' : ''}`}>
-      <Link to={watchLink} className="block relative cursor-pointer group">
+      <FocusableLink to={watchLink} className="block relative cursor-pointer group rounded-lg focus:outline-none">
         <div className="relative">
           {rank && <RankBadge rank={rank} />}
           <div className={`relative overflow-hidden rounded-lg shadow-lg shadow-black/20 ${
@@ -117,7 +118,7 @@ function CarouselCard({ movie, rank, usePoster = false }) {
             <span className="capitalize">{mediaType === 'tv' ? 'TV Show' : 'Movie'}</span>
           </div>
         </div>
-      </Link>
+      </FocusableLink>
     </div>
   );
 }

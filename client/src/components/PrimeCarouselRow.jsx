@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Info, CheckCircle2 } from 'lucide-react';
 import WatchlistButton from './WatchlistButton';
+import FocusableLink from './FocusableLink';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
@@ -44,9 +45,9 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false }
     ? PLACEHOLDER_SVG
     : shouldExpand ? backdropSrc : posterSrc;
 
-  const CardWrapper = isTouchDevice ? Link : 'div';
+  const CardWrapper = isTouchDevice ? FocusableLink : 'div';
   const wrapperProps = isTouchDevice
-    ? { to: watchLink }
+    ? { to: watchLink, className: "focus:outline-none focus:ring-4 focus:ring-white rounded-lg" }
     : {
         onMouseEnter: onHover,
         onMouseLeave: onLeave,
@@ -111,27 +112,27 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false }
               </h3>
 
               <div className="flex items-center gap-2 mb-4">
-                <Link
+                <FocusableLink
                   to={watchLink}
                   className="bg-white text-black px-4 py-1.5 sm:py-2 rounded-lg font-bold text-sm sm:text-base flex items-center hover:bg-white/90 transition-colors shadow-lg"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Play size={16} fill="currentColor" className="mr-1.5" /> Play
-                </Link>
+                </FocusableLink>
                 <WatchlistButton
                   movie={movie}
                   type={mediaType}
                   className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20 flex items-center justify-center"
                   size={18}
                 />
-                <Link
+                <FocusableLink
                   to={watchLink}
                   className="bg-white/20 text-white p-1.5 sm:p-2 rounded-full backdrop-blur-md hover:bg-white/30 transition-colors border border-white/20"
                   onClick={(e) => e.stopPropagation()}
                   title="More Info"
                 >
                   <Info size={18} />
-                </Link>
+                </FocusableLink>
               </div>
 
               <div className="flex flex-col gap-1 text-[11px] sm:text-xs text-white/80 font-medium">

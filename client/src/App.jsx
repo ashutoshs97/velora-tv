@@ -2,6 +2,12 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import { useEffect, useState, useCallback } from 'react';
 import { useSettings } from './contexts/SettingsContext';
+import { init } from '@noriginmedia/norigin-spatial-navigation';
+
+init({
+  debug: false,
+  visualDebug: false
+});
 import Navbar from './components/Navbar';
 import SplashIntro from './components/SplashIntro';
 import Home from './pages/Home';

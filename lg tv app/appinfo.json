@@ -1,0 +1,15 @@
+{
+  "id": "in.veloratv.app",
+  "version": "1.0.0",
+  "vendor": "Velora",
+  "type": "web",
+  "main": "index.html",
+  "title": "Velora TV",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgImage": "largeIcon.png",
+  "appDescription": "Velora stream aggregator and watcher.",
+  "resolution": "1920x1080",
+  "bgColor": "#0b0f19",
+  "transparent": false
+}

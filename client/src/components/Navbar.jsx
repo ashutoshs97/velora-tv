@@ -5,6 +5,8 @@ import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon,
 import SettingsModal from './SettingsModal';
 import { AnimatePresence } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
+import FocusableLink from './FocusableLink';
+import FocusableButton from './FocusableButton';
 
 const SEARCH_HINTS = [
   'Search "Inception"…',
@@ -222,50 +224,50 @@ export default function Navbar() {
                   const active = isActive(to);
                   if (active) {
                     return (
-                      <Link
+                      <FocusableLink
                         key={to}
                         to={to}
                         className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] shadow-lg shadow-white/10 transition-transform hover:scale-105"
                       >
                         {Icon && <Icon size={18} strokeWidth={2.5} />}
                         <span>{label}</span>
-                      </Link>
+                      </FocusableLink>
                     );
                   }
                   return (
-                    <Link
+                    <FocusableLink
                       key={to}
                       to={to}
                       className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full transition-colors duration-200 text-prime-subtext hover:text-white"
                     >
                       {label}
-                    </Link>
+                    </FocusableLink>
                   );
                 })}
               </div>
 
               {/* search + settings */}
               <div className="flex items-center">
-                <Link
+                <FocusableLink
                   to="/search"
                   onClick={() => setMenuOpen(false)}
                   className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
                   aria-label="Search"
                 >
                   <Search size={18} className="translate-y-[1px]" />
-                </Link>
-                <button
+                </FocusableLink>
+                <FocusableButton
                   onClick={() => setSettingsOpen(true)}
                   className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
                   aria-label="Open settings"
                 >
                   <Settings size={18} className="translate-y-[1px]" />
-                </button>
+                </FocusableButton>
               </div>
 
               <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
 
-              <button
+              <FocusableButton
                 onClick={handleSurprise}
                 disabled={surprising}
                 title="Surprise Me!"
@@ -277,7 +279,7 @@ export default function Navbar() {
                   <Dices size={18} />
                 )}
                 <span>Surprise</span>
-              </button>
+              </FocusableButton>
             </div>
           </nav>
         </div>
