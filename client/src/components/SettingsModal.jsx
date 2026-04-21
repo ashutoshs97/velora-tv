@@ -565,8 +565,16 @@ function DataTab({ s }) {
             Upload your <strong className="text-white/60">watched.csv</strong> or <strong className="text-white/60">watchlist.csv</strong> from Letterboxd or IMDb.
           </p>
           <p className="text-[10px] text-white/30 mb-3 leading-relaxed">
-            To export from Letterboxd: <em>Profile → Settings → Import &amp; Export → Export Your Data</em><br/>
-            To export from IMDb: <em>Your lists → Click ⠇ → Export</em>
+            To export from Letterboxd:{' '}
+            <a href="https://letterboxd.com/data/export/" target="_blank" rel="noreferrer" className="text-prime-blue hover:underline">
+              Export Your Data
+            </a>
+            <br />
+            To export from IMDb:{' '}
+            <a href="https://www.imdb.com/list/watchlist/" target="_blank" rel="noreferrer" className="text-prime-blue hover:underline">
+              Your Watchlist
+            </a>{' '}
+            → Click ⠇ → Export
           </p>
           <input ref={lbFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleLetterboxdFile} />
           <button
