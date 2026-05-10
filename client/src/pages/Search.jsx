@@ -6,7 +6,6 @@ import { searchMovies, fetchTrending, fetchTrendingTV } from '../api';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w92';
 const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w300';
-
 const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='169' viewBox='0 0 300 169'%3E%3Crect width='300' height='169' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
 
 const MAX_QUERY_LENGTH = 150;
@@ -25,7 +24,7 @@ const TRENDING_SEARCHES = [
 
 function getSafeType(item) {
   if (item.media_type) return item.media_type;
-  if (item.known_for_department) return 'person'; // fallback for person
+  if (item.known_for_department) return 'person';
   if (item.name && !item.title) return 'tv';
   return 'movie';
 }
@@ -48,17 +47,17 @@ function ResultCard({ movie, index }) {
   const mediaType = getSafeType(movie);
   const id = movie.tmdbId || movie.id;
   const isPerson = mediaType === 'person';
-  const watchLink = id 
-    ? isPerson ? `/person/${id}` : `/watch/${id}?type=${mediaType}` 
+  const watchLink = id
+    ? isPerson ? `/person/${id}` : `/watch/${id}?type=${mediaType}`
     : '/';
-  
+
   const title = movie.title || movie.name || 'Untitled';
   const year = isPerson
     ? movie.known_for_department || 'Actor'
     : (movie.release_date || movie.first_air_date || '').substring(0, 4);
 
-  const rawImg = isPerson 
-    ? (movie.profile_path ? `${BACKDROP_BASE}${movie.profile_path}` : null) 
+  const rawImg = isPerson
+    ? (movie.profile_path ? `${BACKDROP_BASE}${movie.profile_path}` : null)
     : (movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : null);
 
   const img = imgError || !rawImg ? PLACEHOLDER_SVG : rawImg;
@@ -104,55 +103,6 @@ function ResultCard({ movie, index }) {
         </div>
       </a>
     </motion.div>
-  );
-}
-
-function AutocompleteItem({ movie, onClick }) {
-  const [imgError, setImgError] = useState(false);
-  const mediaType = getSafeType(movie);
-  const isTv = mediaType === 'tv';
-  const isPerson = mediaType === 'person';
-  const title = movie.title || movie.name || 'Untitled';
-  const year = isPerson
-    ? movie.known_for_department || 'Actor'
-    : (movie.release_date || movie.first_air_date || '').substring(0, 4);
-    
-  const poster = !imgError 
-    ? isPerson && movie.profile_path ? `${POSTER_BASE}${movie.profile_path}` 
-    : movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : null
-    : null;
-
-  return (
-    <button
-      onMouseDown={onClick}
-      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/10 transition-colors text-left group"
-    >
-      <div className={`w-8 h-10 rounded overflow-hidden flex-shrink-0 bg-prime-surface ${isPerson ? 'rounded-full' : ''}`}>
-        {poster ? (
-          <img
-            src={poster}
-            alt={title}
-            className="w-full h-full object-cover"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-prime-subtext">
-            {isPerson ? <User size={14} /> : <Film size={14} />}
-          </div>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-semibold truncate">{title}</p>
-        <p className="text-prime-subtext text-xs">
-          {year}{!isPerson && year ? ' · ' : ''}{!isPerson ? (isTv ? 'TV Show' : 'Movie') : ''}
-        </p>
-      </div>
-      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
-        isPerson ? 'bg-amber-600/30 text-amber-500' : isTv ? 'bg-purple-600/30 text-purple-400' : 'bg-prime-blue/20 text-prime-blue'
-      }`}>
-        {isPerson ? 'Person' : isTv ? 'TV' : 'Film'}
-      </span>
-    </button>
   );
 }
 
@@ -226,14 +176,11 @@ export default function SearchPage() {
   const [totalResults, setTotalResults] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [autocomplete, setAutocomplete] = useState([]);
-  const [showAuto, setShowAuto] = useState(false);
   const [trendingMovies, setTrendingMovies] = useState([]);
   const [trendingTV, setTrendingTV] = useState([]);
   const [loadingTrending, setLoadingTrending] = useState(true);
 
   const debounceRef = useRef(null);
-  const autoDebounceRef = useRef(null);
   const searchAbortRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -306,32 +253,6 @@ export default function SearchPage() {
     return () => clearTimeout(debounceRef.current);
   }, [inputVal, setSearchParams]);
 
-  useEffect(() => {
-    clearTimeout(autoDebounceRef.current);
-
-    if (!inputVal.trim() || inputVal.length < 2) {
-      setAutocomplete([]);
-      return;
-    }
-
-    let cancelled = false;
-    autoDebounceRef.current = setTimeout(async () => {
-      try {
-        const res = await searchMovies(inputVal, 1);
-        if (!cancelled) {
-          setAutocomplete((res.data?.results || []).slice(0, 6));
-        }
-      } catch {
-        if (!cancelled) setAutocomplete([]);
-      }
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(autoDebounceRef.current);
-    };
-  }, [inputVal]);
-
   const loadMore = useCallback(async () => {
     if (loading || !query.trim()) return;
     const nextPage = page + 1;
@@ -352,7 +273,6 @@ export default function SearchPage() {
   useEffect(() => {
     return () => {
       clearTimeout(debounceRef.current);
-      clearTimeout(autoDebounceRef.current);
       if (searchAbortRef.current) {
         searchAbortRef.current.cancelled = true;
       }
@@ -378,7 +298,7 @@ export default function SearchPage() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pt-20 pb-16"
     >
-      {/* Hero Search Section — overflow-visible so dropdown isn't clipped */}
+      {/* search section */}
       <div className="relative overflow-visible">
         <div className="absolute inset-0 bg-gradient-to-br from-prime-blue/8 via-transparent to-purple-900/8 pointer-events-none" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-8">
@@ -395,8 +315,8 @@ export default function SearchPage() {
             </p>
           </motion.div>
 
-          {/* Search bar — z-[160] ensures dropdown floats above everything */}
-          <div className="relative z-[160]">
+          {/* search bar — no dropdown */}
+          <div className="relative">
             <div className="relative flex items-center bg-white/8 border border-white/15 rounded-2xl shadow-2xl shadow-black/40 backdrop-blur-sm focus-within:border-prime-blue/60 focus-within:shadow-prime-blue/15 focus-within:bg-white/10 transition-all duration-300">
               <Search size={20} className="absolute left-4 sm:left-5 text-prime-subtext flex-shrink-0" />
               <input
@@ -405,8 +325,6 @@ export default function SearchPage() {
                 type="text"
                 value={inputVal}
                 onChange={handleInputChange}
-                onFocus={() => setShowAuto(true)}
-                onBlur={() => setTimeout(() => setShowAuto(false), 200)}
                 placeholder="Search movies, TV shows…"
                 maxLength={MAX_QUERY_LENGTH}
                 className="w-full bg-transparent text-white text-base sm:text-lg placeholder:text-prime-subtext/60 pl-12 sm:pl-14 pr-12 sm:pr-14 py-4 sm:py-5 outline-none rounded-2xl"
@@ -424,40 +342,9 @@ export default function SearchPage() {
                 </button>
               )}
             </div>
-
-            {/* Autocomplete dropdown — z-[170] above search bar and everything else */}
-            <AnimatePresence>
-              {showAuto && autocomplete.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scaleY: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                  exit={{ opacity: 0, y: -8, scaleY: 0.95 }}
-                  transition={{ duration: 0.18 }}
-                  style={{ transformOrigin: 'top' }}
-                  className="absolute top-full left-0 right-0 mt-2 bg-[#1A242F]/95 backdrop-blur-xl border border-prime-blue/20 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 z-[170]"                >
-                  <div className="py-1">
-                    {autocomplete.map((movie) => (
-                      <AutocompleteItem
-                        key={movie.id || movie.tmdbId}
-                        movie={movie}
-                        onClick={() => {
-                          const title = movie.title || movie.name || '';
-                          setInputVal(title);
-                          setShowAuto(false);
-                          inputRef.current?.focus();
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="px-4 py-2 border-t border-white/5 text-xs text-prime-subtext/60 text-center">
-                    Press Enter to see all results
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
-          {/* Type filter pills */}
+          {/* type filter pills */}
           <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
             {TYPE_FILTERS.map(({ key, label, Icon }) => (
               <button
@@ -477,7 +364,7 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Results */}
+      {/* results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-0">
 
         {query && !loading && (
@@ -577,10 +464,7 @@ export default function SearchPage() {
 
         {!loading && movies.length > 0 && page < totalPages && (
           <div className="flex justify-center mt-10">
-            <button
-              onClick={loadMore}
-              className="btn-primary px-10 py-3 text-base"
-            >
+            <button onClick={loadMore} className="btn-primary px-10 py-3 text-base">
               Load More
             </button>
           </div>

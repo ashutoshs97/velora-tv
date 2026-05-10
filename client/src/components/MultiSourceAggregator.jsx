@@ -33,7 +33,6 @@ export default function MultiSourceAggregator({
 }) {
   const { defaultServer } = useSettings();
   const providers = getEnabledMovieProviders();
-  // Find the index of the user's preferred server, fallback to 0
   const preferredIdx = providers.findIndex(p => p.id === defaultServer);
   const [activeServer, setActiveServer] = useState(preferredIdx >= 0 ? preferredIdx : 0);
   const [mirrorIndex, setMirrorIndex] = useState(0);
@@ -214,7 +213,8 @@ export default function MultiSourceAggregator({
                   ? 'Trying alternate route…'
                   : `Connecting to ${currentServer?.label}…`}
               </p>
-              {activeServer === 2 && (
+              {/* VidLink is now index 1 (Server 2) */}
+              {activeServer === 1 && (
                 <p className="text-amber-400/70 text-[10px] mt-1">Powered by JW Player</p>
               )}
             </div>
@@ -243,7 +243,6 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
-        {/* iframe — no 3D animation, plain load */}
         {src && (
           <iframe
             key={iframeKey}
@@ -308,7 +307,8 @@ export default function MultiSourceAggregator({
             <AlertCircle size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-blue-400/80 text-xs leading-relaxed">
               <strong className="text-blue-400">iOS Tip:</strong> Use{' '}
-              <strong className="text-blue-300">Server 3 (VidLink)</strong> for
+              {/* VidLink is now Server 2 */}
+              <strong className="text-blue-300">Server 2 (VidLink)</strong> for
               the best playback on Apple devices. Watch in landscape for the
               best experience.
             </p>
@@ -386,7 +386,7 @@ export default function MultiSourceAggregator({
         </button>
       </div>
 
-      {/* volume note — replaces broken volume boost */}
+      {/* volume note */}
       <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-prime-subtext">
         <Volume2 size={14} className="flex-shrink-0 text-white/40" />
         <span>

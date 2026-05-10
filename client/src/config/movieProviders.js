@@ -13,38 +13,13 @@ function getMovieProviderRuntimeConfig() {
   const enabledIds = parseCsvIds(env.VITE_MOVIE_PROVIDER_ENABLED_IDS);
   const disabledIds = new Set(parseCsvIds(env.VITE_MOVIE_PROVIDER_DISABLED_IDS));
   const orderedIds = parseCsvIds(env.VITE_MOVIE_PROVIDER_ORDER);
-
-  return {
-    enabledIds,
-    disabledIds,
-    orderedIds,
-  };
+  return { enabledIds, disabledIds, orderedIds };
 }
 
 const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 1,
     name: 'Server 1',
-    label: 'VidSrc Pro',
-    sublabel: 'vidsrc.net',
-    badge: 'HD',
-    recommended: true,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://vidsrc.net/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
-        ]
-      : [
-          `https://vidsrc.net/embed/movie/${id}`,
-          `https://vidsrc.to/embed/movie/${id}`,
-          `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
-        ],
-  },
-  {
-    id: 2,
-    name: 'Server 2',
     label: 'VidSrc',
     sublabel: 'vidsrc.cc',
     badge: 'HD',
@@ -61,12 +36,12 @@ const MOVIE_PROVIDER_REGISTRY = [
         ],
   },
   {
-    id: 3,
-    name: 'Server 3',
+    id: 2,
+    name: 'Server 2',
     label: 'VidLink',
     sublabel: 'vidlink.pro',
     badge: 'HD',
-    recommended: false,
+    recommended: true,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
@@ -76,6 +51,26 @@ const MOVIE_PROVIDER_REGISTRY = [
       : [
           `https://vidlink.pro/movie/${id}?${SERVER_UI_PARAMS}`,
           `https://vidlink.pro/movie/${id}?autoplay=true`,
+        ],
+  },
+  {
+    id: 3,
+    name: 'Server 3',
+    label: 'VidSrc Pro',
+    sublabel: 'vidsrc.net',
+    badge: 'HD',
+    recommended: false,
+    enabled: true,
+    getUrls: (id, type, season, episode) => type === 'tv'
+      ? [
+          `https://vidsrc.net/embed/tv/${id}/${season}/${episode}`,
+          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
+          `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
+        ]
+      : [
+          `https://vidsrc.net/embed/movie/${id}`,
+          `https://vidsrc.to/embed/movie/${id}`,
+          `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
         ],
   },
   {
@@ -139,7 +134,6 @@ function applyRuntimeConfig(providers) {
     nextProviders.sort((left, right) => {
       const leftRank = orderMap.has(left.id) ? orderMap.get(left.id) : Number.MAX_SAFE_INTEGER;
       const rightRank = orderMap.has(right.id) ? orderMap.get(right.id) : Number.MAX_SAFE_INTEGER;
-
       if (leftRank !== rightRank) return leftRank - rightRank;
       return left.id - right.id;
     });
