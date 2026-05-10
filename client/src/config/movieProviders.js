@@ -76,21 +76,19 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 4,
     name: 'Server 4',
-    label: '2Embed',
-    sublabel: '2embed.cc',
+    label: 'SuperEmbed',
+    sublabel: 'multiembed.mov',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`,
-          `https://2embed.ru/embedtv/${id}?s=${season}&e=${episode}`,
-          `https://2embed.org/embedtv/${id}?s=${season}&e=${episode}`,
+          `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
+          `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`
         ]
       : [
-          `https://www.2embed.cc/embed/${id}`,
-          `https://2embed.ru/embedmovie/${id}`,
-          `https://2embed.org/embedmovie/${id}`,
+          `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
+          `https://multiembed.mov/?video_id=${id}&tmdb=1`
         ],
   },
   {

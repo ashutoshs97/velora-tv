@@ -248,6 +248,7 @@ export default function MultiSourceAggregator({
             key={iframeKey}
             src={src}
             title={`${currentServer?.name} — ${currentServer?.label}`}
+            referrerPolicy="origin"
             allowFullScreen
             allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share"
             onLoad={() => {
