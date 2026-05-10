@@ -15,56 +15,57 @@ function usePersisted(key, defaultValue) {
   });
 }
 
+function persist(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch { /* storage full */ }
+}
+
 export function SettingsProvider({ children }) {
-  // ── Existing ──────────────────────────────────────────────────────────────
   const [reducedMotion, setReducedMotion] = usePersisted('velora_reduced_motion', false);
   const [theme, setTheme] = usePersisted('velora_theme', 'blue');
-
-  // ── Appearance ────────────────────────────────────────────────────────────
-  const [fontSize, setFontSize] = usePersisted('velora_font_size', 'md');         // 'sm' | 'md' | 'lg'
-
-  // ── Home ──────────────────────────────────────────────────────────────────
+  const [fontSize, setFontSize] = usePersisted('velora_font_size', 'md');
   const [heroAutoplay, setHeroAutoplay] = usePersisted('velora_hero_autoplay', true);
   const [trailerAutoplay, setTrailerAutoplay] = usePersisted('velora_trailer_autoplay', true);
   const [hideAdult, setHideAdult] = usePersisted('velora_hide_adult', false);
-  const [minRating, setMinRating] = usePersisted('velora_min_rating', 0);         // 0–9
+  const [minRating, setMinRating] = usePersisted('velora_min_rating', 0);
   const [hideWatched, setHideWatched] = usePersisted('velora_hide_watched', false);
-
-  // ── Player ────────────────────────────────────────────────────────────────
-  const [defaultServer, setDefaultServer] = usePersisted('velora_default_server', 1); // provider id 1-5
+  const [defaultServer, setDefaultServer] = usePersisted('velora_default_server', 1);
   const [autoplayNext, setAutoplayNext] = usePersisted('velora_autoplay_next', true);
-  const [subtitleLang, setSubtitleLang] = usePersisted('velora_subtitle_lang', 'en'); // 'off'|'en'|'hi'
-
-  // ── General ───────────────────────────────────────────────────────────────
+  const [subtitleLang, setSubtitleLang] = usePersisted('velora_subtitle_lang', 'en');
   const [showSplash, setShowSplash] = usePersisted('velora_show_splash', true);
   const [searchSuggestions, setSearchSuggestions] = usePersisted('velora_search_suggestions', true);
   const [searchHistoryEnabled, setSearchHistoryEnabled] = usePersisted('velora_search_history', true);
-  const [ratingSystem, setRatingSystem] = usePersisted('velora_rating_system', 'tmdb'); // 'tmdb'|'percent'|'stars'
+  const [ratingSystem, setRatingSystem] = usePersisted('velora_rating_system', 'tmdb');
 
-  // ── Apply side-effects ────────────────────────────────────────────────────
-  useEffect(() => { localStorage.setItem('velora_reduced_motion', JSON.stringify(reducedMotion)); }, [reducedMotion]);
-  useEffect(() => { localStorage.setItem('velora_theme', JSON.stringify(theme)); document.documentElement.setAttribute('data-theme', theme); }, [theme]);
-  useEffect(() => { localStorage.setItem('velora_font_size', JSON.stringify(fontSize)); document.documentElement.setAttribute('data-font', fontSize); }, [fontSize]);
-  useEffect(() => { localStorage.setItem('velora_hero_autoplay', JSON.stringify(heroAutoplay)); }, [heroAutoplay]);
-  useEffect(() => { localStorage.setItem('velora_trailer_autoplay', JSON.stringify(trailerAutoplay)); }, [trailerAutoplay]);
-  useEffect(() => { localStorage.setItem('velora_hide_adult', JSON.stringify(hideAdult)); }, [hideAdult]);
-  useEffect(() => { localStorage.setItem('velora_min_rating', JSON.stringify(minRating)); }, [minRating]);
-  useEffect(() => { localStorage.setItem('velora_hide_watched', JSON.stringify(hideWatched)); }, [hideWatched]);
-  useEffect(() => { localStorage.setItem('velora_default_server', JSON.stringify(defaultServer)); }, [defaultServer]);
-  useEffect(() => { localStorage.setItem('velora_autoplay_next', JSON.stringify(autoplayNext)); }, [autoplayNext]);
-  useEffect(() => { localStorage.setItem('velora_subtitle_lang', JSON.stringify(subtitleLang)); }, [subtitleLang]);
-  useEffect(() => { localStorage.setItem('velora_show_splash', JSON.stringify(showSplash)); }, [showSplash]);
-  useEffect(() => { localStorage.setItem('velora_search_suggestions', JSON.stringify(searchSuggestions)); }, [searchSuggestions]);
-  useEffect(() => { localStorage.setItem('velora_search_history', JSON.stringify(searchHistoryEnabled)); }, [searchHistoryEnabled]);
-  useEffect(() => { localStorage.setItem('velora_rating_system', JSON.stringify(ratingSystem)); }, [ratingSystem]);
+  // persist on change
+  useEffect(() => { persist('velora_reduced_motion', reducedMotion); }, [reducedMotion]);
+  useEffect(() => { persist('velora_font_size', fontSize); document.documentElement.setAttribute('data-font', fontSize); }, [fontSize]);
+  useEffect(() => { persist('velora_hero_autoplay', heroAutoplay); }, [heroAutoplay]);
+  useEffect(() => { persist('velora_trailer_autoplay', trailerAutoplay); }, [trailerAutoplay]);
+  useEffect(() => { persist('velora_hide_adult', hideAdult); }, [hideAdult]);
+  useEffect(() => { persist('velora_min_rating', minRating); }, [minRating]);
+  useEffect(() => { persist('velora_hide_watched', hideWatched); }, [hideWatched]);
+  useEffect(() => { persist('velora_default_server', defaultServer); }, [defaultServer]);
+  useEffect(() => { persist('velora_autoplay_next', autoplayNext); }, [autoplayNext]);
+  useEffect(() => { persist('velora_subtitle_lang', subtitleLang); }, [subtitleLang]);
+  useEffect(() => { persist('velora_show_splash', showSplash); }, [showSplash]);
+  useEffect(() => { persist('velora_search_suggestions', searchSuggestions); }, [searchSuggestions]);
+  useEffect(() => { persist('velora_search_history', searchHistoryEnabled); }, [searchHistoryEnabled]);
+  useEffect(() => { persist('velora_rating_system', ratingSystem); }, [ratingSystem]);
 
-  // Apply on initial mount
+  // theme needs DOM side effect
+  useEffect(() => {
+    persist('velora_theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  // apply on mount
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-font', fontSize);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Data actions ──────────────────────────────────────────────────────────
   const clearWatchHistory = useCallback(async () => {
     await apiClearHistory();
     window.dispatchEvent(new CustomEvent('velora:history-cleared'));
@@ -86,27 +87,21 @@ export function SettingsProvider({ children }) {
 
   return (
     <SettingsContext.Provider value={{
-      // existing
       reducedMotion, setReducedMotion,
       theme, setTheme,
-      // appearance
       fontSize, setFontSize,
-      // home
       heroAutoplay, setHeroAutoplay,
       trailerAutoplay, setTrailerAutoplay,
       hideAdult, setHideAdult,
       minRating, setMinRating,
       hideWatched, setHideWatched,
-      // player
       defaultServer, setDefaultServer,
       autoplayNext, setAutoplayNext,
       subtitleLang, setSubtitleLang,
-      // general
       showSplash, setShowSplash,
       searchSuggestions, setSearchSuggestions,
       searchHistoryEnabled, setSearchHistoryEnabled,
       ratingSystem, setRatingSystem,
-      // data actions
       clearWatchHistory,
       exportWatchHistory,
     }}>

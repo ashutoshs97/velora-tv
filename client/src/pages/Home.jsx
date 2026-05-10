@@ -2,12 +2,12 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  Play, Plus, Share2, Award, CheckCircle2,
-  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check
+  Play, Share2, Award, CheckCircle2,
+  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check,
 } from 'lucide-react';
 import {
   fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory,
-  fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail
+  fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail,
 } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
@@ -43,7 +43,6 @@ const AUTHORS_CHOICE = [
   { id: 569094, title: "Spider-Man: Across the Spider-Verse", poster_path: "/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg", backdrop_path: "/9xfDWXAUbFXQK585JvByT5pEAhe.jpg", vote_average: 8.333, release_date: "2023-05-31", media_type: "movie" },
   { id: 489, title: "Good Will Hunting", poster_path: "/z2FnLKpFi1HPO7BEJxdkv6hpJSU.jpg", backdrop_path: "/xj1Sv1xm4Y0ydBueGuf10Y9qM0O.jpg", vote_average: 8.159, release_date: "1997-12-05", media_type: "movie" },
   { id: 16869, title: "Inglourious Basterds", poster_path: "/7sfbEnaARXDDhKm0CZ7D7uc2sbo.jpg", backdrop_path: "/hwNtEmmugU5Yd7hpfprNWI0DGIn.jpg", vote_average: 8.217, release_date: "2009-08-02", media_type: "movie" },
-  { id: 1317288, title: "Marty Supreme", poster_path: "/lYWEXbQgRTR4ZQleSXAgRbxAjvq.jpg", backdrop_path: "/3iMoYSbI72Nwsvi7uSpqReLJVa6.jpg", vote_average: 7.404, release_date: "2025-12-19", media_type: "movie" },
   { id: 84892, title: "The Perks of Being a Wallflower", poster_path: "/aKCvdFFF5n80P2VdS7d8YBwbCjh.jpg", backdrop_path: "/aM6E4DBP6588q3tEr9hz41ls80q.jpg", vote_average: 7.803, release_date: "2012-09-20", media_type: "movie" },
   { id: 19913, title: "(500) Days of Summer", poster_path: "/qXAuQ9hF30sQRsXf40OfRVl0MJZ.jpg", backdrop_path: "/1M2i4Mxd03elGOTmEkIvqrHfmyS.jpg", vote_average: 7.3, release_date: "2009-07-17", media_type: "movie" },
   { id: 210577, title: "Gone Girl", poster_path: "/ts996lKsxvjkO2yiYG0ht4qAicO.jpg", backdrop_path: "/iWak7wT0j6ycCc8lKr4NBz9c7n5.jpg", vote_average: 7.889, release_date: "2014-10-01", media_type: "movie" },
@@ -71,6 +70,7 @@ function getHistoryType(item) {
 
 export default function Home() {
   const { heroAutoplay, trailerAutoplay, minRating, hideWatched } = useSettings();
+
   const [trending, setTrending] = useState([]);
   const [trendingTV, setTrendingTV] = useState([]);
   const [topRated, setTopRated] = useState([]);
@@ -102,6 +102,10 @@ export default function Home() {
   const replayTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
 
+  // touch tracking as refs — no re-renders
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
   const [copied, setCopied] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
@@ -132,14 +136,16 @@ export default function Home() {
     if (navigator.share) {
       navigator.share({
         title: heroMovie.title || heroMovie.name || 'Velora',
-        text: 'Check out this awesome movie on Velora!',
-        url
+        text: 'Check out this on Velora!',
+        url,
       }).catch(() => {});
     } else if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(textToShare).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
-      }).catch(copyFallback);
+      navigator.clipboard.writeText(textToShare)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        })
+        .catch(copyFallback);
     } else {
       copyFallback();
       setCopied(true);
@@ -227,15 +233,9 @@ export default function Home() {
     let cancelled = false;
     setLoadingGenre(true);
     fetchByGenre(selectedGenre.id)
-      .then(res => {
-        if (!cancelled) setGenreMovies(res.data?.results || []);
-      })
-      .catch(() => {
-        if (!cancelled) setGenreMovies([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingGenre(false);
-      });
+      .then(res => { if (!cancelled) setGenreMovies(res.data?.results || []); })
+      .catch(() => { if (!cancelled) setGenreMovies([]); })
+      .finally(() => { if (!cancelled) setLoadingGenre(false); });
     return () => { cancelled = true; };
   }, [selectedGenre]);
 
@@ -243,15 +243,9 @@ export default function Home() {
     let cancelled = false;
     setLoadingMood(true);
     fetchByMood(selectedMood.key)
-      .then(res => {
-        if (!cancelled) setMoodMovies(res.data?.results || []);
-      })
-      .catch(() => {
-        if (!cancelled) setMoodMovies([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingMood(false);
-      });
+      .then(res => { if (!cancelled) setMoodMovies(res.data?.results || []); })
+      .catch(() => { if (!cancelled) setMoodMovies([]); })
+      .finally(() => { if (!cancelled) setLoadingMood(false); });
     return () => { cancelled = true; };
   }, [selectedMood]);
 
@@ -260,18 +254,10 @@ export default function Home() {
     let cancelled = false;
     const latest = history[0];
     if (!latest?.tmdbId) return;
-
-    const safeType = getHistoryType(latest);
     setBecauseTitle(latest.title || latest.name || 'your last watch');
-
-    fetchSimilar(latest.tmdbId, safeType)
-      .then(res => {
-        if (!cancelled) setBecauseYouWatched(res.data?.results || []);
-      })
-      .catch(() => {
-        if (!cancelled) setBecauseYouWatched([]);
-      });
-
+    fetchSimilar(latest.tmdbId, getHistoryType(latest))
+      .then(res => { if (!cancelled) setBecauseYouWatched(res.data?.results || []); })
+      .catch(() => { if (!cancelled) setBecauseYouWatched([]); });
     return () => { cancelled = true; };
   }, [history]);
 
@@ -280,26 +266,6 @@ export default function Home() {
     setHeroIndex(idx);
     setHeroImgError(false);
   }, []);
-
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEndHandler = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const minSwipeDistance = 50;
-    if (distance > minSwipeDistance) nextSlide();
-    if (distance < -minSwipeDistance) prevSlide();
-  };
 
   const nextSlide = useCallback(() => {
     if (!heroMovies.length) return;
@@ -326,10 +292,8 @@ export default function Home() {
     setTrailerEnded(false);
     setTrailerMuted(true);
     clearTimeout(trailerTimerRef.current);
-
     if (!heroMovie?.id) return;
     let cancelled = false;
-
     fetchMovieDetail(heroMovie.id)
       .then(res => {
         if (cancelled) return;
@@ -346,12 +310,11 @@ export default function Home() {
         }
       })
       .catch(() => {});
-
     return () => {
       cancelled = true;
       clearTimeout(trailerTimerRef.current);
     };
-  }, [heroMovie]);
+  }, [heroMovie, trailerAutoplay]);
 
   const replayTrailer = useCallback(() => {
     clearTimeout(replayTimerRef.current);
@@ -374,9 +337,8 @@ export default function Home() {
       try {
         const iframe = trailerIframeRef.current;
         if (iframe?.contentWindow) {
-          const command = newMuted ? 'mute' : 'unMute';
           iframe.contentWindow.postMessage(
-            JSON.stringify({ event: 'command', func: command }),
+            JSON.stringify({ event: 'command', func: newMuted ? 'mute' : 'unMute' }),
             'https://www.youtube.com'
           );
         }
@@ -385,8 +347,10 @@ export default function Home() {
     });
   }, []);
 
-  // ── Settings-based filters ────────────────────────────────────────────────
-  const watchedIds = useMemo(() => new Set(history.map(h => h.tmdbId || h.id)), [history]);
+  const watchedIds = useMemo(
+    () => new Set(history.map(h => h.tmdbId || h.id)),
+    [history]
+  );
 
   const filterItems = useCallback((arr) => {
     if (!Array.isArray(arr)) return [];
@@ -405,13 +369,19 @@ export default function Home() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* ── Hero Billboard ── */}
+      {/* hero billboard */}
       {heroMovies.length > 0 && heroMovie && (
-        <section 
+        <section
           className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20 pt-4"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEndHandler}
+          style={{ clipPath: 'inset(0)' }}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            touchEndX.current = e.changedTouches[0].clientX;
+            const diff = touchStartX.current - touchEndX.current;
+            if (Math.abs(diff) > 50) {
+              diff > 0 ? nextSlide() : prevSlide();
+            }
+          }}
         >
           <AnimatePresence initial={false} custom={heroDirection}>
             {(!trailerActive || trailerEnded) && (
@@ -432,7 +402,7 @@ export default function Home() {
                 {!heroImgError ? (
                   <img
                     src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
-                    alt={heroMovie.title || heroMovie.name || 'Featured movie'}
+                    alt={heroMovie.title || heroMovie.name || 'Featured'}
                     className="w-full h-full object-cover object-top opacity-80 scale-[1.05] sm:scale-[1.08]"
                     style={{ objectPosition: '50% 15%' }}
                     onError={() => setHeroImgError(true)}
@@ -471,7 +441,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
-          <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-28 pb-32 sm:pb-36 lg:pb-28">
+          <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-28 pb-32 sm:pb-28">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
               <AnimatePresence initial={false} custom={heroDirection} mode="wait">
                 <motion.div
@@ -524,17 +494,17 @@ export default function Home() {
                     )}
                   </AnimatePresence>
 
-                  <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <Link
                       to={`/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`}
                       className="btn-primary text-sm sm:text-base hover:scale-105"
                     >
                       <Play size={20} fill="#000" className="mr-1.5" /> Play
                     </Link>
-                    <WatchlistButton 
-                      movie={heroMovie} 
-                      type={getSafeType(heroMovie)} 
-                      className="btn-secondary" 
+                    <WatchlistButton
+                      movie={heroMovie}
+                      type={getSafeType(heroMovie)}
+                      className="btn-secondary"
                       size={22}
                     />
                     <button
@@ -547,15 +517,14 @@ export default function Home() {
                         : <Share2 size={22} className="-ml-0.5" />
                       }
                     </button>
-
-
                   </div>
                 </motion.div>
               </AnimatePresence>
             </div>
           </div>
 
-          <div className="absolute bottom-[88px] sm:bottom-[100px] left-0 right-0 z-20 pointer-events-none">
+          {/* dots + controls */}
+          <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
               <div className="hidden sm:block w-10" />
               <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
@@ -563,8 +532,8 @@ export default function Home() {
                   <button
                     key={i}
                     onClick={() => goToSlide(i, i > heroIndex ? 1 : -1)}
-                    aria-label={`Go to slide ${i + 1}`}
-                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300 shadow-sm"
+                    aria-label={`Slide ${i + 1}`}
+                    className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
                     style={{ width: i === heroIndex ? 36 : 14 }}
                   >
                     <span className="absolute inset-0 bg-white/25 rounded-full" />
@@ -580,7 +549,7 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <div className="ml-auto flex items-center gap-2 pointer-events-auto">
+              <div className="hidden sm:flex ml-auto items-center gap-2 pointer-events-auto">
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
                     onClick={toggleMute}
@@ -598,29 +567,27 @@ export default function Home() {
                     <RotateCcw size={12} /> Replay
                   </button>
                 )}
-                <div className="hidden sm:flex items-center gap-2">
-                  <button
-                    onClick={prevSlide}
-                    aria-label="Previous"
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-lg text-white"
-                  >
-                    <ChevronLeft size={22} className="mr-0.5" />
-                  </button>
-                  <button
-                    onClick={nextSlide}
-                    aria-label="Next"
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-lg text-white"
-                  >
-                    <ChevronRight size={22} className="ml-0.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={prevSlide}
+                  aria-label="Previous"
+                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  aria-label="Next"
+                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
             </div>
           </div>
         </section>
       )}
 
-      {/* ── Content ── */}
+      {/* content */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 -mt-16 relative z-20 space-y-14">
 
         <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
@@ -696,7 +663,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Browse by Genre */}
+        {/* browse by genre */}
         <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -728,7 +695,7 @@ export default function Home() {
           />
         </div>
 
-        {/* Browse by Mood */}
+        {/* browse by mood */}
         <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.65s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -760,9 +727,6 @@ export default function Home() {
           />
         </div>
 
-        {/* ── Bottom ambient glow ── */}
-        <div className="pointer-events-none absolute bottom-0 right-1/4 w-[700px] h-[300px] rounded-full opacity-10"
-          style={{ background: 'radial-gradient(ellipse, rgba(0,180,255,0.2) 0%, transparent 70%)', filter: 'blur(80px)' }} />
       </div>
     </motion.div>
   );

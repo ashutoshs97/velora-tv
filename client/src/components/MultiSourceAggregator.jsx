@@ -60,9 +60,12 @@ export default function MultiSourceAggregator({
     : [];
   const src = urls[mirrorIndex] || urls[0] || '';
 
+  // VidLink is Server 2 (index 1)
+  const isVidLink = activeServer === 1;
+
   // reset on content change
   useEffect(() => {
-    setActiveServer(0);
+    setActiveServer(preferredIdx >= 0 ? preferredIdx : 0);
     setMirrorIndex(0);
     setIframeKey(k => k + 1);
     setLoading(true);
@@ -70,7 +73,7 @@ export default function MultiSourceAggregator({
     setUsingMirror(false);
     setRetryCount(0);
     setAllFailed(false);
-  }, [tmdbId, safeType, safeSeason, safeEpisode]);
+  }, [tmdbId, safeType, safeSeason, safeEpisode, preferredIdx]);
 
   // loading timeout — mirror → next server → stop
   useEffect(() => {
@@ -211,10 +214,9 @@ export default function MultiSourceAggregator({
               <p className="text-prime-subtext text-xs mt-0.5">
                 {usingMirror
                   ? 'Trying alternate route…'
-                  : `Connecting to ${currentServer?.label}…`}
+                  : `Connecting to server…`}
               </p>
-              {/* VidLink is now index 1 (Server 2) */}
-              {activeServer === 1 && (
+              {isVidLink && (
                 <p className="text-amber-400/70 text-[10px] mt-1">Powered by JW Player</p>
               )}
             </div>
@@ -226,9 +228,7 @@ export default function MultiSourceAggregator({
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 z-10 gap-4 p-4">
             <AlertCircle size={36} className="text-amber-400" />
             <div className="text-center">
-              <p className="text-white text-sm font-bold mb-1">
-                All Servers Attempted
-              </p>
+              <p className="text-white text-sm font-bold mb-1">All Servers Attempted</p>
               <p className="text-prime-subtext text-xs mb-4">
                 Auto-switching tried all available routes. Please select a server manually.
               </p>
@@ -243,11 +243,12 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
+        {/* iframe */}
         {src && (
           <iframe
             key={iframeKey}
             src={src}
-            title={`${currentServer?.name} — ${currentServer?.label}`}
+            title={`${currentServer?.name}`}
             referrerPolicy="origin"
             allowFullScreen
             allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share"
@@ -272,7 +273,7 @@ export default function MultiSourceAggregator({
           </span>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-xs text-prime-subtext hidden sm:block">
-              {currentServer?.name} · {currentServer?.label}
+              {currentServer?.name} active
             </span>
             <button
               onClick={reload}
@@ -289,7 +290,7 @@ export default function MultiSourceAggregator({
           <div className="mb-3 bg-prime-blue/10 border border-prime-blue/20 rounded-lg px-3 py-2 flex items-center gap-2">
             <Zap size={13} className="text-prime-blue flex-shrink-0" />
             <p className="text-prime-blue text-xs font-medium">
-              Auto-switched to {currentServer?.name} · {currentServer?.label}
+              Auto-switched to {currentServer?.name}
             </p>
           </div>
         )}
@@ -298,7 +299,7 @@ export default function MultiSourceAggregator({
           <div className="mb-3 bg-white/5 border border-white/10 rounded-lg px-3 py-2 flex items-center gap-2">
             <RefreshCw size={13} className="text-prime-subtext flex-shrink-0 animate-spin" />
             <p className="text-prime-subtext text-xs">
-              Trying alternate route for {currentServer?.label}…
+              Trying alternate route…
             </p>
           </div>
         )}
@@ -308,10 +309,8 @@ export default function MultiSourceAggregator({
             <AlertCircle size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-blue-400/80 text-xs leading-relaxed">
               <strong className="text-blue-400">iOS Tip:</strong> Use{' '}
-              {/* VidLink is now Server 2 */}
-              <strong className="text-blue-300">Server 2 (VidLink)</strong> for
-              the best playback on Apple devices. Watch in landscape for the
-              best experience.
+              <strong className="text-blue-300">Server 2</strong> for
+              the best playback on Apple devices.
             </p>
           </div>
         )}
@@ -340,13 +339,9 @@ export default function MultiSourceAggregator({
                   </span>
                   <div className="ml-auto flex items-center gap-1">
                     <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${
-                      server.badge === '4K'
-                        ? isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                        : isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-prime-blue/10 text-prime-blue border border-prime-blue/20'
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-prime-blue/10 text-prime-blue border border-prime-blue/20'
                     }`}>
                       {server.badge}
                     </span>
@@ -357,11 +352,6 @@ export default function MultiSourceAggregator({
                     )}
                   </div>
                 </div>
-                <span className={`text-[11px] font-semibold truncate ${
-                  isActive ? 'text-white' : 'text-white/80'
-                }`}>
-                  {server.label}
-                </span>
               </button>
             );
           })}

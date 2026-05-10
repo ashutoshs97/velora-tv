@@ -20,8 +20,6 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 1,
     name: 'Server 1',
-    label: 'VidSrc',
-    sublabel: 'vidsrc.cc',
     badge: 'HD',
     recommended: true,
     enabled: true,
@@ -38,8 +36,6 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 2,
     name: 'Server 2',
-    label: 'VidLink',
-    sublabel: 'vidlink.pro',
     badge: 'HD',
     recommended: true,
     enabled: true,
@@ -56,8 +52,6 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 3,
     name: 'Server 3',
-    label: 'VidSrc Pro',
-    sublabel: 'vidsrc.net',
     badge: 'HD',
     recommended: false,
     enabled: true,
@@ -76,40 +70,29 @@ const MOVIE_PROVIDER_REGISTRY = [
   {
     id: 4,
     name: 'Server 4',
-    label: 'SuperEmbed',
-    sublabel: 'multiembed.mov',
     badge: 'HD',
     recommended: false,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
-          `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`
+          `https://111movies.net/tv/${id}/${season}/${episode}`,
+          `https://111movies.com/tv/${id}/${season}/${episode}`,
         ]
       : [
-          `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
-          `https://multiembed.mov/?video_id=${id}&tmdb=1`
+          `https://111movies.net/movie/${id}`,
+          `https://111movies.com/movie/${id}`,
         ],
   },
   {
-    id: 5,
-    name: 'Server 5',
-    label: 'Smashy',
-    sublabel: 'smashy.to',
-    badge: 'HD',
-    recommended: false,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}`,
-          `https://player.smashy.to/tv/${id}?s=${season}&e=${episode}`,
-          `https://smashy.to/tv/${id}?s=${season}&e=${episode}`,
-        ]
-      : [
-          `https://embed.smashystream.com/playere.php?tmdb=${id}`,
-          `https://player.smashy.to/movie/${id}`,
-          `https://smashy.to/movie/${id}`,
-        ],
+  id: 5,
+  name: 'Server 5',
+  badge: 'HD',
+  recommended: false,
+  enabled: true,
+  // params removed — anyembed blocks customized embed URLs
+  getUrls: (id, type, season, episode) => type === 'tv'
+    ? [`https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`]
+    : [`https://anyembed.xyz/embed/tmdb-movie-${id}`],
   },
 ];
 
@@ -117,16 +100,13 @@ const runtimeConfig = getMovieProviderRuntimeConfig();
 
 function applyRuntimeConfig(providers) {
   let nextProviders = [...providers];
-
   if (runtimeConfig.enabledIds.length > 0) {
     const enabledSet = new Set(runtimeConfig.enabledIds);
     nextProviders = nextProviders.filter((provider) => enabledSet.has(provider.id));
   }
-
   if (runtimeConfig.disabledIds.size > 0) {
     nextProviders = nextProviders.filter((provider) => !runtimeConfig.disabledIds.has(provider.id));
   }
-
   if (runtimeConfig.orderedIds.length > 0) {
     const orderMap = new Map(runtimeConfig.orderedIds.map((id, index) => [id, index]));
     nextProviders.sort((left, right) => {
@@ -136,7 +116,6 @@ function applyRuntimeConfig(providers) {
       return left.id - right.id;
     });
   }
-
   return nextProviders;
 }
 
