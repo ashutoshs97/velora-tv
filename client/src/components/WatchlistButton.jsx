@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, Bookmark } from 'lucide-react';
-import { fetchWatchlist, addToWatchlist, deleteWatchlistItem } from '../api';
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from '../utils/watchlist';
 
 export default function WatchlistButton({
   movie,
@@ -15,22 +15,15 @@ export default function WatchlistButton({
 
   useEffect(() => {
     if (!id) return;
-    let cancelled = false;
-    fetchWatchlist()
-      .then(res => {
-        if (cancelled) return;
-        const list = res.data || [];
-        const item = list.find(w => String(w.tmdbId) === String(id));
-        if (item) {
-          setInWatchlist(true);
-          setWatchlistId(item._id || item.tmdbId);
-        } else {
-          setInWatchlist(false);
-          setWatchlistId(null);
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
+    const list = getWatchlist();
+    const item = list.find(w => String(w.tmdbId) === String(id));
+    if (item) {
+      setInWatchlist(true);
+      setWatchlistId(item.tmdbId || id);
+    } else {
+      setInWatchlist(false);
+      setWatchlistId(null);
+    }
   }, [id]);
 
   const toggleWatchlist = useCallback(async (e) => {
@@ -42,10 +35,10 @@ export default function WatchlistButton({
       if (inWatchlist) {
         setInWatchlist(false);
         setWatchlistId(null);
-        await deleteWatchlistItem(watchlistId || id);
+        await removeFromWatchlist(watchlistId || id);
       } else {
         setInWatchlist(true);
-        const res = await addToWatchlist({
+        await addToWatchlist({
           tmdbId: Number(id),
           title: movie.title || movie.name,
           posterPath: movie.poster_path,
@@ -55,7 +48,7 @@ export default function WatchlistButton({
           overview: movie.overview,
           type: type === 'tv' ? 'tv' : 'movie',
         });
-        setWatchlistId(res.data?._id || id);
+        setWatchlistId(id);
       }
       window.dispatchEvent(new CustomEvent('velora:watchlist-updated'));
     } catch {

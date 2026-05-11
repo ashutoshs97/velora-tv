@@ -8,8 +8,9 @@ import {
   ChevronDown, FileText, Film,
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
-import { addToWatchlist, searchMovies } from '../api';
+import { searchMovies } from '../api';
 import { getHistory } from '../utils/watchHistory';
+import { getWatchlist, addToWatchlist } from '../utils/watchlist';
 
 const THEMES = [
   { id: 'blue',   name: 'Velora Blue',  color: '#2563eb' },

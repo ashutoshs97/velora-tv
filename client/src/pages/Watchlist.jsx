@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Play, Star, Trash2 } from 'lucide-react';
-import { fetchWatchlist, deleteWatchlistItem } from '../api';
+import { getWatchlist, removeFromWatchlist } from '../utils/watchlist';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 342 513'%3E%3Crect width='342' height='513' fill='%23111827'/%3E%3Cpath d='M171 230.5c-14.1 0-25.5 11.4-25.5 25.5s11.4 25.5 25.5 25.5 25.5-11.4 25.5-25.5-11.4-25.5-25.5-25.5zm0 34c-4.7 0-8.5-3.8-8.5-8.5s3.8-8.5 8.5-8.5 8.5 3.8 8.5 8.5-3.8 8.5-8.5 8.5z' fill='%23374151'/%3E%3C/svg%3E";
@@ -69,11 +69,11 @@ export default function Watchlist() {
     return () => window.removeEventListener('velora:watchlist-updated', loadWatchlist);
   }, []);
 
-  const loadWatchlist = async () => {
+  const loadWatchlist = () => {
     try {
       setLoading(true);
-      const res = await fetchWatchlist();
-      setWatchlist(res.data || []);
+      const data = getWatchlist();
+      setWatchlist(data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -85,7 +85,7 @@ export default function Watchlist() {
     try {
       // Optistically remove
       setWatchlist(prev => prev.filter(w => w.tmdbId !== item.tmdbId && w._id !== item._id));
-      await deleteWatchlistItem(item._id || item.tmdbId);
+      await removeFromWatchlist(item.tmdbId || item.id);
     } catch {
       // Revert on error
       loadWatchlist();
