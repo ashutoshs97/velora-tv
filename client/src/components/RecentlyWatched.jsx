@@ -11,7 +11,10 @@ function HistoryCard({ item, onDelete }) {
 
   const tmdbId = item.tmdbId || item.id;
   const type = item.type === 'tv' ? 'tv' : 'movie';
-  const watchLink = tmdbId ? `/watch/${tmdbId}?type=${type}` : '/';
+  const watchLink = !tmdbId ? '/'
+  : item.season && item.episode
+    ? `/watch/${tmdbId}?type=${type}&s=${item.season}&e=${item.episode}`
+    : `/watch/${tmdbId}?type=${type}`;
   const title = item.title || item.name || 'Untitled';
   const imgSrc = !imgError && (item.backdropPath || item.backdrop_path)
     ? `${BACKDROP_BASE}${item.backdropPath || item.backdrop_path}`

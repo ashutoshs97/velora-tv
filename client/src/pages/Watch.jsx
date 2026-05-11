@@ -28,7 +28,8 @@ export default function Watch() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const type = getSafeType(searchParams.get('type'));
-
+  const urlSeason = Number(searchParams.get('s')) || null;
+  const urlEpisode = Number(searchParams.get('e')) || null;
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,11 +65,19 @@ export default function Watch() {
           year: releaseYear,
           rating: data.vote_average,
           overview: data.overview,
+          type: type,
+          season: type === 'tv' ? (urlSeason || 1) : undefined,
+          episode: type === 'tv' ? (urlEpisode || 1) : undefined,
         });
         if (type === 'tv' && data.seasons?.length > 0) {
-          const firstRealSeason = data.seasons.find(s => s.season_number > 0) || data.seasons[0];
-          setSeason(firstRealSeason.season_number || 1);
-          setEpisode(1);
+          if (urlSeason) {
+            setSeason(urlSeason);
+            setEpisode(urlEpisode || 1);
+          } else {
+            const firstRealSeason = data.seasons.find(s => s.season_number > 0) || data.seasons[0];
+            setSeason(firstRealSeason.season_number || 1);
+            setEpisode(1);
+          }
         }
       } catch {
         if (!cancelled) setError('Failed to load details. Please try again.');
@@ -79,7 +88,7 @@ export default function Watch() {
     load();
     window.scrollTo(0, 0);
     return () => { cancelled = true; };
-  }, [id, type]);
+  }, [id, type, urlSeason, urlEpisode]);
 
   // cold start warning
   useEffect(() => {
@@ -235,7 +244,25 @@ export default function Watch() {
                   className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer appearance-none"
                   style={{ colorScheme: 'dark' }}
                   value={season}
-                  onChange={(e) => { setSeason(Number(e.target.value)); setEpisode(1); }}
+                  onChange={(e) => {
+                  const newSeason = Number(e.target.value);
+                  setSeason(newSeason);
+                  setEpisode(1);
+                  if (movie) {
+                    addToHistory({
+                      tmdbId: movie.id,
+                      title: movie.title || movie.name,
+                      posterPath: movie.poster_path,
+                      backdropPath: movie.backdrop_path,
+                      year: (movie.release_date || movie.first_air_date || '').substring(0, 4),
+                      rating: movie.vote_average,
+                      overview: movie.overview,
+                      type: type,
+                      season: newSeason,
+                      episode: 1,
+                    });
+                  }
+                }}
                 >
                   {movie.seasons
                     .filter(s => s.season_number > 0)
@@ -249,7 +276,24 @@ export default function Watch() {
                   className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer appearance-none"
                   style={{ colorScheme: 'dark' }}
                   value={episode}
-                  onChange={(e) => setEpisode(Number(e.target.value))}
+                  onChange={(e) => {
+                  const newEpisode = Number(e.target.value);
+                  setEpisode(newEpisode);
+                  if (movie) {
+                    addToHistory({
+                      tmdbId: movie.id,
+                      title: movie.title || movie.name,
+                      posterPath: movie.poster_path,
+                      backdropPath: movie.backdrop_path,
+                      year: (movie.release_date || movie.first_air_date || '').substring(0, 4),
+                      rating: movie.vote_average,
+                      overview: movie.overview,
+                      type: type,
+                      season: season,
+                      episode: newEpisode,
+                    });
+                  }
+                }}
                 >
                   {Array.from(
                     { length: movie.seasons.find(s => s.season_number === season)?.episode_count || 1 },

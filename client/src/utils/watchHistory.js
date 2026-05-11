@@ -25,6 +25,8 @@ export function addToHistory(movie) {
       rating: movie.rating || movie.vote_average,
       overview: movie.overview,
       type: movie.type || movie.media_type || 'movie',
+      season: movie.season,
+      episode: movie.episode,
       watchedAt: new Date().toISOString(),
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered.slice(0, MAX_ITEMS)));
