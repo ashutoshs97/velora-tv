@@ -68,6 +68,27 @@ function getHistoryType(item) {
   return 'movie';
 }
 
+// send command to YouTube iframe via postMessage
+function sendYouTubeCommand(iframeRef, command, args = []) {
+  try {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ event: 'command', func: command, args }),
+      '*'
+    );
+  } catch { /* cross-origin or iframe not ready */ }
+}
+
+function applyTrailerMuteState(iframeRef, muted) {
+  if (muted) {
+    sendYouTubeCommand(iframeRef, 'mute');
+  } else {
+    sendYouTubeCommand(iframeRef, 'setVolume', [100]);
+    sendYouTubeCommand(iframeRef, 'unMute');
+  }
+}
+
 export default function Home() {
   const { heroAutoplay, trailerAutoplay, minRating, hideWatched } = useSettings();
 
@@ -98,11 +119,11 @@ export default function Home() {
   const [trailerActive, setTrailerActive] = useState(false);
   const [trailerMuted, setTrailerMuted] = useState(true);
   const [trailerEnded, setTrailerEnded] = useState(false);
+  const [trailerReady, setTrailerReady] = useState(false);
   const trailerTimerRef = useRef(null);
   const replayTimerRef = useRef(null);
   const trailerIframeRef = useRef(null);
 
-  // touch tracking as refs — no re-renders
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -115,11 +136,34 @@ export default function Home() {
     [heroMovies, heroIndex]
   );
 
+  // listen for YouTube API ready message
+  useEffect(() => {
+    const handleMessage = (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.event === 'onReady' || data.info?.playerState !== undefined) {
+          setTrailerReady(true);
+        }
+        // detect when video ends
+        if (data.info?.playerState === 0) {
+          setTrailerEnded(true);
+        }
+      } catch { /* not a YouTube message */ }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // apply mute/unmute via postMessage when button is pressed
+  useEffect(() => {
+    if (!trailerActive || !trailerReady) return;
+    applyTrailerMuteState(trailerIframeRef, trailerMuted);
+  }, [trailerMuted, trailerActive, trailerReady]);
+
   const handleShare = useCallback(() => {
     if (!heroMovie) return;
     const url = `${window.location.origin}/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`;
-    const textToShare = `Check out "${heroMovie.title || heroMovie.name}" on Velora! 🍿\n\n${url}`;
-
+    const textToShare = `Check out "${heroMovie.title || heroMovie.name}" on Velora!\n\n${url}`;
     const copyFallback = () => {
       try {
         const textarea = document.createElement('textarea');
@@ -132,20 +176,10 @@ export default function Home() {
         document.body.removeChild(textarea);
       } catch { /* silent */ }
     };
-
     if (navigator.share) {
-      navigator.share({
-        title: heroMovie.title || heroMovie.name || 'Velora',
-        text: 'Check out this on Velora!',
-        url,
-      }).catch(() => {});
+      navigator.share({ title: heroMovie.title || heroMovie.name || 'Velora', text: 'Check out this on Velora!', url }).catch(() => {});
     } else if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(textToShare)
-        .then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2500);
-        })
-        .catch(copyFallback);
+      navigator.clipboard.writeText(textToShare).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }).catch(copyFallback);
     } else {
       copyFallback();
       setCopied(true);
@@ -157,75 +191,43 @@ export default function Home() {
     try {
       const res = await fetchHistory();
       setHistory(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      setHistory([]);
-    }
+    } catch { setHistory([]); }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-
     const loadTrending = async () => {
       try {
         const res = await fetchTrending();
         if (cancelled) return;
         const movies = res.data?.results || [];
         setTrending(movies);
-        const candidates = movies
-          .filter(m => m.backdrop_path && m.vote_average > 6.5)
-          .slice(0, 7);
-        setHeroMovies(
-          candidates.length
-            ? candidates
-            : movies.filter(m => m.backdrop_path).slice(0, 5)
-        );
+        const candidates = movies.filter(m => m.backdrop_path && m.vote_average > 6.5).slice(0, 7);
+        setHeroMovies(candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5));
         setHeroIndex(0);
-      } catch {
-        if (!cancelled) setTrending([]);
-      } finally {
-        if (!cancelled) setLoadingTrending(false);
-      }
+      } catch { if (!cancelled) setTrending([]); }
+      finally { if (!cancelled) setLoadingTrending(false); }
     };
-
     const loadTrendingTV = async () => {
-      try {
-        const res = await fetchTrendingTV();
-        if (!cancelled) setTrendingTV(res.data?.results || []);
-      } catch {
-        if (!cancelled) setTrendingTV([]);
-      } finally {
-        if (!cancelled) setLoadingTrendingTV(false);
-      }
+      try { const res = await fetchTrendingTV(); if (!cancelled) setTrendingTV(res.data?.results || []); }
+      catch { if (!cancelled) setTrendingTV([]); }
+      finally { if (!cancelled) setLoadingTrendingTV(false); }
     };
-
     const loadTopRated = async () => {
-      try {
-        const res = await fetchTopRated();
-        if (!cancelled) setTopRated(res.data?.results || []);
-      } catch {
-        if (!cancelled) setTopRated([]);
-      } finally {
-        if (!cancelled) setLoadingTopRated(false);
-      }
+      try { const res = await fetchTopRated(); if (!cancelled) setTopRated(res.data?.results || []); }
+      catch { if (!cancelled) setTopRated([]); }
+      finally { if (!cancelled) setLoadingTopRated(false); }
     };
-
     const loadNewReleases = async () => {
-      try {
-        const res = await fetchNewReleases();
-        if (!cancelled) setNewReleases(res.data?.results || []);
-      } catch {
-        if (!cancelled) setNewReleases([]);
-      } finally {
-        if (!cancelled) setLoadingNew(false);
-      }
+      try { const res = await fetchNewReleases(); if (!cancelled) setNewReleases(res.data?.results || []); }
+      catch { if (!cancelled) setNewReleases([]); }
+      finally { if (!cancelled) setLoadingNew(false); }
     };
-
     loadTrending();
     loadTrendingTV();
     loadTopRated();
     loadNewReleases();
     loadHistory();
-
     return () => { cancelled = true; };
   }, [loadHistory]);
 
@@ -291,6 +293,7 @@ export default function Home() {
     setTrailerActive(false);
     setTrailerEnded(false);
     setTrailerMuted(true);
+    setTrailerReady(false);
     clearTimeout(trailerTimerRef.current);
     if (!heroMovie?.id) return;
     let cancelled = false;
@@ -298,8 +301,7 @@ export default function Home() {
       .then(res => {
         if (cancelled) return;
         const videos = res.data?.videos?.results || [];
-        const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
-          || videos.find(v => v.site === 'YouTube');
+        const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
         if (trailer?.key && typeof trailer.key === 'string' && trailer.key.trim()) {
           setTrailerKey(trailer.key.trim());
           if (trailerAutoplay) {
@@ -310,16 +312,14 @@ export default function Home() {
         }
       })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-      clearTimeout(trailerTimerRef.current);
-    };
+    return () => { cancelled = true; clearTimeout(trailerTimerRef.current); };
   }, [heroMovie, trailerAutoplay]);
 
   const replayTrailer = useCallback(() => {
     clearTimeout(replayTimerRef.current);
     setTrailerEnded(false);
     setTrailerActive(false);
+    setTrailerReady(false);
     replayTimerRef.current = setTimeout(() => setTrailerActive(true), 100);
   }, []);
 
@@ -332,25 +332,14 @@ export default function Home() {
   }, []);
 
   const toggleMute = useCallback(() => {
-    setTrailerMuted(m => {
-      const newMuted = !m;
-      try {
-        const iframe = trailerIframeRef.current;
-        if (iframe?.contentWindow) {
-          iframe.contentWindow.postMessage(
-            JSON.stringify({ event: 'command', func: newMuted ? 'mute' : 'unMute' }),
-            'https://www.youtube.com'
-          );
-        }
-      } catch { /* silent */ }
-      return newMuted;
+    setTrailerMuted((muted) => {
+      const nextMuted = !muted;
+      applyTrailerMuteState(trailerIframeRef, nextMuted);
+      return nextMuted;
     });
   }, []);
 
-  const watchedIds = useMemo(
-    () => new Set(history.map(h => h.tmdbId || h.id)),
-    [history]
-  );
+  const watchedIds = useMemo(() => new Set(history.map(h => h.tmdbId || h.id)), [history]);
 
   const filterItems = useCallback((arr) => {
     if (!Array.isArray(arr)) return [];
@@ -369,7 +358,7 @@ export default function Home() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
-      {/* hero billboard */}
+      {/* hero */}
       {heroMovies.length > 0 && heroMovie && (
         <section
           className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20 pt-4"
@@ -378,11 +367,10 @@ export default function Home() {
           onTouchEnd={(e) => {
             touchEndX.current = e.changedTouches[0].clientX;
             const diff = touchStartX.current - touchEndX.current;
-            if (Math.abs(diff) > 50) {
-              diff > 0 ? nextSlide() : prevSlide();
-            }
+            if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
           }}
         >
+          {/* backdrop */}
           <AnimatePresence initial={false} custom={heroDirection}>
             {(!trailerActive || trailerEnded) && (
               <motion.div
@@ -414,6 +402,7 @@ export default function Home() {
             )}
           </AnimatePresence>
 
+          {/* trailer — always starts muted, postMessage controls mute state */}
           <AnimatePresence>
             {trailerActive && trailerKey && !trailerEnded && (
               <motion.div
@@ -427,7 +416,7 @@ export default function Home() {
                 <iframe
                   ref={trailerIframeRef}
                   src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&origin=${window.location.origin}`}
-                  allow="autoplay; encrypted-media"
+                  allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                   allowFullScreen
                   className="w-full h-full"
                   style={{ border: 'none', pointerEvents: 'none' }}
@@ -437,10 +426,12 @@ export default function Home() {
             )}
           </AnimatePresence>
 
+          {/* gradients */}
           <div className="absolute inset-0 bg-hero-gradient-x opacity-90 z-[1] pointer-events-none" />
           <div className="absolute inset-0 bg-hero-gradient-y z-[1] pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
 
+          {/* content */}
           <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-28 pb-32 sm:pb-28">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
               <AnimatePresence initial={false} custom={heroDirection} mode="wait">
@@ -501,21 +492,13 @@ export default function Home() {
                     >
                       <Play size={20} fill="#000" className="mr-1.5" /> Play
                     </Link>
-                    <WatchlistButton
-                      movie={heroMovie}
-                      type={getSafeType(heroMovie)}
-                      className="btn-secondary"
-                      size={22}
-                    />
+                    <WatchlistButton movie={heroMovie} type={getSafeType(heroMovie)} className="btn-secondary" size={22} />
                     <button
                       onClick={handleShare}
                       title="Share"
                       className={`btn-secondary transition-all ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
                     >
-                      {copied
-                        ? <Check size={22} className="text-green-400 -ml-0.5" />
-                        : <Share2 size={22} className="-ml-0.5" />
-                      }
+                      {copied ? <Check size={22} className="text-green-400 -ml-0.5" /> : <Share2 size={22} className="-ml-0.5" />}
                     </button>
                   </div>
                 </motion.div>
@@ -523,11 +506,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* dots + controls */}
-          <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-[5] pointer-events-none">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between relative">
+          {/* slider controls — all clickable, no pointer-events-none on wrapper */}
+          <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-30">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative flex items-center justify-between">
               <div className="hidden sm:block w-10" />
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-auto">
+
+              {/* dots */}
+              <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 z-30">
                 {heroMovies.map((_, i) => (
                   <button
                     key={i}
@@ -549,7 +534,9 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <div className="hidden sm:flex ml-auto items-center gap-2 pointer-events-auto">
+
+              {/* right controls */}
+              <div className="hidden sm:flex ml-auto items-center gap-2 relative z-30">
                 {trailerKey && trailerActive && !trailerEnded && (
                   <button
                     onClick={toggleMute}
@@ -567,18 +554,10 @@ export default function Home() {
                     <RotateCcw size={12} /> Replay
                   </button>
                 )}
-                <button
-                  onClick={prevSlide}
-                  aria-label="Previous"
-                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                >
+                <button onClick={prevSlide} aria-label="Previous" className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all">
                   <ChevronLeft size={18} />
                 </button>
-                <button
-                  onClick={nextSlide}
-                  aria-label="Next"
-                  className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all"
-                >
+                <button onClick={nextSlide} aria-label="Next" className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all">
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -589,144 +568,62 @@ export default function Home() {
 
       {/* content */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 -mt-16 relative z-20 space-y-14">
-
         <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
-
         <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-          <CarouselRow
-            title="Top 10 Movies"
-            badge="Trending"
-            movies={filterItems(trending)}
-            loading={loadingTrending}
-            ranked
-            usePoster
-          />
+          <CarouselRow title="Top 10 Movies" badge="Trending" movies={filterItems(trending)} loading={loadingTrending} ranked usePoster />
         </div>
-
         <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-          <CarouselRow
-            title="Top 10 TV Shows"
-            badge="Popular"
-            movies={filterItems(trendingTV)}
-            loading={loadingTrendingTV}
-            ranked
-            usePoster
-          />
+          <CarouselRow title="Top 10 TV Shows" badge="Popular" movies={filterItems(trendingTV)} loading={loadingTrendingTV} ranked usePoster />
         </div>
-
         <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
-          <PrimeCarouselRow
-            title="Author's Choice"
-            badge="Letterboxd Favorites"
-            movies={AUTHORS_CHOICE}
-            titleLink="https://letterboxd.com/ashutoshs97/likes/films/by/popular/"
-          />
+          <PrimeCarouselRow title="Author's Choice" badge="Letterboxd Favorites" movies={AUTHORS_CHOICE} titleLink="https://letterboxd.com/ashutoshs97/likes/films/by/popular/" />
         </div>
-
         <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
-          <PrimeCarouselRow
-            title="Critically Acclaimed"
-            badge="Top Rated"
-            movies={filterItems(topRated)}
-            loading={loadingTopRated}
-          />
+          <PrimeCarouselRow title="Critically Acclaimed" badge="Top Rated" movies={filterItems(topRated)} loading={loadingTopRated} />
         </div>
-
         <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
-          <CarouselRow
-            title="Binge-Worthy TV Shows"
-            badge="Series"
-            movies={filterItems(trendingTV)}
-            loading={loadingTrendingTV}
-            usePoster
-          />
+          <CarouselRow title="Binge-Worthy TV Shows" badge="Series" movies={filterItems(trendingTV)} loading={loadingTrendingTV} usePoster />
         </div>
-
         <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
-          <PrimeCarouselRow
-            title="Fresh Drops"
-            badge="New This Month"
-            movies={filterItems(newReleases)}
-            loading={loadingNew}
-          />
+          <PrimeCarouselRow title="Fresh Drops" badge="New This Month" movies={filterItems(newReleases)} loading={loadingNew} />
         </div>
-
         {becauseYouWatched.length > 0 && (
           <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
-            <CarouselRow
-              title={`Because You Watched "${becauseTitle}"`}
-              movies={filterItems(becauseYouWatched)}
-              usePoster
-            />
+            <CarouselRow title={`Because You Watched "${becauseTitle}"`} movies={filterItems(becauseYouWatched)} usePoster />
           </div>
         )}
 
-        {/* browse by genre */}
+        {/* genre */}
         <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Browse by Genre
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Browse by Genre</h2>
           </div>
-          <div
-            className="flex gap-2 mb-6 overflow-x-auto pb-2"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {GENRES.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => setSelectedGenre(g)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
-                  selectedGenre.id === g.id
-                    ? 'bg-prime-blue text-white'
-                    : 'bg-white/5 text-prime-subtext hover:text-white'
-                }`}
-              >
+              <button key={g.id} onClick={() => setSelectedGenre(g)} className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${selectedGenre.id === g.id ? 'bg-prime-blue text-white' : 'bg-white/5 text-prime-subtext hover:text-white'}`}>
                 {g.label}
               </button>
             ))}
           </div>
-          <PrimeCarouselRow
-            title=""
-            movies={filterItems(genreMovies)}
-            loading={loadingGenre}
-          />
+          <PrimeCarouselRow title="" movies={filterItems(genreMovies)} loading={loadingGenre} />
         </div>
 
-        {/* browse by mood */}
+        {/* mood */}
         <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.65s' }}>
           <div className="flex items-center gap-3 mb-5 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Browse by Mood
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Browse by Mood</h2>
           </div>
-          <div
-            className="flex gap-2 mb-6 overflow-x-auto pb-2"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {MOODS.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setSelectedMood(m)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
-                  selectedMood.key === m.key
-                    ? 'bg-prime-blue text-white'
-                    : 'bg-white/5 text-prime-subtext hover:text-white'
-                }`}
-              >
+              <button key={m.key} onClick={() => setSelectedMood(m)} className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${selectedMood.key === m.key ? 'bg-prime-blue text-white' : 'bg-white/5 text-prime-subtext hover:text-white'}`}>
                 {m.label}
               </button>
             ))}
           </div>
-          <PrimeCarouselRow
-            title=""
-            movies={filterItems(moodMovies)}
-            loading={loadingMood}
-          />
+          <PrimeCarouselRow title="" movies={filterItems(moodMovies)} loading={loadingMood} />
         </div>
-
       </div>
     </motion.div>
   );

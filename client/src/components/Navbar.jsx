@@ -206,6 +206,9 @@ export default function Navbar() {
               <span className="text-lg font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
                 ELORA
               </span>
+              <span className="text-[9px] font-bold tracking-widest text-white/30 uppercase ml-2 mt-1 select-none">
+                beta
+              </span>
             </Link>
           </div>
 
@@ -310,6 +313,9 @@ export default function Navbar() {
               </div>
               <span className="text-base font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
                 ELORA
+              </span>
+              <span className="text-[8px] font-bold tracking-widest text-white/30 uppercase ml-1.5 mt-0.5 select-none">
+                beta
               </span>
             </Link>
           </div>
