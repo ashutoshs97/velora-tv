@@ -6,7 +6,7 @@ import {
   Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check,
 } from 'lucide-react';
 import {
-  fetchTrending, fetchTrendingTV, fetchTopRated, fetchHistory,
+  fetchTrending, fetchTrendingTV, fetchTopRated,
   fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar, fetchMovieDetail,
 } from '../api';
 import CarouselRow from '../components/CarouselRow';
@@ -14,6 +14,7 @@ import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
 import WatchlistButton from '../components/WatchlistButton';
 import { useSettings } from '../contexts/SettingsContext';
+import { getHistory } from '../utils/watchHistory';
 
 const GENRES = [
   { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
@@ -187,11 +188,13 @@ export default function Home() {
     }
   }, [heroMovie]);
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(() => {
     try {
-      const res = await fetchHistory();
-      setHistory(Array.isArray(res.data) ? res.data : []);
-    } catch { setHistory([]); }
+      const data = getHistory();
+      setHistory(Array.isArray(data) ? data : []);
+    } catch {
+      setHistory([]);
+    }
   }, []);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { fetchHistory, clearHistory as apiClearHistory } from '../api';
+import { clearHistory, getHistory } from '../utils/watchHistory';
 
 const SettingsContext = createContext();
 
@@ -66,15 +66,14 @@ export function SettingsProvider({ children }) {
     document.documentElement.setAttribute('data-font', fontSize);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clearWatchHistory = useCallback(async () => {
-    await apiClearHistory();
+  const clearWatchHistory = useCallback(() => {
+    clearHistory();
     window.dispatchEvent(new CustomEvent('velora:history-cleared'));
   }, []);
 
-  const exportWatchHistory = useCallback(async () => {
+  const exportWatchHistory = useCallback(() => {
     try {
-      const res = await fetchHistory();
-      const data = res.data || [];
+      const data = getHistory() || [];
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

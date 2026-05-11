@@ -8,7 +8,8 @@ import {
   ChevronDown, FileText, Film,
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
-import { addToWatchlist, fetchHistory, searchMovies } from '../api';
+import { addToWatchlist, searchMovies } from '../api';
+import { getHistory } from '../utils/watchHistory';
 
 const THEMES = [
   { id: 'blue',   name: 'Velora Blue',  color: '#2563eb' },
@@ -302,10 +303,9 @@ function DataTab({ s }) {
   };
 
   // ── Export ──────────────────────────────────────────────────────────────────
-  const handleExportCSV = async () => {
+  const handleExportCSV = () => {
     try {
-      const res = await fetchHistory();
-      const data = res.data || [];
+      const data = getHistory() || [];
       const csv = historyToCSV(data);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);

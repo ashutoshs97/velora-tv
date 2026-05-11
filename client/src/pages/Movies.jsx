@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  fetchTrending, fetchTopRated, fetchHistory,
+  fetchTrending, fetchTopRated,
   fetchNewReleases, fetchByGenre, fetchByMood, fetchSimilar
 } from '../api';
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
+import { getHistory } from '../utils/watchHistory';
 
 const GENRES = [
   { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
@@ -103,10 +104,10 @@ export default function Movies() {
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(() => {
     try {
-      const res = await fetchHistory();
-      setHistory(Array.isArray(res.data) ? res.data : []);
+      const data = getHistory();
+      setHistory(Array.isArray(data) ? data : []);
     } catch {
       setHistory([]);
     }

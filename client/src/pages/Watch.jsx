@@ -8,7 +8,6 @@ import {
 import {
   fetchMovieDetail, fetchTVDetail,
   fetchSimilar, fetchRecommendations,
-  addToHistory,
 } from '../api';
 import MultiSourceAggregator from '../components/MultiSourceAggregator';
 import TrailerModal from '../components/TrailerModal';
@@ -16,6 +15,7 @@ import AmbientBackground from '../components/AmbientBackground';
 import CarouselRow from '../components/CarouselRow';
 import CommentsSection from '../components/CommentsSection';
 import WatchlistButton from '../components/WatchlistButton';
+import { addToHistory } from '../utils/watchHistory';
 
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
 
@@ -64,7 +64,7 @@ export default function Watch() {
           year: releaseYear,
           rating: data.vote_average,
           overview: data.overview,
-        }).catch(() => {});
+        });
         if (type === 'tv' && data.seasons?.length > 0) {
           const firstRealSeason = data.seasons.find(s => s.season_number > 0) || data.seasons[0];
           setSeason(firstRealSeason.season_number || 1);
