@@ -28,11 +28,11 @@ const TABS = [
 ];
 
 const SERVERS = [
-  { id: 1, label: 'VidSrc Pro' },
-  { id: 2, label: 'VidSrc' },
-  { id: 3, label: 'VidLink' },
-  { id: 4, label: '2Embed' },
-  { id: 5, label: 'Smashy' },
+  { id: 1, label: 'Server 1' },
+  { id: 2, label: 'Server 2' },
+  { id: 3, label: 'Server 3' },
+  { id: 4, label: 'Server 4' },
+  { id: 5, label: 'Server 5' },
 ];
 
 // ── Reusable primitives ──────────────────────────────────────────────────────

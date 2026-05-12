@@ -37,8 +37,36 @@ const MOVIE_PROVIDER_REGISTRY = [
     id: 2,
     name: 'Server 2',
     badge: 'HD',
+    recommended: false,
+    enabled: true,
+    getUrls: (id, type, season, episode) => type === 'tv'
+      ? [
+          `https://111movies.net/tv/${id}/${season}/${episode}`,
+          `https://111movies.com/tv/${id}/${season}/${episode}`,
+        ]
+      : [
+          `https://111movies.net/movie/${id}`,
+          `https://111movies.com/movie/${id}`,
+        ],
+  },
+  {
+    id: 3,
+    name: 'Server 3',
+    badge: 'HD',
+    recommended: false,
+    enabled: true,
+    // params removed - anyembed blocks customized embed URLs
+    getUrls: (id, type, season, episode) => type === 'tv'
+      ? [`https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`]
+      : [`https://anyembed.xyz/embed/tmdb-movie-${id}`],
+  },
+  {
+    id: 4,
+    name: 'Server 4',
+    badge: 'HD',
     recommended: true,
     enabled: true,
+    providerKey: 'vidlink',
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
           `https://vidlink.pro/tv/${id}/${season}/${episode}?${SERVER_UI_PARAMS}`,
@@ -50,8 +78,8 @@ const MOVIE_PROVIDER_REGISTRY = [
         ],
   },
   {
-    id: 3,
-    name: 'Server 3',
+    id: 5,
+    name: 'Server 5',
     badge: 'HD',
     recommended: false,
     enabled: true,
@@ -66,33 +94,6 @@ const MOVIE_PROVIDER_REGISTRY = [
           `https://vidsrc.to/embed/movie/${id}`,
           `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
         ],
-  },
-  {
-    id: 4,
-    name: 'Server 4',
-    badge: 'HD',
-    recommended: false,
-    enabled: true,
-    getUrls: (id, type, season, episode) => type === 'tv'
-      ? [
-          `https://111movies.net/tv/${id}/${season}/${episode}`,
-          `https://111movies.com/tv/${id}/${season}/${episode}`,
-        ]
-      : [
-          `https://111movies.net/movie/${id}`,
-          `https://111movies.com/movie/${id}`,
-        ],
-  },
-  {
-  id: 5,
-  name: 'Server 5',
-  badge: 'HD',
-  recommended: false,
-  enabled: true,
-  // params removed — anyembed blocks customized embed URLs
-  getUrls: (id, type, season, episode) => type === 'tv'
-    ? [`https://anyembed.xyz/embed/tmdb-tv-${id}-${season}-${episode}`]
-    : [`https://anyembed.xyz/embed/tmdb-movie-${id}`],
   },
 ];
 

@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Star, Share2, ListVideo, Play as PlayIcon,
-  CheckCircle2, Bookmark, Check,
+  CheckCircle2, Check, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
   fetchMovieDetail, fetchTVDetail,
-  fetchSimilar, fetchRecommendations,
+  fetchSimilar, fetchRecommendations, fetchTVSeason,
 } from '../api';
 import MultiSourceAggregator from '../components/MultiSourceAggregator';
 import TrailerModal from '../components/TrailerModal';
@@ -18,6 +18,8 @@ import WatchlistButton from '../components/WatchlistButton';
 import { addToHistory } from '../utils/watchHistory';
 
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+const STILL_BASE = 'https://image.tmdb.org/t/p/w300';
+const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
 
 function getSafeType(raw) {
   return raw === 'tv' ? 'tv' : 'movie';
@@ -36,11 +38,15 @@ export default function Watch() {
   const [activeTab, setActiveTab] = useState('details');
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
+  const [seasonDetails, setSeasonDetails] = useState(null);
+  const [seasonLoading, setSeasonLoading] = useState(false);
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
   const [copied, setCopied] = useState(false);
   const [similar, setSimilar] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
+  const episodeRailRef = useRef(null);
 
   // load movie details
   useEffect(() => {
@@ -89,6 +95,23 @@ export default function Watch() {
     window.scrollTo(0, 0);
     return () => { cancelled = true; };
   }, [id, type, urlSeason, urlEpisode]);
+
+  useEffect(() => {
+    if (type !== 'tv' || !id || !season) return;
+    let cancelled = false;
+    setSeasonLoading(true);
+    fetchTVSeason(id, season)
+      .then(res => {
+        if (!cancelled) setSeasonDetails(res.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setSeasonDetails(null);
+      })
+      .finally(() => {
+        if (!cancelled) setSeasonLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id, type, season]);
 
   // cold start warning
   useEffect(() => {
@@ -166,6 +189,65 @@ export default function Watch() {
     )?.key || movie?.videos?.results?.[0]?.key;
     return typeof key === 'string' && key.trim().length > 0 ? key : null;
   }, [movie]);
+  const seasons = useMemo(
+    () => movie?.seasons?.filter(s => s.season_number > 0) || [],
+    [movie]
+  );
+  const activeSeason = useMemo(
+    () => seasons.find(s => s.season_number === season),
+    [seasons, season]
+  );
+  const episodes = useMemo(() => {
+    if (seasonDetails?.episodes?.length) return seasonDetails.episodes;
+    const count = activeSeason?.episode_count || 1;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `fallback-${season}-${i + 1}`,
+      episode_number: i + 1,
+      name: `Episode ${i + 1}`,
+      overview: '',
+      still_path: null,
+    }));
+  }, [activeSeason, season, seasonDetails]);
+
+  const recordEpisodeHistory = useCallback((nextSeason, nextEpisode) => {
+    if (!movie) return;
+    addToHistory({
+      tmdbId: movie.id,
+      title: movie.title || movie.name,
+      posterPath: movie.poster_path,
+      backdropPath: movie.backdrop_path,
+      year: (movie.release_date || movie.first_air_date || '').substring(0, 4),
+      rating: movie.vote_average,
+      overview: movie.overview,
+      type: type,
+      season: nextSeason,
+      episode: nextEpisode,
+    });
+  }, [movie, type]);
+
+  const handleSeasonChange = useCallback((newSeason) => {
+    setSeason(newSeason);
+    setEpisode(1);
+    setSeasonMenuOpen(false);
+    recordEpisodeHistory(newSeason, 1);
+    requestAnimationFrame(() => {
+      if (episodeRailRef.current) episodeRailRef.current.scrollLeft = 0;
+    });
+  }, [recordEpisodeHistory]);
+
+  const handleEpisodeChange = useCallback((newEpisode) => {
+    setEpisode(newEpisode);
+    recordEpisodeHistory(season, newEpisode);
+  }, [recordEpisodeHistory, season]);
+
+  const scrollEpisodes = useCallback((direction) => {
+    const rail = episodeRailRef.current;
+    if (!rail) return;
+    rail.scrollBy({
+      left: direction * Math.min(rail.clientWidth * 0.85, 900),
+      behavior: 'smooth',
+    });
+  }, []);
 
   if (loading) {
     return (
@@ -233,75 +315,154 @@ export default function Watch() {
         <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-8">
           <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
 
-          {type === 'tv' && movie?.seasons && (
-            <div className="mt-8 bg-[#1A242F] border border-white/10 rounded-xl p-4 flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-2 text-prime-blue">
-                <ListVideo size={20} />
-                <span className="font-bold text-white tracking-wide uppercase text-sm">Episodes</span>
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <select
-                  className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer appearance-none"
-                  style={{ colorScheme: 'dark' }}
-                  value={season}
-                  onChange={(e) => {
-                  const newSeason = Number(e.target.value);
-                  setSeason(newSeason);
-                  setEpisode(1);
-                  if (movie) {
-                    addToHistory({
-                      tmdbId: movie.id,
-                      title: movie.title || movie.name,
-                      posterPath: movie.poster_path,
-                      backdropPath: movie.backdrop_path,
-                      year: (movie.release_date || movie.first_air_date || '').substring(0, 4),
-                      rating: movie.vote_average,
-                      overview: movie.overview,
-                      type: type,
-                      season: newSeason,
-                      episode: 1,
-                    });
-                  }
-                }}
-                >
-                  {movie.seasons
-                    .filter(s => s.season_number > 0)
-                    .map(s => (
-                      <option key={s.id} value={s.season_number}>
-                        Season {s.season_number}
-                      </option>
-                    ))}
-                </select>
-                <select
-                  className="bg-black/50 border border-white/20 text-white text-sm rounded-lg outline-none focus:border-prime-blue px-3 py-2 cursor-pointer appearance-none"
-                  style={{ colorScheme: 'dark' }}
-                  value={episode}
-                  onChange={(e) => {
-                  const newEpisode = Number(e.target.value);
-                  setEpisode(newEpisode);
-                  if (movie) {
-                    addToHistory({
-                      tmdbId: movie.id,
-                      title: movie.title || movie.name,
-                      posterPath: movie.poster_path,
-                      backdropPath: movie.backdrop_path,
-                      year: (movie.release_date || movie.first_air_date || '').substring(0, 4),
-                      rating: movie.vote_average,
-                      overview: movie.overview,
-                      type: type,
-                      season: season,
-                      episode: newEpisode,
-                    });
-                  }
-                }}
-                >
-                  {Array.from(
-                    { length: movie.seasons.find(s => s.season_number === season)?.episode_count || 1 },
-                    (_, i) => (
-                      <option key={i + 1} value={i + 1}>Episode {i + 1}</option>
-                    )
+          {type === 'tv' && seasons.length > 0 && (
+            <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-[#1A242F]/95 shadow-card">
+              <div className="flex flex-col gap-4 border-b border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 text-prime-blue">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-prime-blue/10 ring-1 ring-prime-blue/20">
+                    <ListVideo size={20} />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-bold uppercase tracking-wide text-white">Episodes</span>
+                    <span className="text-xs font-medium text-prime-subtext">
+                      {activeSeason?.name || `Season ${season}`} · {episodes.length} episodes
+                    </span>
+                  </div>
+                </div>
+
+                <div className="relative w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setSeasonMenuOpen(open => !open)}
+                    className="flex w-full min-w-[190px] items-center justify-between gap-4 rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-left text-sm font-bold text-white shadow-inner shadow-black/20 transition-all duration-200 hover:border-prime-blue/50 hover:bg-black/45 focus:border-prime-blue focus:outline-none sm:w-auto"
+                    aria-haspopup="listbox"
+                    aria-expanded={seasonMenuOpen}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate">{activeSeason?.name || `Season ${season}`}</span>
+                      <span className="block text-[11px] font-semibold text-prime-subtext">
+                        {activeSeason?.episode_count || episodes.length} episodes
+                      </span>
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className={`flex-shrink-0 text-prime-blue transition-transform duration-200 ${seasonMenuOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {seasonMenuOpen && (
+                    <div
+                      className="absolute right-0 z-30 mt-2 max-h-72 w-full min-w-[230px] overflow-y-auto rounded-lg border border-white/10 bg-[#0F1923] p-1.5 shadow-2xl shadow-black/60 sm:w-72"
+                      role="listbox"
+                    >
+                      {seasons.map(s => (
+                        <button
+                          key={s.id || s.season_number}
+                          type="button"
+                          onClick={() => handleSeasonChange(s.season_number)}
+                          className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition-all duration-200 ${
+                            s.season_number === season
+                              ? 'bg-prime-blue/20 text-white ring-1 ring-prime-blue/30'
+                              : 'text-white/80 hover:bg-white/[0.08] hover:text-white'
+                          }`}
+                          role="option"
+                          aria-selected={s.season_number === season}
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-bold">{s.name || `Season ${s.season_number}`}</span>
+                            <span className="text-[11px] font-semibold text-prime-subtext">
+                              {s.episode_count || 0} episodes
+                            </span>
+                          </span>
+                          {s.season_number === season && (
+                            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-prime-blue shadow-glow-sm" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </select>
+                </div>
+              </div>
+
+              <div className="relative p-4">
+                <button
+                  type="button"
+                  onClick={() => scrollEpisodes(-1)}
+                  title="Previous episodes"
+                  className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition-all hover:border-prime-blue/50 hover:bg-prime-blue/20 lg:flex"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollEpisodes(1)}
+                  title="Next episodes"
+                  className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition-all hover:border-prime-blue/50 hover:bg-prime-blue/20 lg:flex"
+                >
+                  <ChevronRight size={22} />
+                </button>
+
+                <div
+                  ref={episodeRailRef}
+                  className="hide-scrollbar flex snap-x gap-3 overflow-x-auto scroll-smooth pb-1 lg:px-10"
+                >
+                  {seasonLoading && !seasonDetails ? (
+                    Array.from({ length: 6 }, (_, i) => (
+                      <div key={`episode-skeleton-${i}`} className="skeleton h-40 w-[235px] flex-shrink-0 rounded-lg" />
+                    ))
+                  ) : episodes.map(ep => {
+                    const isActive = Number(ep.episode_number) === Number(episode);
+                    const imagePath = ep.still_path || activeSeason?.poster_path || movie.backdrop_path;
+                    const imageSrc = ep.still_path
+                      ? `${STILL_BASE}${ep.still_path}`
+                      : imagePath
+                        ? `${BACKDROP_BASE}${imagePath}`
+                        : null;
+                    return (
+                      <button
+                        key={ep.id || ep.episode_number}
+                        type="button"
+                        onClick={() => handleEpisodeChange(ep.episode_number)}
+                        className={`group relative w-[235px] flex-shrink-0 snap-start overflow-hidden rounded-lg border text-left transition-all duration-300 ${
+                          isActive
+                            ? 'border-prime-blue bg-prime-blue/10 shadow-glow-blue'
+                            : 'border-white/10 bg-black/25 hover:border-white/25 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="relative aspect-video overflow-hidden bg-prime-surface">
+                          {imageSrc ? (
+                            <img
+                              src={imageSrc}
+                              alt={ep.name || `Episode ${ep.episode_number}`}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-[#111D28] text-sm font-bold text-prime-subtext">
+                              Episode {ep.episode_number}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                          <span className="absolute bottom-2 left-2 rounded-md bg-black/75 px-2 py-1 text-[11px] font-black uppercase tracking-wide text-white">
+                            E{ep.episode_number}
+                          </span>
+                          {isActive && (
+                            <span className="absolute right-2 top-2 rounded-full bg-prime-blue px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                              Now
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-h-[84px] p-3">
+                          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white">
+                            {ep.name || `Episode ${ep.episode_number}`}
+                          </h3>
+                          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-prime-subtext">
+                            {ep.overview || ep.air_date || 'Episode details from TMDB.'}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -489,17 +650,4 @@ export default function Watch() {
       </div>
     </motion.div>
   );
-}
-
-function fallbackCopy(text) {
-  try {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-  } catch { /* silent */ }
 }

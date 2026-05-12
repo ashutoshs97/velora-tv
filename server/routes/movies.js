@@ -302,6 +302,20 @@ router.get('/tv/:id', async (req, res) => {
   }
 });
 
+router.get('/tv/:id/season/:seasonNumber', async (req, res) => {
+  const { id, seasonNumber } = req.params;
+  if (!isValidId(id) || !/^\d+$/.test(String(seasonNumber))) {
+    return res.status(400).json({ error: 'Invalid TV show or season id' });
+  }
+  try {
+    const data = await tmdbFetch(`/tv/${id}/season/${seasonNumber}`);
+    setCacheHeaders(res, 3600);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: clientError(err) });
+  }
+});
+
 router.get('/person/:id', async (req, res) => {
   const { id } = req.params;
   if (!isValidId(id)) {

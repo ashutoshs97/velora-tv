@@ -40,7 +40,7 @@ export default function Navbar() {
   const [hintIndex, setHintIndex] = useState(0);
   const [hintVisible, setHintVisible] = useState(true);
   const [surprising, setSurprising] = useState(false);
-  const [recentSearches, setRecentSearches] = useState(() => {
+  const [, setRecentSearches] = useState(() => {
     try { return JSON.parse(localStorage.getItem('velora_recent_searches') || '[]'); }
     catch { return []; }
   });
@@ -178,9 +178,40 @@ export default function Navbar() {
         .nav-link:hover .nav-underline { transform: scaleX(1); }
         .hint-fade { transition: opacity 0.3s ease; }
         .nav-pill-bg {
-          background: rgba(40, 35, 30, 0.4);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
+          position: relative;
+          overflow: hidden;
+          background: rgba(12, 19, 27, 0.88);
+          border: 1px solid rgba(255,255,255,0.10);
+          box-shadow:
+            0 18px 44px rgba(0,0,0,0.42),
+            inset 0 1px 0 rgba(255,255,255,0.08);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        .nav-pill-bg::before {
+          content: '';
+          position: absolute;
+          left: 10px;
+          right: 10px;
+          top: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.24), transparent);
+          opacity: 0.75;
+          pointer-events: none;
+        }
+        .nav-active-pill {
+          box-shadow:
+            0 10px 26px rgba(0,0,0,0.26),
+            0 0 0 1px rgba(255,255,255,0.14),
+            inset 0 1px 0 rgba(255,255,255,0.85);
+        }
+        .mobile-menu-panel {
+          background: rgba(15,25,35,0.88);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          box-shadow:
+            0 18px 48px rgba(0,0,0,0.48),
+            inset 0 1px 0 rgba(255,255,255,0.08);
         }
       `}</style>
 
@@ -214,13 +245,13 @@ export default function Navbar() {
 
           {/* navigation pill */}
           <nav
-            className={`pointer-events-auto transition-all duration-500 ease-out max-w-fit rounded-full select-none ${
+            className={`pointer-events-auto transition-all duration-500 ease-out max-w-fit rounded-full select-none nav-pill-bg ${
               scrolled
-                ? 'shadow-2xl shadow-black/50 nav-pill-bg border border-white/10'
-                : 'nav-pill-bg border border-transparent shadow-lg'
+                ? 'border-white/15 shadow-2xl shadow-black/50'
+                : 'border-white/5 shadow-lg'
             }`}
           >
-            <div className="flex items-center px-3 py-2 gap-2 sm:gap-6">
+            <div className="flex items-center px-3 py-2 gap-2 sm:gap-5">
               {/* nav links */}
               <div className="flex items-center gap-1 sm:gap-2">
                 {NAV_LINKS.map(({ to, label, icon: Icon }) => {
@@ -230,7 +261,7 @@ export default function Navbar() {
                       <FocusableLink
                         key={to}
                         to={to}
-                        className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] shadow-lg shadow-white/10 transition-transform hover:scale-105"
+                        className="nav-active-pill flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] transition-transform hover:scale-[1.03]"
                       >
                         {Icon && <Icon size={18} strokeWidth={2.5} />}
                         <span>{label}</span>
@@ -241,7 +272,7 @@ export default function Navbar() {
                     <FocusableLink
                       key={to}
                       to={to}
-                      className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full transition-colors duration-200 text-prime-subtext hover:text-white"
+                      className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full transition-all duration-200 text-prime-subtext hover:text-white hover:bg-white/[0.08]"
                     >
                       {label}
                     </FocusableLink>
@@ -254,21 +285,21 @@ export default function Navbar() {
                 <FocusableLink
                   to="/search"
                   onClick={() => setMenuOpen(false)}
-                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
+                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/[0.08]"
                   aria-label="Search"
                 >
                   <Search size={18} className="translate-y-[1px]" />
                 </FocusableLink>
                 <FocusableButton
                   onClick={() => setSettingsOpen(true)}
-                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/10"
+                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/[0.08]"
                   aria-label="Open settings"
                 >
                   <Settings size={18} className="translate-y-[1px]" />
                 </FocusableButton>
               </div>
 
-              <div className="w-[1px] h-6 bg-white/20 mx-1 hidden sm:block" />
+              <div className="w-px h-6 bg-white/15 mx-1 hidden sm:block" />
 
               <FocusableButton
                 onClick={handleSurprise}
@@ -292,7 +323,7 @@ export default function Navbar() {
       <nav
         className={`fixed top-0 left-0 right-0 z-[100] flex md:hidden flex-col transition-[background-color,backdrop-filter] duration-500 ${
           scrolled || menuOpen
-            ? 'bg-[#080E14]/90 backdrop-blur-xl border-b border-white/[0.05]'
+            ? 'bg-[#080E14]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.35)]'
             : 'bg-gradient-to-b from-black/70 to-transparent border-b-0'
         }`}
       >
@@ -331,16 +362,18 @@ export default function Navbar() {
 
         {/* mobile dropdown */}
         {menuOpen && (
-          <div className="glass-card mb-3 overflow-hidden">
+          <div className="mobile-menu-panel mx-3 mb-3 overflow-hidden rounded-2xl border border-white/10">
             {/* search form */}
             <form onSubmit={handleSearch} className="p-4 border-b border-white/5 bg-black/20">
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Search movies & shows..."
+                  placeholder={searchSuggestions && hintVisible ? SEARCH_HINTS[hintIndex] : 'Search movies & shows...'}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-white/40 focus:outline-none focus:border-prime-blue focus:bg-white/10 transition-colors"
                   value={query}
                   onChange={handleQueryChange}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
                   maxLength={MAX_QUERY_LENGTH}
                 />
                 <button
@@ -379,7 +412,7 @@ export default function Navbar() {
                   className={`flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all ${
                     isActive(to)
                       ? 'bg-white/10 text-white'
-                      : 'text-prime-subtext hover:text-white hover:bg-white/6'
+                      : 'text-prime-subtext hover:text-white hover:bg-white/[0.08]'
                   }`}
                 >
                   {label}
@@ -392,7 +425,7 @@ export default function Navbar() {
                   setMenuOpen(false);
                   setSettingsOpen(true);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all text-prime-subtext hover:text-white hover:bg-white/6"
+                className="w-full flex items-center gap-3 p-3 rounded-xl font-semibold text-sm transition-all text-prime-subtext hover:text-white hover:bg-white/[0.08]"
               >
                 <Settings size={16} />
                 Settings

@@ -60,8 +60,7 @@ export default function MultiSourceAggregator({
     : [];
   const src = urls[mirrorIndex] || urls[0] || '';
 
-  // VidLink is Server 2 (index 1)
-  const isVidLink = activeServer === 1;
+  const isVidLink = currentServer?.providerKey === 'vidlink';
 
   // reset on content change
   useEffect(() => {
@@ -309,7 +308,7 @@ export default function MultiSourceAggregator({
             <AlertCircle size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-blue-400/80 text-xs leading-relaxed">
               <strong className="text-blue-400">iOS Tip:</strong> Use{' '}
-              <strong className="text-blue-300">Server 2</strong> for
+              <strong className="text-blue-300">Server 4</strong> for
               the best playback on Apple devices.
             </p>
           </div>
