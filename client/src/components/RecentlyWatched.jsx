@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, X, Play } from 'lucide-react';
 import { removeFromHistory } from '../utils/watchHistory';
@@ -76,6 +76,27 @@ function HistoryCard({ item, onDelete }) {
 
 export default function RecentlyWatched({ history, onRefresh }) {
   const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 8);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [checkScroll, history]);
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -84,6 +105,7 @@ export default function RecentlyWatched({ history, onRefresh }) {
       left: dir === 1 ? amount : -amount,
       behavior: 'smooth',
     });
+    requestAnimationFrame(checkScroll);
   };
 
   const handleDelete = (tmdbId) => {
@@ -105,17 +127,16 @@ export default function RecentlyWatched({ history, onRefresh }) {
       {/* carousel */}
       <div className="relative">
 
-        {/* left shade */}
-        <div
-          onClick={() => scroll(-1)}
-          className="hidden sm:flex absolute left-0 top-0 bottom-4 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-r from-[#080E14] to-transparent"
-          role="button"
-          aria-label="Scroll left"
-        >
-          <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
-            <ChevronLeft size={20} className="text-white" />
+        {canScrollLeft && (
+          <div
+            onClick={() => scroll(-1)}
+            className="hidden sm:flex absolute left-0 top-0 bottom-4 w-10 z-40 cursor-pointer items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] opacity-0 backdrop-blur-[1px] transition-all duration-300 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover:opacity-100"
+            role="button"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
           </div>
-        </div>
+        )}
 
         {/* scrollable row */}
         <div
@@ -132,17 +153,16 @@ export default function RecentlyWatched({ history, onRefresh }) {
           ))}
         </div>
 
-        {/* right shade */}
-        <div
-          onClick={() => scroll(1)}
-          className="hidden sm:flex absolute right-0 top-0 bottom-4 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-l from-[#080E14] to-transparent"
-          role="button"
-          aria-label="Scroll right"
-        >
-          <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
-            <ChevronRight size={20} className="text-white" />
+        {canScrollRight && (
+          <div
+            onClick={() => scroll(1)}
+            className="hidden sm:flex absolute right-0 top-0 bottom-4 w-10 z-40 cursor-pointer items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] opacity-0 backdrop-blur-[1px] transition-all duration-300 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover:opacity-100"
+            role="button"
+            aria-label="Scroll right"
+          >
+            <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
           </div>
-        </div>
+        )}
 
       </div>
     </section>

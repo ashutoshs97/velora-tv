@@ -1,4 +1,37 @@
 const SERVER_UI_PARAMS = ['player=jw', 'primaryColor=ffffff', 'secondaryColor=a8a8a8', 'iconColor=ffffff', 'autoplay=true', 'nextbutton=false'].join('&');
+const VIDEASY_PARAMS = ['color=2563EB', 'overlay=true'].join('&');
+const STREAMMAFIA_PARAMS = [
+  'primarycolor=2563EB',
+  'secondarycolor=60A5FA',
+  'iconcolor=FFFFFF',
+  'glasscolor=000000',
+  'glassopacity=55',
+  'glassblur=16',
+  'autoplay=true',
+  'autonext=false',
+  'nextbutton=false',
+  'episodelist=false',
+  'download=false',
+  'chromecast=true',
+  'pip=true',
+  'watchparty=false',
+  'title=false',
+  'font=Inter',
+  'fontcolor=FFFFFF',
+  'fontsize=18',
+  'subtextsize=200',
+  'subtextcolor=FFFFFF',
+  'subfont=Inter',
+  'subbold=true',
+  'subbgenabled=true',
+  'subbgcolor=000000',
+  'subbgopacity=45',
+  'subbgblur=8',
+  'hideautonext=true',
+  'hidenextbutton=true',
+  'hidetitle=true',
+  'hideepisodelist=true',
+].join('&');
 
 function parseCsvIds(rawValue) {
   if (!rawValue || typeof rawValue !== 'string') return [];
@@ -23,21 +56,20 @@ const MOVIE_PROVIDER_REGISTRY = [
     badge: 'HD',
     recommended: true,
     enabled: true,
+    providerKey: 'videasy',
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://vidsrc.cc/v3/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
+          `https://player.videasy.net/tv/${id}/${season}/${episode}?${VIDEASY_PARAMS}`,
         ]
       : [
-          `https://vidsrc.cc/v3/embed/movie/${id}`,
-          `https://vidsrc.to/embed/movie/${id}`,
+          `https://player.videasy.net/movie/${id}?${VIDEASY_PARAMS}`,
         ],
   },
   {
     id: 2,
     name: 'Server 2',
     badge: 'HD',
-    recommended: false,
+    recommended: true,
     enabled: true,
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
@@ -64,7 +96,7 @@ const MOVIE_PROVIDER_REGISTRY = [
     id: 4,
     name: 'Server 4',
     badge: 'HD',
-    recommended: true,
+    recommended: false,
     enabled: true,
     providerKey: 'vidlink',
     getUrls: (id, type, season, episode) => type === 'tv'
@@ -83,16 +115,13 @@ const MOVIE_PROVIDER_REGISTRY = [
     badge: 'HD',
     recommended: false,
     enabled: true,
+    providerKey: 'streammafia',
     getUrls: (id, type, season, episode) => type === 'tv'
       ? [
-          `https://vidsrc.net/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
-          `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
+          `https://embed.streammafia.to/embed/tv/${id}/${season}/${episode}?${STREAMMAFIA_PARAMS}`,
         ]
       : [
-          `https://vidsrc.net/embed/movie/${id}`,
-          `https://vidsrc.to/embed/movie/${id}`,
-          `https://vidsrc.xyz/embed/movie?tmdb=${id}`,
+          `https://embed.streammafia.to/embed/movie/${id}?${STREAMMAFIA_PARAMS}`,
         ],
   },
 ];

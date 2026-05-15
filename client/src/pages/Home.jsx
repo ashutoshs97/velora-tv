@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  Play, Share2, Award, CheckCircle2,
+  Play, Share2, Award,
   Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check,
 } from 'lucide-react';
 import {
@@ -450,18 +450,15 @@ export default function Home() {
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-                  className="w-full md:w-3/4 lg:w-[58%]"
+                  className="w-full md:w-3/4 lg:w-[58%] min-w-0"
                 >
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-[1.15] tracking-[-0.025em] drop-shadow-2xl line-clamp-3 font-display pb-2">
+                  <h1 className="max-w-[min(100%,40rem)] whitespace-normal break-words text-balance text-[clamp(1.65rem,3.2vw,2.55rem)] font-black text-white mb-4 leading-[1.12] drop-shadow-2xl line-clamp-3 font-display pb-2">
                     {heroMovie.title || heroMovie.name || 'Untitled'}
                   </h1>
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
-                    <span className="flex items-center gap-1.5 text-[13px] font-bold text-prime-blue bg-white/10 px-3 py-1.5 rounded-full backdrop-blur border border-white/10">
-                      <CheckCircle2 size={14} /> Included with Velora
-                    </span>
                     {(heroMovie.release_date || heroMovie.first_air_date) && (
-                      <span className="text-[15px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                      <span className="text-[15px] font-bold text-prime-subtext">
                         {(heroMovie.release_date || heroMovie.first_air_date).substring(0, 4)}
                       </span>
                     )}
@@ -557,11 +554,11 @@ export default function Home() {
                     <RotateCcw size={12} /> Replay
                   </button>
                 )}
-                <button onClick={prevSlide} aria-label="Previous" className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all">
-                  <ChevronLeft size={18} />
+                <button onClick={prevSlide} aria-label="Previous" className="h-10 w-8 flex-shrink-0 rounded-xl bg-gradient-to-r from-black/28 via-black/12 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] flex items-center justify-center hover:from-white/12 hover:via-white/6 hover:to-transparent transition-all">
+                  <ChevronLeft size={20} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
                 </button>
-                <button onClick={nextSlide} aria-label="Next" className="w-9 h-9 flex-shrink-0 rounded-full bg-black/40 backdrop-blur border border-white/12 text-white flex items-center justify-center hover:bg-white/15 transition-all">
-                  <ChevronRight size={18} />
+                <button onClick={nextSlide} aria-label="Next" className="h-10 w-8 flex-shrink-0 rounded-xl bg-gradient-to-l from-black/28 via-black/12 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] flex items-center justify-center hover:from-white/12 hover:via-white/6 hover:to-transparent transition-all">
+                  <ChevronRight size={20} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
                 </button>
               </div>
             </div>

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Star, Share2, ListVideo, Play as PlayIcon,
-  CheckCircle2, Check, ChevronDown, ChevronLeft, ChevronRight,
+  Check, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
   fetchMovieDetail, fetchTVDetail,
@@ -46,6 +46,8 @@ export default function Watch() {
   const [similar, setSimilar] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
+  const [canScrollEpisodesLeft, setCanScrollEpisodesLeft] = useState(false);
+  const [canScrollEpisodesRight, setCanScrollEpisodesRight] = useState(false);
   const episodeRailRef = useRef(null);
 
   // load movie details
@@ -225,20 +227,70 @@ export default function Watch() {
     });
   }, [movie, type]);
 
+  const alignEpisodeToStart = useCallback((episodeNumber, behavior = 'smooth') => {
+    const rail = episodeRailRef.current;
+    if (!rail) return;
+
+    const card = rail.querySelector(`[data-episode-number="${Number(episodeNumber)}"]`);
+    if (!card) return;
+
+    const railRect = rail.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const paddingLeft = Number.parseFloat(window.getComputedStyle(rail).paddingLeft) || 0;
+    const nextLeft = rail.scrollLeft + cardRect.left - railRect.left - paddingLeft;
+
+    rail.scrollTo({
+      left: Math.max(0, nextLeft),
+      behavior,
+    });
+  }, []);
+
+  const handleEpisodeChange = useCallback((newEpisode) => {
+    setEpisode(newEpisode);
+    recordEpisodeHistory(season, newEpisode);
+    requestAnimationFrame(() => alignEpisodeToStart(newEpisode));
+  }, [alignEpisodeToStart, recordEpisodeHistory, season]);
+
+  const checkEpisodeScroll = useCallback(() => {
+    const rail = episodeRailRef.current;
+    if (!rail) return;
+    setCanScrollEpisodesLeft(rail.scrollLeft > 8);
+    setCanScrollEpisodesRight(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 8);
+  }, []);
+
   const handleSeasonChange = useCallback((newSeason) => {
     setSeason(newSeason);
     setEpisode(1);
     setSeasonMenuOpen(false);
     recordEpisodeHistory(newSeason, 1);
     requestAnimationFrame(() => {
-      if (episodeRailRef.current) episodeRailRef.current.scrollLeft = 0;
+      if (episodeRailRef.current) {
+        episodeRailRef.current.scrollLeft = 0;
+        checkEpisodeScroll();
+      }
     });
-  }, [recordEpisodeHistory]);
+  }, [checkEpisodeScroll, recordEpisodeHistory]);
 
-  const handleEpisodeChange = useCallback((newEpisode) => {
-    setEpisode(newEpisode);
-    recordEpisodeHistory(season, newEpisode);
-  }, [recordEpisodeHistory, season]);
+  useEffect(() => {
+    if (type !== 'tv' || seasonLoading) return;
+    const frame = requestAnimationFrame(() => {
+      alignEpisodeToStart(episode, 'auto');
+      checkEpisodeScroll();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [alignEpisodeToStart, checkEpisodeScroll, episode, episodes.length, seasonLoading, type]);
+
+  useEffect(() => {
+    const rail = episodeRailRef.current;
+    if (!rail || type !== 'tv') return undefined;
+    checkEpisodeScroll();
+    rail.addEventListener('scroll', checkEpisodeScroll, { passive: true });
+    window.addEventListener('resize', checkEpisodeScroll);
+    return () => {
+      rail.removeEventListener('scroll', checkEpisodeScroll);
+      window.removeEventListener('resize', checkEpisodeScroll);
+    };
+  }, [checkEpisodeScroll, episodes.length, type]);
 
   const scrollEpisodes = useCallback((direction) => {
     const rail = episodeRailRef.current;
@@ -247,7 +299,8 @@ export default function Watch() {
       left: direction * Math.min(rail.clientWidth * 0.85, 900),
       behavior: 'smooth',
     });
-  }, []);
+    requestAnimationFrame(checkEpisodeScroll);
+  }, [checkEpisodeScroll]);
 
   if (loading) {
     return (
@@ -383,27 +436,31 @@ export default function Watch() {
                 </div>
               </div>
 
-              <div className="relative p-4">
-                <button
-                  type="button"
-                  onClick={() => scrollEpisodes(-1)}
-                  title="Previous episodes"
-                  className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition-all hover:border-prime-blue/50 hover:bg-prime-blue/20 lg:flex"
-                >
-                  <ChevronLeft size={22} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollEpisodes(1)}
-                  title="Next episodes"
-                  className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white backdrop-blur transition-all hover:border-prime-blue/50 hover:bg-prime-blue/20 lg:flex"
-                >
-                  <ChevronRight size={22} />
-                </button>
+              <div className="relative p-3">
+                {canScrollEpisodesLeft && (
+                  <button
+                    type="button"
+                    onClick={() => scrollEpisodes(-1)}
+                    title="Previous episodes"
+                    className="absolute bottom-4 left-0 top-3 z-20 hidden w-10 items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all hover:from-white/12 hover:via-white/6 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-prime-blue/60 lg:flex"
+                  >
+                    <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
+                  </button>
+                )}
+                {canScrollEpisodesRight && (
+                  <button
+                    type="button"
+                    onClick={() => scrollEpisodes(1)}
+                    title="Next episodes"
+                    className="absolute bottom-4 right-0 top-3 z-20 hidden w-10 items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all hover:from-white/12 hover:via-white/6 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-prime-blue/60 lg:flex"
+                  >
+                    <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
+                  </button>
+                )}
 
                 <div
                   ref={episodeRailRef}
-                  className="hide-scrollbar flex snap-x gap-3 overflow-x-auto scroll-smooth pb-1 lg:px-10"
+                  className="hide-scrollbar flex snap-x gap-2.5 overflow-x-auto scroll-smooth pb-1 lg:px-3"
                 >
                   {seasonLoading && !seasonDetails ? (
                     Array.from({ length: 6 }, (_, i) => (
@@ -421,6 +478,7 @@ export default function Watch() {
                       <button
                         key={ep.id || ep.episode_number}
                         type="button"
+                        data-episode-number={ep.episode_number}
                         onClick={() => handleEpisodeChange(ep.episode_number)}
                         className={`group relative w-[235px] flex-shrink-0 snap-start overflow-hidden rounded-lg border text-left transition-all duration-300 ${
                           isActive
@@ -480,11 +538,8 @@ export default function Watch() {
                 {movie.title || movie.name}
               </h1>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <span className="flex items-center gap-1 text-[13px] font-bold text-prime-blue">
-                  <CheckCircle2 size={14} /> Included with Velora
-                </span>
                 {year && (
-                  <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">
+                  <span className="text-[14px] font-bold text-prime-subtext">
                     {year}
                   </span>
                 )}

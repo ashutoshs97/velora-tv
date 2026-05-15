@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Play, Info, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Info } from 'lucide-react';
 import WatchlistButton from './WatchlistButton';
 import FocusableLink from './FocusableLink';
 
@@ -136,9 +136,6 @@ function PrimeCard({ movie, isHovered, onHover, onLeave, disableExpand = false }
               </div>
 
               <div className="flex flex-col gap-1 text-[11px] sm:text-xs text-white/80 font-medium">
-                <div className="flex items-center gap-1.5 text-green-400 font-bold">
-                  <CheckCircle2 size={12} /> Included with Velora
-                </div>
                 <div className="flex items-center gap-1.5">
                   {year && (
                     <span className="bg-white/10 px-1.5 rounded">{year}</span>
@@ -288,13 +285,11 @@ export default function PrimeCarouselRow({
           {canScrollLeft && (
             <div
               onClick={() => scroll(-1)}
-              className="hidden sm:flex absolute left-4 sm:left-6 lg:left-12 top-0 bottom-8 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-r from-[#080E14] to-transparent"
+              className="hidden sm:flex absolute left-4 sm:left-6 lg:left-12 top-0 bottom-8 w-10 z-40 cursor-pointer items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] opacity-0 backdrop-blur-[1px] transition-all duration-300 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover:opacity-100"
               role="button"
               aria-label="Scroll left"
             >
-              <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
-                <ChevronLeft size={20} className="text-white" />
-              </div>
+              <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
             </div>
           )}
 
@@ -321,13 +316,11 @@ export default function PrimeCarouselRow({
           {canScrollRight && (
             <div
               onClick={() => scroll(1)}
-              className="hidden sm:flex absolute right-0 top-0 bottom-8 w-12 sm:w-14 z-40 cursor-pointer items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-l from-[#080E14] to-transparent"
+              className="hidden sm:flex absolute right-0 top-0 bottom-8 w-10 z-40 cursor-pointer items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] opacity-0 backdrop-blur-[1px] transition-all duration-300 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover:opacity-100"
               role="button"
               aria-label="Scroll right"
             >
-              <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors">
-                <ChevronRight size={20} className="text-white" />
-              </div>
+              <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
             </div>
           )}
         </div>

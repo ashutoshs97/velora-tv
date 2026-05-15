@@ -207,9 +207,9 @@ export default function CarouselRow({
           <button
             onClick={() => scroll('left')}
             aria-label="Scroll left"
-            className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md items-center justify-center hover:bg-white/20 transition-all duration-300 opacity-0 group-hover/row:opacity-100 shadow-lg text-white"
+            className="hidden sm:flex absolute left-0 top-0 bottom-4 z-30 w-10 items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all duration-300 opacity-0 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover/row:opacity-100 focus:outline-none focus:ring-2 focus:ring-prime-blue/60"
           >
-            <ChevronLeft size={22} className="mr-0.5" />
+            <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
           </button>
         )}
 
@@ -236,17 +236,10 @@ export default function CarouselRow({
           <button
             onClick={() => scroll('right')}
             aria-label="Scroll right"
-            className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md items-center justify-center hover:bg-white/20 transition-all duration-300 opacity-0 group-hover/row:opacity-100 shadow-lg text-white"
+            className="hidden sm:flex absolute right-0 top-0 bottom-4 z-30 w-10 items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all duration-300 opacity-0 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover/row:opacity-100 focus:outline-none focus:ring-2 focus:ring-prime-blue/60"
           >
-            <ChevronRight size={22} className="ml-0.5" />
+            <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
           </button>
-        )}
-
-        {canScrollLeft && (
-          <div className="absolute left-0 top-0 bottom-4 w-12 bg-gradient-to-r from-[#080E14] to-transparent pointer-events-none z-20" />
-        )}
-        {canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-[#080E14] to-transparent pointer-events-none z-20" />
         )}
       </div>
     </section>
