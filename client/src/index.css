@@ -23,7 +23,8 @@
   body {
     background-color: #080E14;
     color: #FFFFFF;
-    font-family: 'Satoshi', system-ui, sans-serif;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-display: swap;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;

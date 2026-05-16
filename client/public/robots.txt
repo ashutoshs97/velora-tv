@@ -1,0 +1,23 @@
+User-agent: *
+# Allow standard crawling
+Allow: /
+
+# Prevent indexing of private/user-specific areas
+Disallow: /watchlist
+Disallow: /settings
+Disallow: /profile
+
+# Prevent crawler traps on dynamic search results
+Disallow: /search
+Disallow: /*?q=*
+Disallow: /*?*type=*
+
+# Protect backend and source map structures
+Disallow: /api/
+Disallow: /admin/
+Disallow: /src/
+Disallow: /*.map$
+Disallow: /*.jsx$
+
+# Sitemaps
+Sitemap: https://veloratv.com/sitemap.xml

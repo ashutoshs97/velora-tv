@@ -4,8 +4,8 @@ import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import FocusableLink from './FocusableLink';
 
-const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
+const POSTER_BASE = 'https://image.tmdb.org/t/p/w185';
+const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w500';
 const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='342' height='513' viewBox='0 0 342 513'%3E%3Crect width='342' height='513' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
 
 function getMediaType(movie) {
@@ -81,8 +81,8 @@ function CarouselCard({ movie, rank, usePoster = false }) {
               src={imgSrc}
               alt={title}
               loading="lazy"
-              width={usePoster ? 342 : 780}
-              height={usePoster ? 513 : 439}
+              width={usePoster ? 185 : 500}
+              height={usePoster ? 278 : 281}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => setImgError(true)}
             />

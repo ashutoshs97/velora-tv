@@ -397,6 +397,8 @@ export default function Home() {
                     className="w-full h-full object-cover object-top opacity-80 scale-[1.05] sm:scale-[1.08]"
                     style={{ objectPosition: '50% 15%' }}
                     onError={() => setHeroImgError(true)}
+                    fetchpriority="high"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-prime-surface to-black" />

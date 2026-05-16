@@ -4,8 +4,8 @@ import { ChevronLeft, ChevronRight, Play, Info } from 'lucide-react';
 import WatchlistButton from './WatchlistButton';
 import FocusableLink from './FocusableLink';
 
-const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
+const POSTER_BASE = 'https://image.tmdb.org/t/p/w185';
+const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w500';
 const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='342' height='513' viewBox='0 0 342 513'%3E%3Crect width='342' height='513' fill='%231A242F'/%3E%3C/svg%3E`;
 
 function getMediaType(movie) {

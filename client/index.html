@@ -10,26 +10,48 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <!-- fonts — only load what we actually use -->
-    <link rel="preconnect" href="https://api.fontshare.com" />
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet" />
+    <!-- preconnect to critical origins early -->
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://image.tmdb.org" crossorigin />
+    <link rel="preconnect" href="https://velora-tv.onrender.com" crossorigin />
 
-    <title>Velora: Stream Anything</title>
+    <!-- fonts loaded async — no render blocking -->
+    <link
+      rel="preload"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet" />
+    </noscript>
+
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet" />
+    </noscript>
+
+    <title>Velora — Stream Anything</title>
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://veloratv.in/" />
     <meta property="og:site_name" content="Velora" />
-    <meta property="og:title" content="Velora: Stream Anything" />
-    <meta property="og:description" content="Velora is a cinematic streaming platform to watch movies and TV series instantly. Enjoy multi-server playback, mood-based collections, and a premium experience." />
+    <meta property="og:title" content="Velora — Stream Anything" />
+    <meta property="og:description" content="Velora is a cinematic streaming platform to watch movies and TV series instantly." />
     <meta property="og:image" content="https://veloratv.in/og-image.png" />
     <meta property="og:image:width" content="1280" />
     <meta property="og:image:height" content="640" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Velora: Stream Anything" />
+    <meta name="twitter:title" content="Velora — Stream Anything" />
     <meta name="twitter:description" content="Velora is a cinematic streaming platform to watch movies and TV series instantly." />
     <meta name="twitter:image" content="https://veloratv.in/og-image.png" />
   </head>

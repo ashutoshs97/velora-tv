@@ -254,8 +254,8 @@ export default function Watch() {
   const checkEpisodeScroll = useCallback(() => {
     const rail = episodeRailRef.current;
     if (!rail) return;
-    setCanScrollEpisodesLeft(rail.scrollLeft > 8);
-    setCanScrollEpisodesRight(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 8);
+    setCanScrollEpisodesLeft(rail.scrollLeft > 24);
+    setCanScrollEpisodesRight(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 24);
   }, []);
 
   const handleSeasonChange = useCallback((newSeason) => {
@@ -295,8 +295,19 @@ export default function Watch() {
   const scrollEpisodes = useCallback((direction) => {
     const rail = episodeRailRef.current;
     if (!rail) return;
-    rail.scrollBy({
-      left: direction * Math.min(rail.clientWidth * 0.85, 900),
+    
+    const amount = Math.min(rail.clientWidth * 0.85, 900);
+    let nextLeft = rail.scrollLeft + direction * amount;
+    
+    if (direction === 1) {
+      const maxScroll = rail.scrollWidth - rail.clientWidth;
+      if (maxScroll - nextLeft < amount * 0.5) nextLeft = maxScroll;
+    } else {
+      if (nextLeft < amount * 0.5) nextLeft = 0;
+    }
+
+    rail.scrollTo({
+      left: nextLeft,
       behavior: 'smooth',
     });
     requestAnimationFrame(checkEpisodeScroll);
