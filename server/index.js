@@ -5,6 +5,9 @@ import moviesRouter from './routes/movies.js';
 import historyRouter from './routes/history.js';
 import watchlistRouter from './routes/watchlist.js';
 import commentsRouter from './routes/comments.js';
+import proxyRouter from './routes/proxy.js';
+import { connectDB } from './config/db.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,31 +54,7 @@ app.use('/api/history', historyRouter);
 app.use('/api/watchlist', watchlistRouter);
 app.use('/api/comments', commentsRouter);
 
-// AnyEmbed direct stream proxy
-app.get('/api/proxy/anyembed', async (req, res) => {
-  const { id, type, s, e } = req.query;
-  if (!id) return res.status(400).json({ error: 'Missing id' });
-  try {
-    const target = type === 'tv'
-      ? `https://anyembed.xyz/api/v1/stream/tmdb-tv-${id}-${s}-${e}`
-      : `https://anyembed.xyz/api/v1/stream/tmdb-movie-${id}`;
-    const response = await fetch(target, {
-      headers: {
-        'Referer': 'https://anyembed.xyz/',
-        'Origin': 'https://anyembed.xyz',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      }
-    });
-    if (!response.ok) {
-      return res.status(response.status).json({ error: `AnyEmbed returned ${response.status}` });
-    }
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    console.error('[ANYEMBED PROXY]', err.message);
-    res.status(500).json({ error: 'Failed to fetch stream' });
-  }
-});
+app.use('/api/proxy', proxyRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -90,45 +69,9 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API route not found' });
 });
 
-app.use((err, req, res, next) => {
-  console.error('[ERROR]', req.method, req.path, '-', err.message);
-  if (err.message === 'Not allowed by CORS') {
-    return res.status(403).json({ error: 'CORS not allowed' });
-  }
-  res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err.message,
-  });
-});
+app.use(errorHandler);
 
-const connectDB = async (retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await mongoose.connect(process.env.MONGO_URI, {
-        serverSelectionTimeoutMS: 5000,
-        socketTimeoutMS: 10000,
-      });
-      console.log('[DB] Connected to MongoDB');
-      return true;
-    } catch (err) {
-      console.error(`[DB] Connection attempt ${i + 1}/${retries} failed:`, err.message);
-      if (i < retries - 1) {
-        console.log('[DB] Retrying in 3 seconds...');
-        await new Promise(r => setTimeout(r, 3000));
-      }
-    }
-  }
-  return false;
-};
 
-mongoose.connection.on('disconnected', () => {
-  console.warn('[DB] MongoDB disconnected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('[DB] MongoDB error:', err.message);
-});
 
 const startServer = async () => {
   const dbConnected = await connectDB();

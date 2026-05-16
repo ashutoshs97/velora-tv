@@ -155,18 +155,11 @@ export default function CarouselRow({
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const throttleRef = useRef(null);
-
   const checkScroll = useCallback(() => {
-    if (throttleRef.current) return;
-    throttleRef.current = setTimeout(() => {
-      const el = scrollRef.current;
-      if (el) {
-        setCanScrollLeft(el.scrollLeft > 8);
-        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
-      }
-      throttleRef.current = null;
-    }, 80);
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 8);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
   }, []);
 
   useEffect(() => {
@@ -176,7 +169,6 @@ export default function CarouselRow({
     el.addEventListener('scroll', checkScroll, { passive: true });
     return () => {
       el.removeEventListener('scroll', checkScroll);
-      if (throttleRef.current) clearTimeout(throttleRef.current);
     };
   }, [checkScroll, movies]);
 
