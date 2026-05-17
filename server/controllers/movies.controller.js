@@ -1,4 +1,5 @@
 import { tmdbFetch } from '../services/tmdb.service.js';
+import { AUTHORS_CHOICE_TITLES } from '../config/authors_choice.js';
 
 const IS_PROD = process.env.NODE_ENV === 'production';
 
@@ -298,6 +299,39 @@ export const getMovieDetails = async (req, res) => {
       : { cast: [], crew: [] };
     setCacheHeaders(res, 3600);
     res.json({ ...detail.value, credits: creditsData });
+  } catch (err) {
+    res.status(500).json({ error: clientError(err) });
+  }
+};
+
+export const getAuthorsChoice = async (req, res) => {
+  try {
+    const promises = AUTHORS_CHOICE_TITLES.map(async (title) => {
+      try {
+        const searchData = await tmdbFetch('/search/multi', { query: title });
+        const result = searchData?.results?.[0];
+        if (result) {
+          const media_type = result.media_type || 'movie';
+          return {
+            id: result.id,
+            title: result.title || result.name,
+            poster_path: result.poster_path,
+            backdrop_path: result.backdrop_path,
+            vote_average: result.vote_average,
+            release_date: result.release_date || result.first_air_date,
+            overview: result.overview,
+            media_type,
+          };
+        }
+      } catch (err) {
+        console.error(`[AUTHORS CHOICE] Failed to fetch TMDB details for "${title}":`, err.message);
+      }
+      return null;
+    });
+
+    const results = (await Promise.all(promises)).filter(Boolean);
+    setCacheHeaders(res, 600);
+    res.json({ results });
   } catch (err) {
     res.status(500).json({ error: clientError(err) });
   }

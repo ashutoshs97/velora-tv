@@ -1,83 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, X, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { removeFromHistory } from '../utils/watchHistory';
-
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
-const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='439' viewBox='0 0 780 439'%3E%3Crect width='780' height='439' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
-
-function HistoryCard({ item, onDelete }) {
-  const [imgError, setImgError] = useState(false);
-
-  const tmdbId = item.tmdbId || item.id;
-  const type = item.type === 'tv' ? 'tv' : 'movie';
-  const watchLink = !tmdbId ? '/'
-  : item.season && item.episode
-    ? `/watch/${tmdbId}?type=${type}&s=${item.season}&e=${item.episode}`
-    : `/watch/${tmdbId}?type=${type}`;
-  const title = item.title || item.name || 'Untitled';
-  const imgSrc = !imgError && (item.backdropPath || item.backdrop_path)
-    ? `${BACKDROP_BASE}${item.backdropPath || item.backdrop_path}`
-    : PLACEHOLDER_SVG;
-
-  const handleDelete = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onDelete(tmdbId);
-  };
-
-  return (
-    <div className="group/card snap-start flex-shrink-0 w-56 sm:w-64 md:w-72">
-      <Link
-        to={watchLink}
-        className="block relative aspect-video rounded-lg overflow-hidden bg-prime-surface"
-      >
-        {/* thumbnail */}
-        <img
-          src={imgSrc}
-          alt={title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-          onError={() => setImgError(true)}
-        />
-
-        {/* delete button */}
-        <button
-          onClick={handleDelete}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity hover:bg-black/90 z-20"
-          title="Remove"
-        >
-          <X size={14} className="text-white" />
-        </button>
-
-        {/* play overlay */}
-        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
-          <div className="bg-white text-black p-3 rounded-full">
-            <Play size={20} fill="#000" className="ml-0.5" />
-          </div>
-        </div>
-
-        {/* gradient for text */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
-
-        {/* title */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="text-white text-sm font-bold line-clamp-1 drop-shadow">
-            {title}
-          </h3>
-          <span className="text-[10px] font-semibold text-prime-subtext uppercase tracking-wide">
-            {type === 'tv' ? 'Continue Series' : 'Resume'}
-          </span>
-        </div>
-      </Link>
-    </div>
-  );
-}
+import { PrimeCard, HoverPopout } from './PrimeCarouselRow';
 
 export default function RecentlyWatched({ history, onRefresh }) {
+  const navigate = useNavigate();
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [activePopout, setActivePopout] = useState(null);
+
+  // Edge detection for arrow shifting
+  const isHoveredPopped = activePopout !== null;
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -100,11 +36,26 @@ export default function RecentlyWatched({ history, onRefresh }) {
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
-    const amount = scrollRef.current.clientWidth * 0.75;
-    scrollRef.current.scrollBy({
-      left: dir === 1 ? amount : -amount,
-      behavior: 'smooth',
-    });
+    const el = scrollRef.current;
+    const amount = el.clientWidth * 0.75;
+    const currentScroll = el.scrollLeft;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    let target = currentScroll + dir * amount;
+
+    // Snapping tolerance (about 1.5 cards + gap: 1.5 * 260px = ~390px)
+    const snapTolerance = 390;
+
+    if (dir === 1) {
+      if (maxScroll - target < snapTolerance) {
+        target = maxScroll;
+      }
+    } else if (dir === -1) {
+      if (target < snapTolerance) {
+        target = 0;
+      }
+    }
+
+    el.scrollTo({ left: target, behavior: 'smooth' });
     requestAnimationFrame(checkScroll);
   };
 
@@ -116,7 +67,20 @@ export default function RecentlyWatched({ history, onRefresh }) {
   if (!history || history.length === 0) return null;
 
   return (
-    <section className="relative group">
+    <section className="relative group/row">
+      <AnimatePresence mode="wait">
+        {activePopout && (
+          <HoverPopout
+            key={activePopout.movie.id || activePopout.movie.tmdbId}
+            popout={activePopout}
+            onClose={() => setActivePopout(null)}
+            primaryActionLabel="Resume"
+            onDelete={handleDelete}
+            navigate={navigate}
+          />
+        )}
+      </AnimatePresence>
+
       {/* title */}
       <div className="flex items-center gap-3 mb-4">
         <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -126,17 +90,25 @@ export default function RecentlyWatched({ history, onRefresh }) {
 
       {/* carousel */}
       <div className="relative">
-
-        {canScrollLeft && (
-          <div
-            onClick={() => scroll(-1)}
-            className="hidden sm:flex absolute left-0 top-0 bottom-4 w-10 z-40 cursor-pointer items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] opacity-0 backdrop-blur-[1px] transition-all duration-300 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover:opacity-100"
-            role="button"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
-          </div>
-        )}
+        <AnimatePresence>
+          {canScrollLeft && (
+            <motion.div
+              onClick={() => scroll(-1)}
+              initial={{ opacity: 0, x: -24 }}
+              animate={{ opacity: isHoveredPopped ? 1 : 0.75, x: 0 }}
+              exit={{ opacity: 0, x: -80 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className={`hidden sm:flex absolute -left-10 lg:-left-12 top-0 bottom-4 w-10 z-40 cursor-pointer items-center justify-center bg-transparent text-white border-0 shadow-none backdrop-blur-none transition-all duration-300 hover:scale-125 hover:opacity-100 select-none outline-none active:outline-none focus:outline-none focus-visible:outline-none ${
+                isHoveredPopped ? 'z-[10001] scale-110' : ''
+              }`}
+              role="button"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* scrollable row */}
         <div
@@ -145,25 +117,35 @@ export default function RecentlyWatched({ history, onRefresh }) {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {history.map((item, idx) => (
-            <HistoryCard
+            <PrimeCard
               key={item.tmdbId || item.id || `history-${idx}`}
-              item={item}
+              movie={item}
+            onHoverPopout={setActivePopout}
+              rowRef={scrollRef}
               onDelete={handleDelete}
             />
           ))}
         </div>
 
-        {canScrollRight && (
-          <div
-            onClick={() => scroll(1)}
-            className="hidden sm:flex absolute right-0 top-0 bottom-4 w-10 z-40 cursor-pointer items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] opacity-0 backdrop-blur-[1px] transition-all duration-300 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover:opacity-100"
-            role="button"
-            aria-label="Scroll right"
-          >
-            <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
-          </div>
-        )}
-
+        <AnimatePresence>
+          {canScrollRight && (
+            <motion.div
+              onClick={() => scroll(1)}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: isHoveredPopped ? 1 : 0.75, x: 0 }}
+              exit={{ opacity: 0, x: 80 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className={`hidden sm:flex absolute -right-10 lg:-right-12 top-0 bottom-4 w-10 z-40 cursor-pointer items-center justify-center bg-transparent text-white border-0 shadow-none backdrop-blur-none transition-all duration-300 hover:scale-125 hover:opacity-100 select-none outline-none active:outline-none focus:outline-none focus-visible:outline-none ${
+                isHoveredPopped ? 'z-[10001] scale-110' : ''
+              }`}
+              role="button"
+              aria-label="Scroll right"
+            >
+              <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );

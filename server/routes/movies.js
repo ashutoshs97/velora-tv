@@ -17,7 +17,8 @@ import {
   getPerson,
   getSimilar,
   getRecommendations,
-  getMovieDetails
+  getMovieDetails,
+  getAuthorsChoice
 } from '../controllers/movies.controller.js';
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.get('/top-rated', getTopRated);
 router.get('/top-rated-tv', getTopRatedTv);
 router.get('/on-air-tv', getOnAirTv);
 router.get('/new-releases', getNewReleases);
+router.get('/authors-choice', getAuthorsChoice);
 router.get('/search', searchMovies);
 router.get('/genre/:id', getByGenre);
 router.get('/mood/:mood', getByMood);

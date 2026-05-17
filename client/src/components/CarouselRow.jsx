@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
 import FocusableLink from './FocusableLink';
 
@@ -83,7 +84,7 @@ function CarouselCard({ movie, rank, usePoster = false }) {
               loading="lazy"
               width={usePoster ? 185 : 500}
               height={usePoster ? 278 : 281}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-cover"
               onError={() => setImgError(true)}
             />
             <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
@@ -164,19 +165,51 @@ export default function CarouselRow({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     checkScroll();
     el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll);
     return () => {
       el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
     };
   }, [checkScroll, movies]);
 
   const scroll = useCallback((dir) => {
     const el = scrollRef.current;
     if (!el) return;
-    const amount = el.clientWidth * 0.75;
-    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    
+    const firstCard = el.children[0];
+    if (firstCard) {
+      const cardWidth = firstCard.offsetWidth;
+      const gap = parseInt(window.getComputedStyle(el).gap) || 0;
+      const visibleItems = Math.floor(el.clientWidth / (cardWidth + gap));
+      const itemsToScroll = Math.max(1, Math.min(visibleItems, 4));
+      const amount = (cardWidth + gap) * itemsToScroll;
+
+      const currentScroll = el.scrollLeft;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      let target = currentScroll + (dir === 'right' ? 1 : -1) * amount;
+
+      // Snapping tolerance bounds
+      const snapTolerance = (cardWidth + gap) * 1.5;
+
+      if (dir === 'right') {
+        if (maxScroll - target < snapTolerance) {
+          target = maxScroll;
+        }
+      } else if (dir === 'left') {
+        if (target < snapTolerance) {
+          target = 0;
+        }
+      }
+
+      el.scrollTo({ left: target, behavior: 'smooth' });
+    } else {
+      // Fallback
+      const amount = el.clientWidth * 0.75;
+      el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    }
   }, []);
 
   if (!loading && movies.length === 0) return null;
@@ -195,15 +228,23 @@ export default function CarouselRow({
       </div>
 
       <div className="relative group/row">
-        {canScrollLeft && (
-          <button
-            onClick={() => scroll('left')}
-            aria-label="Scroll left"
-            className="hidden sm:flex absolute left-0 top-0 bottom-4 z-30 w-10 items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all duration-300 opacity-0 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover/row:opacity-100 focus:outline-none focus:ring-2 focus:ring-prime-blue/60"
-          >
-            <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
-          </button>
-        )}
+        <AnimatePresence>
+          {canScrollLeft && (
+            <motion.button
+              type="button"
+              onClick={() => scroll('left')}
+              title="Scroll left"
+              initial={{ opacity: 0, x: -24 }}
+              animate={{ opacity: 0.75, x: 0 }}
+              exit={{ opacity: 0, x: -80 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className="hidden md:flex absolute -left-10 lg:-left-12 top-0 bottom-4 w-10 z-30 cursor-pointer items-center justify-center bg-transparent text-white border-0 shadow-none backdrop-blur-none transition-all duration-300 hover:scale-125 hover:opacity-100 select-none outline-none active:outline-none focus:outline-none focus-visible:outline-none"
+            >
+              <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {loading ? (
           <CarouselSkeleton usePoster={usePoster} />
@@ -224,15 +265,23 @@ export default function CarouselRow({
           </div>
         )}
 
-        {canScrollRight && (
-          <button
-            onClick={() => scroll('right')}
-            aria-label="Scroll right"
-            className="hidden sm:flex absolute right-0 top-0 bottom-4 z-30 w-10 items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all duration-300 opacity-0 hover:from-white/12 hover:via-white/6 hover:to-transparent group-hover/row:opacity-100 focus:outline-none focus:ring-2 focus:ring-prime-blue/60"
-          >
-            <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
-          </button>
-        )}
+        <AnimatePresence>
+          {canScrollRight && (
+            <motion.button
+              type="button"
+              onClick={() => scroll('right')}
+              title="Scroll right"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 0.75, x: 0 }}
+              exit={{ opacity: 0, x: 80 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className="hidden md:flex absolute -right-10 lg:-right-12 top-0 bottom-4 w-10 z-30 cursor-pointer items-center justify-center bg-transparent text-white border-0 shadow-none backdrop-blur-none transition-all duration-300 hover:scale-125 hover:opacity-100 select-none outline-none active:outline-none focus:outline-none focus-visible:outline-none"
+            >
+              <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );

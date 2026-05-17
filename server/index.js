@@ -37,7 +37,12 @@ app.use(cors({
     if (!origin) return callback(null, true);
     const normalise = (o) => o.replace(/^(https?:\/\/)www\./, '$1');
     const normOrigin = normalise(origin);
+    const isLocal =
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      origin.startsWith('http://[::1]:');
     const allowed =
+      isLocal ||
       allowedOrigins.includes('*') ||
       allowedOrigins.some(o => normalise(o) === normOrigin);
     if (allowed) return callback(null, true);
