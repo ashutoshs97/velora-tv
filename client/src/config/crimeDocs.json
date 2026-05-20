@@ -187,5 +187,77 @@
     "vote_average": 6.9,
     "release_date": "2022-03-01",
     "media_type": "tv"
+  },
+  {
+    "id": 213345,
+    "title": "Indian Predator: Murder in a Courtroom",
+    "poster_path": "/wlxrIG7LDiFxbPNQWAF0CjHTfoY.jpg",
+    "backdrop_path": "/bWXDK7M0LqAR7wiKlBjMqCQdUaq.jpg",
+    "vote_average": 6.4,
+    "release_date": "2022-10-28",
+    "media_type": "tv"
+  },
+  {
+    "id": 132583,
+    "title": "Crime Stories: India Detectives",
+    "poster_path": "/w8oUG8e72MeyGyXhGtOpau7O05q.jpg",
+    "backdrop_path": "/4Uty2eaTb2ub4r4Pz4zCg0V0WDm.jpg",
+    "vote_average": 6.6,
+    "release_date": "2021-09-22",
+    "media_type": "tv"
+  },
+  {
+    "id": 87508,
+    "title": "Delhi Crime",
+    "poster_path": "/xkpkTj6KGsjSaet0VQaq0aTn31D.jpg",
+    "backdrop_path": "/j6djmR4hi8ULL0xUPQN4ZVyzgVN.jpg",
+    "vote_average": 7.748,
+    "release_date": "2019-03-22",
+    "media_type": "tv"
+  },
+  {
+    "id": 246178,
+    "title": "The Indrani Mukerjea Story: Buried Truth",
+    "poster_path": "/bnKsvPH5QnXofRHwO9AJiWhRDPO.jpg",
+    "backdrop_path": "/byNkLVZTesQ0i41K0lfUkN9iREJ.jpg",
+    "vote_average": 5.8,
+    "release_date": "2024-02-29",
+    "media_type": "tv"
+  },
+  {
+    "id": 205434,
+    "title": "Indian Predator: The Butcher of Delhi",
+    "poster_path": "/kC6CSCUQlb1MayCrtBqC1Rt0Ec7.jpg",
+    "backdrop_path": "/qXio38JA0CSyIHBoEkr6iWknWMR.jpg",
+    "vote_average": 6,
+    "release_date": "2022-07-20",
+    "media_type": "tv"
+  },
+  {
+    "id": 215871,
+    "title": "Beast of Bangalore: Indian Predator",
+    "poster_path": "/n6uk2wUZl9DCLQ2NQXQcm6xjRBb.jpg",
+    "backdrop_path": "/b7e2wnA1Fe8omvEyVhpT3BuYUAs.jpg",
+    "vote_average": 5.667,
+    "release_date": "2022-12-16",
+    "media_type": "tv"
+  },
+  {
+    "id": 208130,
+    "title": "Indian Predator: The Diary of a Serial Killer",
+    "poster_path": "/nyNiNEKjmfibb4JIuoeR17boMKh.jpg",
+    "backdrop_path": "/krVSnT5RN8GljvVaAw4tNCRcpVH.jpg",
+    "vote_average": 7.1,
+    "release_date": "2022-09-07",
+    "media_type": "tv"
+  },
+  {
+    "id": 1217392,
+    "title": "Curry & Cyanide: The Jolly Joseph Case",
+    "poster_path": "/sdXu8YeDqg1qxEP9LJuTIFBtR5L.jpg",
+    "backdrop_path": "/j6jTAXID9G6pcRbW3qCgCmXzl7s.jpg",
+    "vote_average": 6.808,
+    "release_date": "2023-12-22",
+    "media_type": "movie"
   }
 ]
