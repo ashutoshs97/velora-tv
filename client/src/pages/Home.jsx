@@ -12,6 +12,7 @@ import RecentlyWatched from '../components/RecentlyWatched';
 import WatchlistButton from '../components/WatchlistButton';
 import { useSettings } from '../contexts/SettingsContext';
 import { getHistory } from '../utils/watchHistory';
+import crimeDocs from '../config/crimeDocs.json';
 
 const GENRES = [
   { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
@@ -152,6 +153,7 @@ export default function Home() {
   const filteredAuthorsChoice = useMemo(() => filterItems(authorsChoice), [filterItems, authorsChoice]);
   const filteredBecauseYouWatched = useMemo(() => filterItems(becauseYouWatched), [filterItems, becauseYouWatched]);
   const filteredGenreMovies = useMemo(() => filterItems(genreMovies), [filterItems, genreMovies]);
+  const filteredCrimeDocs = useMemo(() => filterItems(crimeDocs), [filterItems]);
 
   return (
     <motion.div
@@ -197,6 +199,9 @@ export default function Home() {
         </div>
         <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
           <PrimeCarouselRow title="Binge-Worthy TV Shows" badge="Series" movies={filteredTrendingTV} loading={loadingTrendingTV} />
+        </div>
+        <div className="animate-fade-up" style={{ animationDelay: '0.48s' }}>
+          <PrimeCarouselRow title="Author's Handpicked Crime Documentaries" badge="True Crime" movies={filteredCrimeDocs} />
         </div>
         <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
           <PrimeCarouselRow title="Fresh Drops" badge="New This Month" movies={filteredNewReleases} loading={loadingNew} />
