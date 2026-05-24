@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  Play, Share2, Award,
-  Volume2, VolumeX, RotateCcw, ChevronLeft, ChevronRight, Check,
+  Play, Share2,
+  ChevronLeft, ChevronRight, Check, Film, X
 } from 'lucide-react';
 import { fetchMovieDetail } from '../api';
 import WatchlistButton from './WatchlistButton';
@@ -20,42 +20,16 @@ function getSafeType(movie) {
   return 'movie';
 }
 
-function sendYouTubeCommand(iframeRef, command, args = []) {
-  try {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: 'command', func: command, args }),
-      '*'
-    );
-  } catch { /* cross-origin or iframe not ready */ }
-}
-
-function applyTrailerMuteState(iframeRef, muted) {
-  if (muted) {
-    sendYouTubeCommand(iframeRef, 'mute');
-  } else {
-    sendYouTubeCommand(iframeRef, 'setVolume', [100]);
-    sendYouTubeCommand(iframeRef, 'unMute');
-  }
-}
-
 export default function HeroBanner({ heroMovies }) {
-  const { heroAutoplay, trailerAutoplay } = useSettings();
+  const { heroAutoplay } = useSettings();
 
   const [heroIndex, setHeroIndex] = useState(0);
   const [heroDirection, setHeroDirection] = useState(1);
   const [heroImgError, setHeroImgError] = useState(false);
   const autoAdvanceRef = useRef(null);
-
-  const [trailerKey, setTrailerKey] = useState(null);
-  const [trailerActive, setTrailerActive] = useState(false);
-  const [trailerMuted, setTrailerMuted] = useState(true);
-  const [trailerEnded, setTrailerEnded] = useState(false);
-  const [trailerReady, setTrailerReady] = useState(false);
-  const trailerTimerRef = useRef(null);
-  const replayTimerRef = useRef(null);
-  const trailerIframeRef = useRef(null);
+  
+  const heroRef = useRef(null);
+  const isHovering = useRef(false);
 
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
@@ -66,27 +40,6 @@ export default function HeroBanner({ heroMovies }) {
     () => heroMovies[heroIndex] || null,
     [heroMovies, heroIndex]
   );
-
-  useEffect(() => {
-    const handleMessage = (event) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.event === 'onReady' || data.info?.playerState !== undefined) {
-          setTrailerReady(true);
-        }
-        if (data.info?.playerState === 0) {
-          setTrailerEnded(true);
-        }
-      } catch { /* not a YouTube message */ }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  useEffect(() => {
-    if (!trailerActive || !trailerReady) return;
-    applyTrailerMuteState(trailerIframeRef, trailerMuted);
-  }, [trailerMuted, trailerActive, trailerReady]);
 
   const handleShare = useCallback(() => {
     if (!heroMovie) return;
@@ -131,14 +84,45 @@ export default function HeroBanner({ heroMovies }) {
     goToSlide((heroIndex - 1 + heroMovies.length) % heroMovies.length, -1);
   }, [heroIndex, heroMovies.length, goToSlide]);
 
+  const handleMouseMove = useCallback((e) => {
+    if (!heroRef.current) return;
+    const { left, top, width, height } = heroRef.current.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    
+    heroRef.current.style.setProperty('--mouse-x', `${x}px`);
+    heroRef.current.style.setProperty('--mouse-y', `${y}px`);
+    
+    // Calculate subtle 3D tilt (max 4 degrees)
+    const tiltX = ((y / height) - 0.5) * -8; 
+    const tiltY = ((x / width) - 0.5) * 8;
+    heroRef.current.style.setProperty('--tilt-x', `${tiltX}deg`);
+    heroRef.current.style.setProperty('--tilt-y', `${tiltY}deg`);
+
+    if (!isHovering.current) {
+      isHovering.current = true;
+      heroRef.current.style.setProperty('--spotlight-opacity', '1');
+      heroRef.current.style.setProperty('--transition-speed', '0s');
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!heroRef.current) return;
+    isHovering.current = false;
+    heroRef.current.style.setProperty('--transition-speed', '1.2s');
+    heroRef.current.style.setProperty('--tilt-x', '0deg');
+    heroRef.current.style.setProperty('--tilt-y', '0deg');
+    heroRef.current.style.setProperty('--spotlight-opacity', '0');
+  }, []);
+
   useEffect(() => {
-    if (!heroAutoplay || (trailerActive && !trailerEnded)) {
+    if (!heroAutoplay) {
       clearInterval(autoAdvanceRef.current);
       return;
     }
-    autoAdvanceRef.current = setInterval(nextSlide, 10000);
+    autoAdvanceRef.current = setInterval(nextSlide, 8000);
     return () => clearInterval(autoAdvanceRef.current);
-  }, [nextSlide, trailerActive, trailerEnded, heroAutoplay]);
+  }, [nextSlide, heroAutoplay]);
 
   // Preload the background image for the next slide to ensure smooth transitions
   useEffect(() => {
@@ -152,72 +136,29 @@ export default function HeroBanner({ heroMovies }) {
   }, [heroIndex, heroMovies]);
 
   useEffect(() => {
-    setTrailerKey(null);
-    setTrailerActive(false);
-    setTrailerEnded(false);
-    setTrailerMuted(true);
-    setTrailerReady(false);
-    clearTimeout(trailerTimerRef.current);
-    if (!heroMovie?.id) return;
-    let cancelled = false;
-    
-    // Debounce the fetch to prevent API spam when user rapidly clicks through slides
-    const fetchTimer = setTimeout(() => {
-      fetchMovieDetail(heroMovie.id)
-        .then(res => {
-          if (cancelled) return;
-          const videos = res.data?.videos?.results || [];
-          const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.find(v => v.site === 'YouTube');
-          if (trailer?.key && typeof trailer.key === 'string' && trailer.key.trim()) {
-            setTrailerKey(trailer.key.trim());
-            if (trailerAutoplay) {
-              // Wait 5 seconds after fetching before showing the trailer
-              trailerTimerRef.current = setTimeout(() => {
-                if (!cancelled) setTrailerActive(true);
-              }, 5000);
-            }
-          }
-        })
-        .catch(() => {});
-    }, 800);
-
-    return () => { 
-      cancelled = true; 
-      clearTimeout(fetchTimer);
-      clearTimeout(trailerTimerRef.current); 
-    };
-  }, [heroMovie, trailerAutoplay]);
-
-  const replayTrailer = useCallback(() => {
-    clearTimeout(replayTimerRef.current);
-    setTrailerEnded(false);
-    setTrailerActive(false);
-    setTrailerReady(false);
-    replayTimerRef.current = setTimeout(() => setTrailerActive(true), 100);
-  }, []);
-
-  useEffect(() => {
     return () => {
-      clearTimeout(replayTimerRef.current);
-      clearTimeout(trailerTimerRef.current);
       clearInterval(autoAdvanceRef.current);
     };
-  }, []);
-
-  const toggleMute = useCallback(() => {
-    setTrailerMuted((muted) => {
-      const nextMuted = !muted;
-      applyTrailerMuteState(trailerIframeRef, nextMuted);
-      return nextMuted;
-    });
   }, []);
 
   if (!heroMovies.length || !heroMovie) return null;
 
   return (
     <section
+      ref={heroRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] overflow-hidden -mt-20 pt-4"
-      style={{ clipPath: 'inset(0)' }}
+      style={{ 
+        clipPath: 'inset(0)',
+        '--mouse-x': '50%',
+        '--mouse-y': '50%',
+        '--tilt-x': '0deg',
+        '--tilt-y': '0deg',
+        '--spotlight-opacity': '0',
+        '--transition-speed': '1.2s',
+        perspective: '1200px'
+      }}
       onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
         touchEndX.current = e.changedTouches[0].clientX;
@@ -226,59 +167,61 @@ export default function HeroBanner({ heroMovies }) {
       }}
     >
       <AnimatePresence initial={false} custom={heroDirection}>
-        {(!trailerActive || trailerEnded) && (
-          <motion.div
-            key={`bg-${heroIndex}`}
-            custom={heroDirection}
-            variants={{
-              enter: (d) => ({ x: d > 0 ? '6%' : '-6%', opacity: 0 }),
-              center: { x: 0, opacity: 1 },
-              exit: { opacity: 0 },
-            }}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 1.2, ease: [0.32, 0.72, 0, 1] }}
-            className="absolute inset-0 w-full h-full"
-          >
-            {!heroImgError ? (
+        <motion.div
+          key={`bg-${heroIndex}`}
+          custom={heroDirection}
+          variants={{
+            enter: (d) => ({ x: d > 0 ? '3%' : '-3%', opacity: 0 }),
+            center: { x: 0, opacity: 1 },
+            exit: { opacity: 0 },
+          }}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            transform: 'rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) scale(1.05)',
+            transformOrigin: 'center center',
+            transition: 'transform var(--transition-speed) cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            willChange: 'transform'
+          }}
+        >
+          {!heroImgError ? (
+            <>
+              {/* Base Layer: Moody, slightly out-of-focus background */}
               <img
                 src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
-                alt={heroMovie.title || heroMovie.name || 'Featured'}
-                className="w-full h-full object-cover object-top opacity-80 scale-[1.05] sm:scale-[1.08]"
+                alt=""
+                className="w-full h-full object-cover object-top opacity-50 blur-[3px] scale-[1.02]"
                 style={{ objectPosition: '50% 15%' }}
                 onError={() => setHeroImgError(true)}
                 fetchpriority="high"
                 decoding="async"
               />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-prime-surface to-black" />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {trailerActive && trailerKey && !trailerEnded && (
-          <motion.div
-            key="trailer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.5, ease: 'easeInOut' }}
-            className="absolute inset-0 w-full h-full"
-          >
-            <iframe
-              ref={trailerIframeRef}
-              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&origin=${window.location.origin}`}
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-              style={{ border: 'none', pointerEvents: 'none' }}
-              title="Hero Trailer"
-            />
-          </motion.div>
-        )}
+              
+              {/* Spotlight Layer: Crystal clear, vibrant, revealed by dynamic CSS mask */}
+              <div 
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  opacity: 'var(--spotlight-opacity)',
+                  transition: 'opacity var(--transition-speed) ease-in-out',
+                  maskImage: 'radial-gradient(circle 450px at var(--mouse-x) var(--mouse-y), black 15%, transparent 85%)',
+                  WebkitMaskImage: 'radial-gradient(circle 450px at var(--mouse-x) var(--mouse-y), black 15%, transparent 85%)',
+                }}
+              >
+                <img
+                  src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
+                  alt={heroMovie.title || heroMovie.name || 'Featured'}
+                  className="w-full h-full object-cover object-top scale-[1.02] brightness-110 contrast-[1.05] saturate-[1.1]"
+                  style={{ objectPosition: '50% 15%' }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-prime-surface to-black" />
+          )}
+        </motion.div>
       </AnimatePresence>
 
       <div className="absolute inset-0 bg-hero-gradient-x opacity-90 z-[1] pointer-events-none" />
@@ -292,50 +235,69 @@ export default function HeroBanner({ heroMovies }) {
               key={`content-${heroIndex}`}
               custom={heroDirection}
               variants={{
-                enter: (d) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
-                center: { x: 0, opacity: 1 },
-                exit: (d) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
+                enter: (d) => ({ opacity: 0, x: d > 0 ? 20 : -20 }),
+                center: { opacity: 1, x: 0 },
+                exit: { opacity: 0, transition: { duration: 0.15 } }
               }}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-              className="w-full md:w-3/4 lg:w-[58%] min-w-0"
+              transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+              className="w-full md:w-[85%] lg:w-[75%] xl:w-[70%] min-w-0"
             >
-              <h1 className="max-w-[min(100%,40rem)] whitespace-normal break-words text-balance text-[clamp(1.65rem,3.2vw,2.55rem)] font-black text-white mb-4 leading-[1.12] drop-shadow-2xl line-clamp-3 font-display pb-2">
+              <motion.h1 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.05, ease: [0.25, 1, 0.5, 1] }}
+                className="w-full whitespace-normal break-words text-[clamp(1.75rem,3.5vw,2.75rem)] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/50 mb-1 pb-2 leading-[1.1] drop-shadow-sm font-display tracking-tight"
+              >
                 {heroMovie.title || heroMovie.name || 'Untitled'}
-              </h1>
+              </motion.h1>
 
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-6">
-                {(heroMovie.release_date || heroMovie.first_air_date) && (
-                  <span className="text-[15px] font-bold text-prime-subtext">
-                    {(heroMovie.release_date || heroMovie.first_air_date).substring(0, 4)}
-                  </span>
-                )}
-                {heroMovie.vote_average > 0 && (
-                  <div className="flex items-center gap-1 text-[15px] font-bold text-yellow-400 border-l border-white/20 pl-4">
-                    <Award size={16} fill="currentColor" />
-                    <span>{Number(heroMovie.vote_average).toFixed(1)}</span>
-                  </div>
-                )}
-              </div>
+              {((heroMovie.release_date || heroMovie.first_air_date) || heroMovie.vote_average > 0) && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 1, 0.5, 1] }}
+                  className="inline-flex items-center gap-3 mb-7 bg-black/30 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-xl"
+                >
+                  {(heroMovie.release_date || heroMovie.first_air_date) && (
+                    <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
+                      {(heroMovie.release_date || heroMovie.first_air_date).substring(0, 4)}
+                    </span>
+                  )}
+                  
+                  {heroMovie.vote_average > 0 && (
+                    <>
+                      <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
+                      <div className="flex items-center gap-1.5 text-[14px] font-bold text-white">
+                        <span className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-[#0d253f] text-[9px] font-black px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-sm">
+                          TMDB
+                        </span>
+                        <span>{Number(heroMovie.vote_average).toFixed(1)}</span>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              )}
 
-              <AnimatePresence>
-                {(!trailerActive || trailerEnded) && heroMovie.overview && (
-                  <motion.p
-                    key="synopsis"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.8, ease: 'easeInOut' }}
-                    className="text-sm sm:text-base text-white/85 line-clamp-3 mb-7 max-w-xl font-medium leading-relaxed drop-shadow-md"
-                  >
-                    {heroMovie.overview}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+              {heroMovie.overview && (
+                <motion.p
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
+                  className="text-[14px] sm:text-[15px] text-white/80 mb-7 max-w-2xl font-medium leading-relaxed drop-shadow-md border-l-[3px] border-white/20 pl-4 sm:pl-5 line-clamp-4 sm:line-clamp-none"
+                >
+                  {heroMovie.overview}
+                </motion.p>
+              )}
 
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
+                className="flex items-center gap-3 sm:gap-4 flex-wrap"
+              >
                 <Link
                   to={`/watch/${heroMovie.id}?type=${getSafeType(heroMovie)}`}
                   className="btn-primary text-sm sm:text-base hover:scale-105"
@@ -350,57 +312,17 @@ export default function HeroBanner({ heroMovies }) {
                 >
                   {copied ? <Check size={22} className="text-green-400 -ml-0.5" /> : <Share2 size={22} className="-ml-0.5" />}
                 </button>
-              </div>
+              </motion.div>
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
 
-      <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-30">
+      <div className="absolute bottom-24 sm:bottom-[100px] left-0 right-0 z-30 pointer-events-none">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative flex items-center justify-between">
           <div className="hidden sm:block w-10" />
 
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 z-30">
-            {heroMovies.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goToSlide(i, i > heroIndex ? 1 : -1)}
-                aria-label={`Slide ${i + 1}`}
-                className="group relative h-[4px] rounded-full overflow-hidden transition-all duration-300"
-                style={{ width: i === heroIndex ? 36 : 14 }}
-              >
-                <span className="absolute inset-0 bg-white/25 rounded-full" />
-                {i === heroIndex && (
-                  <motion.span
-                    key={heroIndex}
-                    className="absolute inset-0 bg-white rounded-full origin-left"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 10, ease: 'linear' }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="hidden sm:flex ml-auto items-center gap-2 relative z-30">
-            {trailerKey && trailerActive && !trailerEnded && (
-              <button
-                onClick={toggleMute}
-                aria-label={trailerMuted ? 'Unmute' : 'Mute'}
-                className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-tl from-black/28 via-black/12 to-transparent text-white shadow-[0_5px_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] flex items-center justify-center hover:from-white/12 hover:via-white/6 hover:to-transparent transition-all"
-              >
-                {trailerMuted ? <VolumeX size={18} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" /> : <Volume2 size={18} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />}
-              </button>
-            )}
-            {trailerKey && trailerEnded && (
-              <button
-                onClick={replayTrailer}
-                className="h-10 px-4 flex-shrink-0 rounded-xl bg-gradient-to-tl from-black/28 via-black/12 to-transparent text-white shadow-[0_5px_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] flex items-center gap-1.5 text-xs font-semibold justify-center hover:from-white/12 hover:via-white/6 hover:to-transparent transition-all"
-              >
-                <RotateCcw size={16} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" /> Replay
-              </button>
-            )}
+          <div className="hidden sm:flex ml-auto items-center gap-2 relative z-30 pointer-events-auto">
             <button onClick={prevSlide} aria-label="Previous" className="h-10 w-8 flex-shrink-0 rounded-xl bg-gradient-to-r from-black/28 via-black/12 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] flex items-center justify-center hover:from-white/12 hover:via-white/6 hover:to-transparent transition-all">
               <ChevronLeft size={20} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
             </button>

@@ -21,7 +21,7 @@ export default function Layout({ children }) {
       <footer className="mt-auto border-t border-white/5 bg-[#141d26] py-6 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-prime-subtext text-[11px] sm:text-xs font-medium leading-relaxed opacity-60 hover:opacity-100 transition-opacity duration-300">
-            <span className="font-bold text-white/40">Disclaimer:</span> This site hosts zero content. Filing a takedown here is equivalent to suing a phonebook for the content of a phone call. If you truly find a hosted file on our servers, please alert us; we’d be as shocked as you. Until then, stop wasting both of our time.
+           This site works as an index of publicly available links. We do not store, host, or upload any files to our servers and are not responsible for content on third-party sites.
           </p>
         </div>
       </footer>

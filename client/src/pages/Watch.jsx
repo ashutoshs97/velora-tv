@@ -375,73 +375,67 @@ export default function Watch() {
       )}
 
       {/* player area */}
-      <div className="w-full relative z-10 pt-24 pb-8 bg-black">
+      <div className="w-full relative z-30 pt-24 pb-8 bg-black">
         <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-8">
           <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
 
           {type === 'tv' && seasons.length > 0 && (
-            <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-[#1A242F]/95 shadow-card">
-              <div className="flex flex-col gap-4 border-b border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3 text-prime-blue">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-prime-blue/10 ring-1 ring-prime-blue/20">
-                    <ListVideo size={20} />
-                  </div>
-                  <div>
-                    <span className="block text-sm font-bold uppercase tracking-wide text-white">Episodes</span>
-                    <span className="text-xs font-medium text-prime-subtext">
-                      {activeSeason?.name || `Season ${season}`} · {episodes.length} episodes
-                    </span>
-                  </div>
+            <div className="mt-8 overflow-visible rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/40">
+              <div className="flex flex-col gap-4 border-b border-white/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-[15px] font-bold text-white tracking-tight">
+                    {activeSeason?.name || `Season ${season}`}
+                  </span>
+                  <span className="text-[13px] text-white/40 font-medium">
+                    {episodes.length} Episode{episodes.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
 
                 <div className="relative w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => setSeasonMenuOpen(open => !open)}
-                    className="flex w-full min-w-[190px] items-center justify-between gap-4 rounded-lg border border-white/15 bg-black/35 px-4 py-3 text-left text-sm font-bold text-white shadow-inner shadow-black/20 transition-all duration-200 hover:border-prime-blue/50 hover:bg-black/45 focus:border-prime-blue focus:outline-none sm:w-auto"
+                    className="flex w-full items-center justify-between gap-3 rounded-full bg-white/[0.06] hover:bg-white/[0.1] backdrop-blur-md px-4 py-2.5 text-left text-[13px] font-semibold text-white/90 transition-all duration-200 border border-white/[0.08] hover:border-white/[0.15] sm:w-auto sm:min-w-[180px]"
                     aria-haspopup="listbox"
                     aria-expanded={seasonMenuOpen}
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate">{activeSeason?.name || `Season ${season}`}</span>
-                      <span className="block text-[11px] font-semibold text-prime-subtext">
-                        {activeSeason?.episode_count || episodes.length} episodes
-                      </span>
-                    </span>
+                    <span className="truncate">{activeSeason?.name || `Season ${season}`}</span>
                     <ChevronDown
-                      size={18}
-                      className={`flex-shrink-0 text-prime-blue transition-transform duration-200 ${seasonMenuOpen ? 'rotate-180' : ''}`}
+                      size={15}
+                      className={`flex-shrink-0 text-white/50 transition-transform duration-300 ${seasonMenuOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
                   {seasonMenuOpen && (
                     <div
-                      className="absolute right-0 z-30 mt-2 max-h-72 w-full min-w-[230px] overflow-y-auto rounded-lg border border-white/10 bg-[#0F1923] p-1.5 shadow-2xl shadow-black/60 sm:w-72"
+                      className="absolute right-0 z-40 mt-2 flex max-h-80 w-full min-w-[220px] flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1923]/95 backdrop-blur-2xl shadow-2xl shadow-black/70 sm:w-64"
                       role="listbox"
                     >
-                      {seasons.map(s => (
-                        <button
-                          key={s.id || s.season_number}
-                          type="button"
-                          onClick={() => handleSeasonChange(s.season_number)}
-                          className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left transition-all duration-200 ${
-                            s.season_number === season
-                              ? 'bg-prime-blue/20 text-white ring-1 ring-prime-blue/30'
-                              : 'text-white/80 hover:bg-white/[0.08] hover:text-white'
-                          }`}
-                          role="option"
-                          aria-selected={s.season_number === season}
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-bold">{s.name || `Season ${s.season_number}`}</span>
-                            <span className="text-[11px] font-semibold text-prime-subtext">
-                              {s.episode_count || 0} episodes
+                      <div className="custom-scrollbar overflow-y-auto max-h-[calc(20rem-2px)] p-2 pr-1.5">
+                        {seasons.map(s => (
+                          <button
+                            key={s.id || s.season_number}
+                            type="button"
+                            onClick={() => handleSeasonChange(s.season_number)}
+                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${
+                              s.season_number === season
+                                ? 'bg-prime-blue/15 text-white'
+                                : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                            }`}
+                            role="option"
+                            aria-selected={s.season_number === season}
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate text-[13px] font-semibold">{s.name || `Season ${s.season_number}`}</span>
+                              <span className="text-[11px] font-medium text-white/35">
+                                {s.episode_count || 0} episodes
+                              </span>
                             </span>
-                          </span>
-                          {s.season_number === season && (
-                            <span className="h-2 w-2 flex-shrink-0 rounded-full bg-prime-blue shadow-glow-sm" />
-                          )}
-                        </button>
-                      ))}
+                            {s.season_number === season && (
+                              <Check size={14} className="flex-shrink-0 text-prime-blue" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -493,7 +487,7 @@ export default function Watch() {
                         onClick={() => handleEpisodeChange(ep.episode_number)}
                         className={`group relative w-[235px] flex-shrink-0 snap-start overflow-hidden rounded-lg border text-left transition-all duration-300 ${
                           isActive
-                            ? 'border-prime-blue bg-prime-blue/10 shadow-glow-blue'
+                            ? 'border-prime-blue bg-prime-blue/10 shadow-[0_0_15px_rgba(1,180,228,0.3)]'
                             : 'border-white/10 bg-black/25 hover:border-white/25 hover:bg-white/5'
                         }`}
                       >
@@ -539,54 +533,64 @@ export default function Watch() {
       </div>
 
       {/* details area */}
-      <div className="flex-1 bg-prime-bg relative z-20">
+      <div className="flex-1 bg-prime-bg relative z-10">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-10">
-
+          
           {/* header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl lg:text-5xl font-black text-white mb-3 break-words">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 mt-6 lg:mt-0">
+            <div className="min-w-0 flex-1">
+              <h1 className="max-w-[min(100%,50rem)] whitespace-normal break-words text-balance text-[clamp(2rem,4vw,3.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60 mb-4 leading-tight drop-shadow-sm font-display tracking-tight">
                 {movie.title || movie.name}
               </h1>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              
+              <div className="inline-flex flex-wrap items-center gap-3 bg-black/30 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-xl mb-2">
                 {year && (
-                  <span className="text-[14px] font-bold text-prime-subtext">
+                  <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
                     {year}
                   </span>
                 )}
+                
                 {runtime && (
-                  <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                    {runtime}
-                  </span>
+                  <>
+                    <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
+                    <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
+                      {runtime}
+                    </span>
+                  </>
                 )}
+                
                 {type === 'tv' && movie.number_of_seasons && (
-                  <span className="text-[14px] font-bold text-prime-subtext border-l border-white/20 pl-4">
-                    {movie.number_of_seasons} Seasons
-                  </span>
+                  <>
+                    <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
+                    <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
+                      {movie.number_of_seasons} Season{movie.number_of_seasons !== 1 ? 's' : ''}
+                    </span>
+                  </>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap pb-2 lg:pb-4">
               {trailerKey && (
                 <button
                   onClick={() => setShowTrailer(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-red-600/80 border border-white/15 hover:border-red-500 text-white text-sm font-bold transition-all duration-200"
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 sm:px-8 sm:py-3 rounded-full font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-md border border-white/10"
                 >
-                  <PlayIcon size={16} fill="currentColor" /> Watch Trailer
+                  <PlayIcon size={18} className="fill-current" />
+                  <span>Trailer</span>
                 </button>
               )}
               <WatchlistButton
                 movie={movie}
                 type={type}
-                className="btn-secondary !p-4"
+                className="flex items-center justify-center bg-white/10 hover:bg-white/20 text-white p-3 sm:p-3.5 rounded-full transition-all hover:scale-105 active:scale-95 backdrop-blur-md border border-white/10"
                 size={20}
                 useBookmark
               />
               <button
                 onClick={handleShare}
                 title="Share"
-                className={`btn-secondary !p-4 transition-all ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
+                className={`flex items-center justify-center bg-white/10 hover:bg-white/20 text-white p-3 sm:p-3.5 rounded-full transition-all hover:scale-105 active:scale-95 backdrop-blur-md border border-white/10 ${copied ? '!bg-green-500/30 !border-green-500' : ''}`}
               >
                 {copied
                   ? <Check size={20} className="text-green-400" />
@@ -596,23 +600,26 @@ export default function Watch() {
             </div>
           </div>
 
+
           {/* tabs */}
-          <div className="flex items-center gap-6 sm:gap-8 border-b border-white/10 mb-8 overflow-x-auto">
+          <div className="flex items-center gap-2 mb-8 overflow-x-auto">
             {['details', 'cast'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-4 text-sm font-bold uppercase tracking-widest transition-colors relative whitespace-nowrap ${
-                  activeTab === tab ? 'text-white' : 'text-prime-subtext hover:text-white'
+                className={`px-5 py-2 text-sm font-bold uppercase tracking-widest transition-all duration-200 rounded-full whitespace-nowrap ${
+                  activeTab === tab
+                    ? 'text-white bg-prime-blue/20 border border-prime-blue/30 shadow-[0_0_12px_rgba(1,180,228,0.15)]'
+                    : 'text-prime-subtext hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
               >
                 {tab === 'details' ? 'Details' : 'Cast & Crew'}
-                {activeTab === tab && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-prime-blue rounded-t-full" />
-                )}
               </button>
             ))}
           </div>
+
+          {/* separator */}
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8" />
 
           {/* tab content */}
           <div className="min-h-[300px]">
@@ -647,9 +654,11 @@ export default function Watch() {
                   </div>
                   {movie.vote_average > 0 && (
                     <div>
-                      <span className="text-sm text-prime-subtext block mb-1">TMDB Rating</span>
-                      <div className="flex items-center gap-1.5 text-yellow-500 font-bold">
-                        <Star size={16} fill="currentColor" />
+                      <span className="text-sm text-prime-subtext block mb-1">Rating</span>
+                      <div className="flex items-center gap-2 text-[14px] font-bold text-white">
+                        <span className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-[#0d253f] text-[10px] font-black px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-sm">
+                          TMDB
+                        </span>
                         <span>{movie.vote_average.toFixed(1)} / 10</span>
                       </div>
                     </div>
@@ -716,4 +725,4 @@ export default function Watch() {
       </div>
     </motion.div>
   );
-}
+};
