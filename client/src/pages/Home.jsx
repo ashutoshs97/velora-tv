@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   fetchTrending, fetchTrendingTV, fetchTopRated,
   fetchNewReleases, fetchByGenre, fetchSimilar,
-  fetchAuthorsChoice,
+  fetchAuthorsChoice, fetchCrimeDocs
 } from '../api';
 import HeroBanner from '../components/HeroBanner';
 import CarouselRow from '../components/CarouselRow';
@@ -12,7 +12,6 @@ import RecentlyWatched from '../components/RecentlyWatched';
 import WatchlistButton from '../components/WatchlistButton';
 import { useSettings } from '../contexts/SettingsContext';
 import { getHistory } from '../utils/watchHistory';
-import crimeDocs from '../config/crimeDocs.json';
 
 const GENRES = [
   { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
@@ -42,6 +41,7 @@ export default function Home() {
   const [history, setHistory] = useState([]);
   const [newReleases, setNewReleases] = useState([]);
   const [authorsChoice, setAuthorsChoice] = useState([]);
+  const [crimeDocs, setCrimeDocs] = useState([]);
   const [genreMovies, setGenreMovies] = useState([]);
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
   const [becauseTitle, setBecauseTitle] = useState('');
@@ -51,6 +51,7 @@ export default function Home() {
   const [loadingTopRated, setLoadingTopRated] = useState(true);
   const [loadingNew, setLoadingNew] = useState(true);
   const [loadingAuthorsChoice, setLoadingAuthorsChoice] = useState(true);
+  const [loadingCrimeDocs, setLoadingCrimeDocs] = useState(true);
   const [loadingGenre, setLoadingGenre] = useState(false);
 
   const [heroMovies, setHeroMovies] = useState([]);
@@ -70,43 +71,74 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    const loadTrending = async () => {
-      try {
-        const res = await fetchTrending();
-        if (cancelled) return;
-        const movies = res.data?.results || [];
+
+    const loadAll = async () => {
+      const results = await Promise.allSettled([
+        fetchTrending(),
+        fetchTrendingTV(),
+        fetchTopRated(),
+        fetchNewReleases(),
+        fetchAuthorsChoice(),
+        fetchCrimeDocs()
+      ]);
+
+      if (cancelled) return;
+
+      // Trending
+      if (results[0].status === 'fulfilled') {
+        const movies = results[0].value.data?.results || [];
         setTrending(movies);
         const candidates = movies.filter(m => m.backdrop_path && m.vote_average > 6.5).slice(0, 7);
         setHeroMovies(candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5));
-      } catch { if (!cancelled) setTrending([]); }
-      finally { if (!cancelled) setLoadingTrending(false); }
+      } else {
+        setTrending([]);
+      }
+      setLoadingTrending(false);
+
+      // Trending TV
+      if (results[1].status === 'fulfilled') {
+        setTrendingTV(results[1].value.data?.results || []);
+      } else {
+        setTrendingTV([]);
+      }
+      setLoadingTrendingTV(false);
+
+      // Top Rated
+      if (results[2].status === 'fulfilled') {
+        setTopRated(results[2].value.data?.results || []);
+      } else {
+        setTopRated([]);
+      }
+      setLoadingTopRated(false);
+
+      // New Releases
+      if (results[3].status === 'fulfilled') {
+        setNewReleases(results[3].value.data?.results || []);
+      } else {
+        setNewReleases([]);
+      }
+      setLoadingNew(false);
+
+      // Authors Choice
+      if (results[4].status === 'fulfilled') {
+        setAuthorsChoice(results[4].value.data?.results || []);
+      } else {
+        setAuthorsChoice([]);
+      }
+      setLoadingAuthorsChoice(false);
+
+      // Crime Docs
+      if (results[5].status === 'fulfilled') {
+        setCrimeDocs(results[5].value.data?.results || []);
+      } else {
+        setCrimeDocs([]);
+      }
+      setLoadingCrimeDocs(false);
     };
-    const loadTrendingTV = async () => {
-      try { const res = await fetchTrendingTV(); if (!cancelled) setTrendingTV(res.data?.results || []); }
-      catch { if (!cancelled) setTrendingTV([]); }
-      finally { if (!cancelled) setLoadingTrendingTV(false); }
-    };
-    const loadTopRated = async () => {
-      try { const res = await fetchTopRated(); if (!cancelled) setTopRated(res.data?.results || []); }
-      catch { if (!cancelled) setTopRated([]); }
-      finally { if (!cancelled) setLoadingTopRated(false); }
-    };
-    const loadNewReleases = async () => {
-      try { const res = await fetchNewReleases(); if (!cancelled) setNewReleases(res.data?.results || []); }
-      catch { if (!cancelled) setNewReleases([]); }
-      finally { if (!cancelled) setLoadingNew(false); }
-    };
-    const loadAuthorsChoice = async () => {
-      try { const res = await fetchAuthorsChoice(); if (!cancelled) setAuthorsChoice(res.data?.results || []); }
-      catch { if (!cancelled) setAuthorsChoice([]); }
-      finally { if (!cancelled) setLoadingAuthorsChoice(false); }
-    };
-    loadTrending();
-    loadTrendingTV();
-    loadTopRated();
-    loadNewReleases();
-    loadAuthorsChoice();
+
+    loadAll();
     loadHistory();
+
     return () => { cancelled = true; };
   }, [loadHistory]);
 
@@ -151,9 +183,9 @@ export default function Home() {
   const filteredTopRated = useMemo(() => filterItems(topRated), [filterItems, topRated]);
   const filteredNewReleases = useMemo(() => filterItems(newReleases), [filterItems, newReleases]);
   const filteredAuthorsChoice = useMemo(() => filterItems(authorsChoice), [filterItems, authorsChoice]);
+  const filteredCrimeDocs = useMemo(() => filterItems(crimeDocs), [filterItems, crimeDocs]);
   const filteredBecauseYouWatched = useMemo(() => filterItems(becauseYouWatched), [filterItems, becauseYouWatched]);
   const filteredGenreMovies = useMemo(() => filterItems(genreMovies), [filterItems, genreMovies]);
-  const filteredCrimeDocs = useMemo(() => filterItems(crimeDocs), [filterItems]);
 
   return (
     <motion.div
@@ -201,7 +233,7 @@ export default function Home() {
           <PrimeCarouselRow title="Binge-Worthy TV Shows" badge="Series" movies={filteredTrendingTV} loading={loadingTrendingTV} />
         </div>
         <div className="animate-fade-up" style={{ animationDelay: '0.48s' }}>
-          <PrimeCarouselRow title="Author's Handpicked Crime Documentaries" badge="True Crime" movies={filteredCrimeDocs} />
+          <PrimeCarouselRow title="Author's Handpicked Crime Documentaries" badge="True Crime" movies={filteredCrimeDocs} loading={loadingCrimeDocs} />
         </div>
         <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
           <PrimeCarouselRow title="Fresh Drops" badge="New This Month" movies={filteredNewReleases} loading={loadingNew} />

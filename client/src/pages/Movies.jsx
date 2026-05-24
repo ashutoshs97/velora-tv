@@ -116,42 +116,38 @@ export default function Movies() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadTrending = async () => {
-      try {
-        const res = await fetchTrending();
-        if (!cancelled) setTrending(res.data?.results || []);
-      } catch {
-        if (!cancelled) setTrending([]);
-      } finally {
-        if (!cancelled) setLoadingTrending(false);
+    const loadAll = async () => {
+      const results = await Promise.allSettled([
+        fetchTrending(),
+        fetchTopRated(),
+        fetchNewReleases()
+      ]);
+
+      if (cancelled) return;
+
+      if (results[0].status === 'fulfilled') {
+        setTrending(results[0].value.data?.results || []);
+      } else {
+        setTrending([]);
       }
+      setLoadingTrending(false);
+
+      if (results[1].status === 'fulfilled') {
+        setTopRated(results[1].value.data?.results || []);
+      } else {
+        setTopRated([]);
+      }
+      setLoadingTopRated(false);
+
+      if (results[2].status === 'fulfilled') {
+        setNewReleases(results[2].value.data?.results || []);
+      } else {
+        setNewReleases([]);
+      }
+      setLoadingNew(false);
     };
 
-    const loadTopRated = async () => {
-      try {
-        const res = await fetchTopRated();
-        if (!cancelled) setTopRated(res.data?.results || []);
-      } catch {
-        if (!cancelled) setTopRated([]);
-      } finally {
-        if (!cancelled) setLoadingTopRated(false);
-      }
-    };
-
-    const loadNewReleases = async () => {
-      try {
-        const res = await fetchNewReleases();
-        if (!cancelled) setNewReleases(res.data?.results || []);
-      } catch {
-        if (!cancelled) setNewReleases([]);
-      } finally {
-        if (!cancelled) setLoadingNew(false);
-      }
-    };
-
-    loadTrending();
-    loadTopRated();
-    loadNewReleases();
+    loadAll();
     loadHistory();
 
     return () => { cancelled = true; };

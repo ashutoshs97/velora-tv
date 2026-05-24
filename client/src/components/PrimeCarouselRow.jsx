@@ -294,7 +294,7 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
         </div>
       )}
       <div
-        className={`relative rounded-lg overflow-hidden bg-[#111] ${
+        className={`relative overflow-hidden rounded-2xl bg-[#0F1923] transition-all duration-500 ${
           isPoster
             ? 'w-[130px] sm:w-[155px] md:w-[170px] lg:w-[190px] xl:w-[205px] aspect-[2/3]'
             : 'w-[200px] sm:w-[240px] md:w-[270px] lg:w-[300px] xl:w-[320px] aspect-video'
@@ -305,27 +305,26 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
         <img
           src={imageSrc}
           alt={title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-[800ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
           onError={() => setImgError(true)}
           loading="lazy"
           draggable={false}
         />
 
         {/* Gradient overlay — always visible for text readability, deepens on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-700 group-hover:from-black/90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f16] via-[#0a0f16]/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
 
         {/* Title + Year — always visible. Shift slightly to avoid overlap with rank badge */}
-        <div className={`absolute bottom-0 inset-x-0 px-3 pb-2.5 transition-all duration-300 ${rank ? 'pl-[45px] sm:pl-[55px]' : ''}`}>
-          <h4 className="text-white font-semibold text-[13px] sm:text-sm leading-snug line-clamp-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-            {title}
-          </h4>
-          {year && (
-            <span className="text-white/50 text-[10px] font-medium transition-colors duration-700 group-hover:text-white/70">{year}</span>
-          )}
-        </div>
-
-        {/* Hover border glow — slow and subtle */}
-        <div className="absolute inset-0 rounded-lg border border-white/0 transition-all duration-700 group-hover:border-white/15" />
+        {!rank && (
+          <div className="absolute bottom-0 inset-x-0 px-3 pb-2.5 transition-all duration-300">
+            <h4 className="text-white font-semibold text-[13px] sm:text-sm leading-snug line-clamp-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+              {title}
+            </h4>
+            {year && (
+              <span className="text-white/50 text-[10px] font-medium transition-colors duration-700 group-hover:text-white/70">{year}</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

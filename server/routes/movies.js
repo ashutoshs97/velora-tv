@@ -2,24 +2,27 @@ import express from 'express';
 import {
   getSurprise,
   getTrending,
-  getTrendingTv,
   getPopular,
-  getPopularTv,
   getTopRated,
-  getTopRatedTv,
-  getOnAirTv,
   getNewReleases,
   searchMovies,
   getByGenre,
   getByMood,
-  getTvDetails,
-  getTvSeason,
-  getPerson,
   getSimilar,
   getRecommendations,
   getMovieDetails,
-  getAuthorsChoice
+  getAuthorsChoice,
+  getCrimeDocs
 } from '../controllers/movies.controller.js';
+import {
+  getTrendingTv,
+  getPopularTv,
+  getTopRatedTv,
+  getOnAirTv,
+  getTvDetails,
+  getTvSeason
+} from '../controllers/tv.controller.js';
+import { getPerson } from '../controllers/person.controller.js';
 
 const router = express.Router();
 
@@ -33,6 +36,7 @@ router.get('/top-rated-tv', getTopRatedTv);
 router.get('/on-air-tv', getOnAirTv);
 router.get('/new-releases', getNewReleases);
 router.get('/authors-choice', getAuthorsChoice);
+router.get('/crime-docs', getCrimeDocs);
 router.get('/search', searchMovies);
 router.get('/genre/:id', getByGenre);
 router.get('/mood/:mood', getByMood);

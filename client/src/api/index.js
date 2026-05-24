@@ -14,6 +14,7 @@ export const fetchTopRated = () => api.get('/movies/top-rated');
 export const fetchTopRatedTV = () => api.get('/movies/top-rated-tv');
 export const fetchNewReleases = () => api.get('/movies/new-releases');
 export const fetchAuthorsChoice = () => api.get('/movies/authors-choice');
+export const fetchCrimeDocs = () => api.get('/movies/crime-docs');
 export const fetchOnAirTV = () => api.get('/movies/on-air-tv');
 export const fetchSurprise = () => api.get('/movies/surprise');
 export const fetchByGenre = (genreId, type = 'movie') => api.get(`/movies/genre/${genreId}`, { params: { type } });

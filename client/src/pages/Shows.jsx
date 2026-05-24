@@ -64,42 +64,38 @@ export default function Shows() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadTrending = async () => {
-      try {
-        const res = await fetchTrendingTV();
-        if (!cancelled) setTrending(res.data?.results || []);
-      } catch {
-        if (!cancelled) setTrending([]);
-      } finally {
-        if (!cancelled) setLoadingTrending(false);
+    const loadAll = async () => {
+      const results = await Promise.allSettled([
+        fetchTrendingTV(),
+        fetchTopRatedTV(),
+        fetchOnAirTV()
+      ]);
+
+      if (cancelled) return;
+
+      if (results[0].status === 'fulfilled') {
+        setTrending(results[0].value.data?.results || []);
+      } else {
+        setTrending([]);
       }
+      setLoadingTrending(false);
+
+      if (results[1].status === 'fulfilled') {
+        setTopRated(results[1].value.data?.results || []);
+      } else {
+        setTopRated([]);
+      }
+      setLoadingTopRated(false);
+
+      if (results[2].status === 'fulfilled') {
+        setOnAir(results[2].value.data?.results || []);
+      } else {
+        setOnAir([]);
+      }
+      setLoadingOnAir(false);
     };
 
-    const loadTopRated = async () => {
-      try {
-        const res = await fetchTopRatedTV();
-        if (!cancelled) setTopRated(res.data?.results || []);
-      } catch {
-        if (!cancelled) setTopRated([]);
-      } finally {
-        if (!cancelled) setLoadingTopRated(false);
-      }
-    };
-
-    const loadOnAir = async () => {
-      try {
-        const res = await fetchOnAirTV();
-        if (!cancelled) setOnAir(res.data?.results || []);
-      } catch {
-        if (!cancelled) setOnAir([]);
-      } finally {
-        if (!cancelled) setLoadingOnAir(false);
-      }
-    };
-
-    loadTrending();
-    loadTopRated();
-    loadOnAir();
+    loadAll();
     loadHistory();
 
     return () => { cancelled = true; };

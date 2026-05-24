@@ -21,20 +21,17 @@ function getMediaType(movie) {
 function RankBadge({ rank }) {
   return (
     <div
-      className="absolute -left-5 bottom-0 z-20 select-none pointer-events-none"
+      className="absolute -left-5 sm:-left-7 bottom-[-5px] z-20 select-none pointer-events-none"
       aria-hidden="true"
     >
       <span
-        className="font-black leading-none"
+        className="font-black tracking-tighter leading-none"
         style={{
-          fontSize: 'clamp(48px, 9vw, 88px)',
-          lineHeight: 1,
-          WebkitTextStroke: '2px rgba(255,255,255,0.15)',
-          color: 'transparent',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.08) 100%)',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.8))',
+          fontSize: 'clamp(72px, 11vw, 120px)',
+          lineHeight: 0.85,
+          color: '#000000', // Black fill
+          WebkitTextStroke: '1px rgba(255, 255, 255, 0.7)', // Reduced light border
+          filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.08))', // Barely there light shadow
         }}
       >
         {rank}
@@ -69,13 +66,13 @@ function CarouselCard({ movie, rank, usePoster = false }) {
       : (movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : PLACEHOLDER_SVG);
 
   return (
-    <div className={`carousel-card relative flex-shrink-0 ${
+    <div className={`carousel-card relative flex-shrink-0 transition-all duration-300 hover:z-50 ${
       usePoster ? 'w-36 sm:w-44 md:w-48' : 'w-60 sm:w-72 md:w-80'
     } ${rank ? 'ml-6 sm:ml-8' : ''}`}>
-      <FocusableLink to={watchLink} className="block relative cursor-pointer group rounded-lg focus:outline-none">
+      <Link to={watchLink} className="block relative cursor-pointer group rounded-2xl focus:outline-none transition-all duration-500 hover:-translate-y-2">
         <div className="relative">
           {rank && <RankBadge rank={rank} />}
-          <div className={`relative overflow-hidden rounded-lg shadow-lg shadow-black/20 ${
+          <div className={`relative overflow-hidden rounded-2xl bg-[#0F1923] transition-all duration-500 ${
             usePoster ? 'aspect-[2/3]' : 'aspect-video'
           }`}>
             <img
@@ -84,42 +81,43 @@ function CarouselCard({ movie, rank, usePoster = false }) {
               loading="lazy"
               width={usePoster ? 185 : 500}
               height={usePoster ? 278 : 281}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               onError={() => setImgError(true)}
             />
-            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f16] via-[#0a0f16]/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
               <div className="bg-prime-blue text-white rounded-full p-2 shadow-lg hover:scale-110 transition-transform">
                 <Play size={12} fill="currentColor" />
               </div>
             </div>
-            <div className="absolute inset-0 rounded-lg ring-0 ring-prime-blue/60 group-hover:ring-2 transition-all duration-300 pointer-events-none" />
           </div>
         </div>
 
-        <div className="mt-2.5 px-0.5">
-          <h3 className="text-white text-[13px] sm:text-sm font-bold truncate group-hover:text-prime-blue transition-colors duration-200">
-            {title}
-          </h3>
-          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-prime-subtext font-medium truncate">
-            {rating && (
-              <>
-                <span className="flex items-center gap-0.5 text-prime-blue font-bold">
-                  <Star size={10} fill="currentColor" /> {rating}
-                </span>
-                <span className="text-white/20">·</span>
-              </>
-            )}
-            {year && (
-              <>
-                <span>{year}</span>
-                <span className="text-white/20">·</span>
-              </>
-            )}
-            <span className="capitalize">{mediaType === 'tv' ? 'TV Show' : 'Movie'}</span>
+        {!rank && (
+          <div className="mt-2.5 px-0.5">
+            <h3 className="text-white text-[13px] sm:text-sm font-bold truncate group-hover:text-prime-blue transition-colors duration-200">
+              {title}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-prime-subtext font-medium truncate">
+              {rating && (
+                <>
+                  <span className="flex items-center gap-0.5 text-prime-blue font-bold">
+                    <Star size={10} fill="currentColor" /> {rating}
+                  </span>
+                  <span className="text-white/20">·</span>
+                </>
+              )}
+              {year && (
+                <>
+                  <span>{year}</span>
+                  <span className="text-white/20">·</span>
+                </>
+              )}
+              <span className="capitalize">{mediaType === 'tv' ? 'TV Show' : 'Movie'}</span>
+            </div>
           </div>
-        </div>
-      </FocusableLink>
+        )}
+      </Link>
     </div>
   );
 }
@@ -251,7 +249,7 @@ export default function CarouselRow({
         ) : (
           <div
             ref={scrollRef}
-            className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scroll-smooth"
+            className="flex gap-3 sm:gap-4 overflow-x-auto pt-6 -mt-6 pb-6 -mb-2 scroll-smooth"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {movies.map((movie, idx) => (
