@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-
-const POSTER_BASE = 'https://image.tmdb.org/t/p/w92';
+import { getTmdbImageUrl } from '../utils/tmdbImages';
 
 export default function AmbientBackground({ posterPath }) {
   const glowRef = useRef(null);
@@ -86,7 +85,7 @@ export default function AmbientBackground({ posterPath }) {
       // Image failed to load — glow stays transparent, no crash
     };
 
-    img.src = `${POSTER_BASE}${posterPath}`;
+    img.src = getTmdbImageUrl(posterPath, 'w92');
 
     // Cleanup — cancel any pending operations on unmount
     return () => {

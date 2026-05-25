@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fetchByGenre } from '../api';
 import { triggerHaptic } from '../utils/haptics';
 import { Loader2, Play, ArrowRight } from 'lucide-react';
+import { getTmdbImage } from '../utils/tmdbImages';
 
 const MOVIE_GENRES = [
   { id: 28,    label: 'Action' },
@@ -38,8 +39,6 @@ const TYPES = [
   { key: 'tv',    label: 'TV Shows', genres: TV_GENRES },
 ];
 
-const TMDB_IMG    = 'https://image.tmdb.org/t/p/w780';
-const TMDB_POSTER = 'https://image.tmdb.org/t/p/w300';
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='440' viewBox='0 0 780 440'%3E%3Crect width='780' height='440' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='22' fill='%234b5563'%3ENo Image%3C/text%3E%3C/svg%3E`;
 const POSTER_PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23111827'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%234b5563'%3EVelora%3C/text%3E%3C/svg%3E`;
 
@@ -61,8 +60,12 @@ function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd
     >
       {cover ? (
         <img
-          src={cover}
+          src={cover.src}
+          srcSet={cover.srcSet}
+          sizes="(max-width: 640px) 200px, 300px"
           alt={genre.label}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
       ) : (
@@ -85,11 +88,6 @@ function GenreCard({ genre, cover, isSelected, onClick, onHoverStart, onHoverEnd
         <h3 className="text-white font-black text-lg sm:text-xl lg:text-2xl tracking-tight drop-shadow-lg leading-none">
           {genre.label}
         </h3>
-        <div className={`p-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 ${
-          isSelected ? 'bg-prime-blue/80 border-prime-blue' : 'opacity-0 group-hover:opacity-100'
-        }`}>
-          <ArrowRight size={16} className="text-white" />
-        </div>
       </div>
     </motion.button>
   );
@@ -107,9 +105,11 @@ function ContentGrid({ items, type }) {
       {items.map((item, idx) => {
         const id = item.id;
         const title = item.title || item.name || 'Unknown';
-        const poster = item.poster_path
-          ? `${TMDB_POSTER}${item.poster_path}`
+        const imgData = item.poster_path
+          ? getTmdbImage(item.poster_path, 'poster', 'w342')
           : null;
+        const posterSrc = imgData ? imgData.src : null;
+        const posterSrcSet = imgData ? imgData.srcSet : undefined;
         const rating = item.vote_average > 0
           ? Number(item.vote_average).toFixed(1)
           : null;
@@ -124,26 +124,18 @@ function ContentGrid({ items, type }) {
           >
             <Link
               to={watchLink}
-              className="group block relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5 border border-white/5 hover:border-prime-blue/40 hover:shadow-[0_0_20px_rgba(37,99,235,0.2)] transition-all duration-300"
+              className="block relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5 border border-white/5 transition-all duration-300"
             >
               <img
-                src={poster || POSTER_PLACEHOLDER}
+                src={posterSrc || POSTER_PLACEHOLDER}
+                srcSet={posterSrcSet}
+                sizes="(max-width: 640px) 150px, (max-width: 1024px) 200px, 250px"
                 alt={title}
                 loading="lazy"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                onError={(e) => { e.target.src = POSTER_PLACEHOLDER; }}
+                decoding="async"
+                className="w-full h-full object-cover"
+                onError={(e) => { e.target.src = POSTER_PLACEHOLDER; e.target.removeAttribute('srcset'); }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2">
-                <div className="flex justify-end">
-                  <div className="bg-prime-blue/80 backdrop-blur-sm rounded-full p-1.5">
-                    <Play size={14} fill="white" className="text-white ml-0.5" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-white text-[11px] font-bold line-clamp-2 leading-tight">{title}</p>
-                  {rating && <p className="text-yellow-400 text-[10px] font-bold mt-0.5">★ {rating}</p>}
-                </div>
-              </div>
             </Link>
           </motion.div>
         );
@@ -182,7 +174,7 @@ export default function Genres() {
           const pick = arr[1] || arr[0];
           if (pick) {
             const path = pick.backdrop_path || pick.poster_path;
-            results[genre.id] = path ? `${TMDB_IMG}${path}` : null;
+            results[genre.id] = path ? getTmdbImage(path, 'backdrop', 'w780') : null;
           }
         } catch { /* silently fail */ }
       })
@@ -239,7 +231,7 @@ export default function Genres() {
           >
             <div className="absolute inset-0 bg-[#060A0F]/40 z-10" />
             <img
-              src={genreCovers[hoveredGenreId]}
+              src={genreCovers[hoveredGenreId]?.src}
               alt=""
               className="w-full h-full object-cover blur-[80px] scale-110"
             />

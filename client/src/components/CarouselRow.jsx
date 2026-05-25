@@ -4,9 +4,8 @@ import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
 import FocusableLink from './FocusableLink';
+import { getTmdbImage } from '../utils/tmdbImages';
 
-const POSTER_BASE = 'https://image.tmdb.org/t/p/w185';
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w500';
 const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='342' height='513' viewBox='0 0 342 513'%3E%3Crect width='342' height='513' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='16' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
 
 function getMediaType(movie) {
@@ -59,11 +58,23 @@ function CarouselCard({ movie, rank, usePoster = false }) {
   };
   const rating = formatRating(rawRating);
 
-  const imgSrc = imgError
+  const tmdbImg = usePoster 
+    ? getTmdbImage(movie.poster_path, 'poster', 'w185')
+    : getTmdbImage(movie.backdrop_path, 'backdrop', 'w500');
+
+  const hasImage = usePoster ? !!movie.poster_path : !!movie.backdrop_path;
+
+  const imgSrc = imgError || !hasImage
     ? PLACEHOLDER_SVG
-    : usePoster
-      ? (movie.poster_path ? `${POSTER_BASE}${movie.poster_path}` : PLACEHOLDER_SVG)
-      : (movie.backdrop_path ? `${BACKDROP_BASE}${movie.backdrop_path}` : PLACEHOLDER_SVG);
+    : tmdbImg.src;
+
+  const imgSrcSet = imgError || !hasImage
+    ? undefined
+    : tmdbImg.srcSet;
+    
+  const sizes = usePoster 
+    ? "(max-width: 640px) 144px, (max-width: 768px) 176px, 192px" 
+    : "(max-width: 640px) 240px, (max-width: 768px) 288px, 320px";
 
   return (
     <div className={`carousel-card relative flex-shrink-0 transition-all duration-300 hover:z-50 ${
@@ -77,8 +88,11 @@ function CarouselCard({ movie, rank, usePoster = false }) {
           }`}>
             <img
               src={imgSrc}
+              srcSet={imgSrcSet}
+              sizes={sizes}
               alt={title}
               loading="lazy"
+              decoding="async"
               width={usePoster ? 185 : 500}
               height={usePoster ? 278 : 281}
               className="w-full h-full object-cover transition-transform duration-700 ease-out"

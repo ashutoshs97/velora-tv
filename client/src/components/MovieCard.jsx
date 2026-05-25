@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Play } from 'lucide-react';
-
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
+import { getTmdbImage } from '../utils/tmdbImages';
 
 // ── Local SVG placeholder — no third party needed ─────────────────────────
 const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='780' height='439' viewBox='0 0 780 439'%3E%3Crect width='780' height='439' fill='%231A242F'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%238197A4'%3EVelora%3C/text%3E%3C/svg%3E`;
@@ -32,9 +31,11 @@ export default function MovieCard({ movie }) {
 
   // ── Safe image source ─────────────────────────────────────────────────
   const rawPath = movie.backdrop_path || movie.backdropPath;
+  const imgData = rawPath ? getTmdbImage(rawPath, 'backdrop', 'w780') : null;
   const imgUrl = imgError || !rawPath
     ? PLACEHOLDER_SVG
-    : `${BACKDROP_BASE}${rawPath}`;
+    : imgData.src;
+  const imgSrcSet = imgError || !rawPath ? undefined : imgData.srcSet;
 
   // ── Safe ID and watch link ────────────────────────────────────────────
   const id = movie.tmdbId || movie.id;
@@ -50,9 +51,12 @@ export default function MovieCard({ movie }) {
       <div className="movie-card-inner">
         <img
           src={imgUrl}
+          srcSet={imgSrcSet}
+          sizes="(max-width: 640px) 300px, 500px"
           alt={title}
           className="w-full h-full object-cover"
           loading="lazy"
+          decoding="async"
           onError={() => setImgError(true)} // ← local state, no chain dependency
         />
 

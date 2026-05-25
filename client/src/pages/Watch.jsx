@@ -16,10 +16,7 @@ import CarouselRow from '../components/CarouselRow';
 import CommentsSection from '../components/CommentsSection';
 import WatchlistButton from '../components/WatchlistButton';
 import { addToHistory } from '../utils/watchHistory';
-
-const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
-const STILL_BASE = 'https://image.tmdb.org/t/p/w300';
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
+import { getTmdbImage } from '../utils/tmdbImages';
 
 function getSafeType(raw) {
   return raw === 'tv' ? 'tv' : 'movie';
@@ -527,11 +524,13 @@ export default function Watch() {
                   ) : episodes.map(ep => {
                     const isActive = Number(ep.episode_number) === Number(episode);
                     const imagePath = ep.still_path || activeSeason?.poster_path || movie.backdrop_path;
-                    const imageSrc = ep.still_path
-                      ? `${STILL_BASE}${ep.still_path}`
+                    const imgData = ep.still_path
+                      ? getTmdbImage(ep.still_path, 'still', 'w300')
                       : imagePath
-                        ? `${BACKDROP_BASE}${imagePath}`
-                        : null;
+                        ? getTmdbImage(imagePath, 'backdrop', 'w780')
+                        : { src: null, srcSet: undefined };
+                    const imageSrc = imgData.src;
+                    const imgSrcSet = imgData.srcSet;
                     return (
                       <button
                         key={ep.id || ep.episode_number}
@@ -548,9 +547,12 @@ export default function Watch() {
                           {imageSrc ? (
                             <img
                               src={imageSrc}
+                              srcSet={imgSrcSet}
+                              sizes="(max-width: 640px) 235px, 235px"
                               alt={ep.name || `Episode ${ep.episode_number}`}
                               className="h-full w-full object-cover"
                               loading="lazy"
+                              decoding="async"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-[#111D28] text-sm font-bold text-prime-subtext">
@@ -718,10 +720,13 @@ export default function Watch() {
                     <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden mb-2 sm:mb-3 bg-prime-surface border-[3px] border-transparent group-hover:border-prime-blue transition-colors shadow-xl flex-shrink-0">
                       {person.profile_path ? (
                         <img
-                          src={`${PROFILE_BASE}${person.profile_path}`}
+                          src={getTmdbImage(person.profile_path, 'profile', 'w185').src}
+                          srcSet={getTmdbImage(person.profile_path, 'profile', 'w185').srcSet}
+                          sizes="(max-width: 640px) 80px, 96px"
                           alt={person.name || 'Cast member'}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          decoding="async"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.nextSibling.style.display = 'flex';

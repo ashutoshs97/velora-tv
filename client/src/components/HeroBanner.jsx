@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import WatchlistButton from './WatchlistButton';
 import { useSettings } from '../contexts/SettingsContext';
-
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/original';
+import { getTmdbImageUrl } from '../utils/tmdbImages';
 
 function getSafeType(movie) {
   if (!movie) return 'movie';
@@ -130,7 +129,7 @@ export default function HeroBanner({ heroMovies }) {
     const nextMovie = heroMovies[nextIdx];
     if (nextMovie?.backdrop_path) {
       const img = new Image();
-      img.src = `${BACKDROP_BASE}${nextMovie.backdrop_path}`;
+      img.src = getTmdbImageUrl(nextMovie.backdrop_path, 'w1280');
     }
   }, [heroIndex, heroMovies]);
 
@@ -140,7 +139,41 @@ export default function HeroBanner({ heroMovies }) {
     };
   }, []);
 
-  if (!heroMovies.length || !heroMovie) return null;
+  // Preload first hero image dynamically to fix LCP discoverability
+  useEffect(() => {
+    if (heroMovies.length > 0 && heroMovies[0]?.backdrop_path) {
+      const preloadUrl = getTmdbImageUrl(heroMovies[0].backdrop_path, 'w1280');
+      if (!document.querySelector(`link[href="${preloadUrl}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = preloadUrl;
+        document.head.appendChild(link);
+      }
+    }
+  }, [heroMovies]);
+
+  if (!heroMovies.length || !heroMovie) {
+    return (
+      <section className="relative w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] bg-[#080E14] overflow-hidden -mt-20 pt-4 animate-pulse">
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#080E14]/90 to-transparent pointer-events-none z-[1]" />
+        <div className="relative z-10 w-full min-h-[75vh] sm:min-h-[85vh] lg:min-h-[600px] flex flex-col justify-end pt-28 pb-32 sm:pb-28">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 w-full">
+            <div className="w-full md:w-[85%] lg:w-[75%] xl:w-[70%] min-w-0">
+               <div className="h-[90px] sm:h-[110px] mb-3 sm:mb-4 bg-white/5 rounded-2xl w-3/4" />
+               <div className="h-[40px] mb-4 bg-white/5 rounded-full w-48" />
+               <div className="h-[48px] sm:h-[60px] bg-white/5 rounded-xl w-full max-w-[600px]" />
+               <div className="mt-8 sm:mt-10 flex items-center gap-3">
+                 <div className="w-32 h-12 sm:w-40 sm:h-14 bg-white/5 rounded-full" />
+                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-full" />
+                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/5 rounded-full" />
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -190,7 +223,7 @@ export default function HeroBanner({ heroMovies }) {
             <>
               {/* Base Layer: Moody, slightly out-of-focus background */}
               <img
-                src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
+                src={getTmdbImageUrl(heroMovie.backdrop_path, 'w780')}
                 alt=""
                 className="w-full h-full object-cover object-top opacity-50 blur-[3px] scale-[1.02]"
                 style={{ objectPosition: '50% 15%' }}
@@ -210,7 +243,7 @@ export default function HeroBanner({ heroMovies }) {
                 }}
               >
                 <img
-                  src={`${BACKDROP_BASE}${heroMovie.backdrop_path}`}
+                  src={getTmdbImageUrl(heroMovie.backdrop_path, 'w1280')}
                   alt={heroMovie.title || heroMovie.name || 'Featured'}
                   className="w-full h-full object-cover object-top scale-[1.02] brightness-110 contrast-[1.05] saturate-[1.1]"
                   style={{ objectPosition: '50% 15%' }}

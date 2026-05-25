@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Plus, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WatchlistButton from './WatchlistButton';
+import { getTmdbImage } from '../utils/tmdbImages';
 
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w780';
-const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='281' viewBox='0 0 500 281'%3E%3Crect width='500' height='281' fill='%23181818'/%3E%3C/svg%3E`;
 
 function getMediaType(movie) {
@@ -16,13 +15,14 @@ function getMediaType(movie) {
   return 'movie';
 }
 
-function getImageSrc(movie, usePoster = false) {
+function getImageData(movie, usePoster = false) {
   const backdrop = movie.backdrop_path || movie.backdropPath;
   const poster = movie.poster_path || movie.posterPath;
-  if (usePoster && poster) return `${POSTER_BASE}${poster}`;
-  if (backdrop) return `${BACKDROP_BASE}${backdrop}`;
-  if (poster) return `${POSTER_BASE}${poster}`;
-  return PLACEHOLDER;
+  
+  if (usePoster && poster) return getTmdbImage(poster, 'poster', 'w342');
+  if (backdrop) return getTmdbImage(backdrop, 'backdrop', 'w780');
+  if (poster) return getTmdbImage(poster, 'poster', 'w342');
+  return { src: PLACEHOLDER, srcSet: undefined };
 }
 
 /* ─────────────────────────────────────────────
@@ -40,7 +40,9 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
   const title = movie.title || movie.name || 'Unknown Title';
   const year = movie.year || (movie.release_date || movie.first_air_date || '').substring(0, 4);
   const description = movie.overview || '';
-  const imageSrc = getImageSrc(movie, false); // always use horizontal backdrop for widescreen detail preview in popout
+  const imgData = getImageData(movie, false); // always use horizontal backdrop for widescreen detail preview in popout
+  const imageSrc = imgData.src;
+  const imgSrcSet = imgData.srcSet;
   const ratingVal = movie.vote_average || movie.rating;
   const rating = ratingVal ? Number(ratingVal).toFixed(1) : null;
   const seasons = movie.number_of_seasons;
@@ -131,6 +133,8 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
       {/* Image — covers the top portion, with a slow cinematic zoom */}
       <motion.img
         src={imageSrc}
+        srcSet={imgSrcSet}
+        sizes="(max-width: 640px) 300px, 360px"
         alt={title}
         className="absolute top-0 left-0 w-full object-cover"
         style={{ height: imageHeight }}
@@ -244,7 +248,12 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
     ? `/watch/${id}?type=${mediaType}&s=${movie.season}&e=${movie.episode}`
     : id ? `/watch/${id}?type=${mediaType}` : '/';
   const isPoster = aspect === 'poster';
-  const imageSrc = imgError ? PLACEHOLDER : getImageSrc(movie, isPoster);
+  const imgData = getImageData(movie, isPoster);
+  const imageSrc = imgError ? PLACEHOLDER : imgData.src;
+  const imgSrcSet = imgError ? undefined : imgData.srcSet;
+  const sizes = isPoster 
+    ? "(max-width: 640px) 155px, (max-width: 1024px) 190px, 205px" 
+    : "(max-width: 640px) 240px, (max-width: 1024px) 300px, 320px";
   const title = movie.title || movie.name || '';
   const year = movie.year || (movie.release_date || movie.first_air_date || '').substring(0, 4);
 
@@ -304,10 +313,13 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
         {/* Image with slow smooth zoom */}
         <img
           src={imageSrc}
+          srcSet={imgSrcSet}
+          sizes={sizes}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
           onError={() => setImgError(true)}
           loading="lazy"
+          decoding="async"
           draggable={false}
         />
 
