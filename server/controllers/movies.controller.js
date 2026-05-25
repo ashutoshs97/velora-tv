@@ -116,9 +116,17 @@ export const getSimilar = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Invalid id' });
   }
   const path = type === 'tv' ? `/tv/${id}/similar` : `/movie/${id}/similar`;
-  const data = await tmdbFetch(path);
-  setCacheHeaders(res, 1800);
-  res.json(data);
+  try {
+    const data = await tmdbFetch(path);
+    setCacheHeaders(res, 1800);
+    res.json(data);
+  } catch (error) {
+    if (error.status === 404) {
+      setCacheHeaders(res, 1800);
+      return res.json({ results: [] });
+    }
+    throw error;
+  }
 });
 
 export const getRecommendations = asyncHandler(async (req, res) => {
@@ -128,9 +136,17 @@ export const getRecommendations = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Invalid id' });
   }
   const path = type === 'tv' ? `/tv/${id}/recommendations` : `/movie/${id}/recommendations`;
-  const data = await tmdbFetch(path);
-  setCacheHeaders(res, 1800);
-  res.json(data);
+  try {
+    const data = await tmdbFetch(path);
+    setCacheHeaders(res, 1800);
+    res.json(data);
+  } catch (error) {
+    if (error.status === 404) {
+      setCacheHeaders(res, 1800);
+      return res.json({ results: [] });
+    }
+    throw error;
+  }
 });
 
 export const getMovieDetails = asyncHandler(async (req, res) => {
@@ -143,7 +159,9 @@ export const getMovieDetails = asyncHandler(async (req, res) => {
     tmdbFetch(`/movie/${id}/credits`),
   ]);
   if (detail.status === 'rejected') {
-    throw new Error(detail.reason?.message || 'Failed to fetch movie details');
+    const err = new Error(detail.reason?.message || 'Failed to fetch movie details');
+    err.status = detail.reason?.status || 500;
+    throw err;
   }
   const creditsData = credits.status === 'fulfilled' ? credits.value : { cast: [], crew: [] };
   setCacheHeaders(res, 3600);

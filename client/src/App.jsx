@@ -34,8 +34,8 @@ export default function App() {
     <MotionConfig reducedMotion={reducedMotion ? 'always' : 'user'}>
       {showIntro && <SplashIntro onDone={handleIntroDone} />}
       <Layout>
-        <AnimatePresence mode="wait">
-          <Suspense fallback={<div className="min-h-screen bg-prime-bg flex items-center justify-center"><div className="w-8 h-8 border-4 border-prime-blue border-t-transparent rounded-full animate-spin"></div></div>}>
+        <AnimatePresence mode="popLayout">
+          <Suspense fallback={<div className="min-h-screen bg-prime-bg" />}>
             <Routes location={location} key={location.pathname}>
               <Route path="/"          element={<Home />} />
               <Route path="/movies"    element={<Movies />} />

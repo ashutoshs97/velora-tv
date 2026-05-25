@@ -65,14 +65,26 @@ export async function tmdbFetch(path, params = {}, useCache = true) {
 
   try {
     const res = await fetch(url.toString(), { signal: controller.signal });
-    if (res.status === 429) throw new Error('TMDB rate limit reached — please try again shortly');
-    if (!res.ok) throw new Error(`TMDB error: ${res.status} ${res.statusText}`);
+    if (res.status === 429) {
+      const err = new Error('TMDB rate limit reached — please try again shortly');
+      err.status = 429;
+      throw err;
+    }
+    if (!res.ok) {
+      const err = new Error(`TMDB error: ${res.status} ${res.statusText}`);
+      err.status = res.status;
+      throw err;
+    }
     const data = await res.json();
     if (data.results) data.results = filterUnreleased(data.results);
     if (useCache) setCache(cacheKey, data);
     return data;
   } catch (err) {
-    if (err.name === 'AbortError') throw new Error('TMDB request timed out — please try again');
+    if (err.name === 'AbortError') {
+      const timeoutErr = new Error('TMDB request timed out — please try again');
+      timeoutErr.status = 408;
+      throw timeoutErr;
+    }
     throw err;
   } finally {
     clearTimeout(timeout);

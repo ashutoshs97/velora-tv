@@ -36,7 +36,9 @@ export const getTvDetails = asyncHandler(async (req, res) => {
     tmdbFetch(`/tv/${id}/credits`),
   ]);
   if (detail.status === 'rejected') {
-    throw new Error(detail.reason?.message || 'Failed to fetch TV details');
+    const err = new Error(detail.reason?.message || 'Failed to fetch TV details');
+    err.status = detail.reason?.status || 500;
+    throw err;
   }
   const creditsData = credits.status === 'fulfilled' ? credits.value : { cast: [], crew: [] };
   setCacheHeaders(res, 3600);

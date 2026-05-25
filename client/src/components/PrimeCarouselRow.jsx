@@ -1,10 +1,12 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Play, Plus, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Plus, Check, X, Clapperboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WatchlistButton from './WatchlistButton';
+import TrailerModal from './TrailerModal';
 import { getTmdbImage } from '../utils/tmdbImages';
+import { fetchMovieDetail, fetchTVDetail } from '../api';
 
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='281' viewBox='0 0 500 281'%3E%3Crect width='500' height='281' fill='%23181818'/%3E%3C/svg%3E`;
 
@@ -46,6 +48,33 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
   const ratingVal = movie.vote_average || movie.rating;
   const rating = ratingVal ? Number(ratingVal).toFixed(1) : null;
   const seasons = movie.number_of_seasons;
+
+  // Trailer state
+  const [trailerKey, setTrailerKey] = useState(null);
+  const [trailerLoading, setTrailerLoading] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTrailer = async () => {
+      if (!id) return;
+      setTrailerLoading(true);
+      try {
+        const fetcher = mediaType === 'tv' ? fetchTVDetail : fetchMovieDetail;
+        const res = await fetcher(id);
+        if (cancelled) return;
+        const videos = res.data?.videos?.results || [];
+        const key = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key || videos[0]?.key;
+        setTrailerKey(typeof key === 'string' && key.trim().length > 0 ? key : null);
+      } catch {
+        if (!cancelled) setTrailerKey(null);
+      } finally {
+        if (!cancelled) setTrailerLoading(false);
+      }
+    };
+    fetchTrailer();
+    return () => { cancelled = true; };
+  }, [id, mediaType]);
 
   // Responsive popout width based on viewport
   const vw = window.innerWidth;
@@ -114,8 +143,8 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
         opacity: 0,
       }}
       transition={{
-        default: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-        opacity: { duration: 0.15 },
+        default: { duration: 0.15, ease: [0.25, 1, 0.5, 1] },
+        opacity: { duration: 0.08 },
       }}
       className="fixed z-[9999] rounded-2xl overflow-hidden cursor-pointer"
       style={{
@@ -206,16 +235,21 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Trailer Button */}
           <button
-            className="flex-1 h-9 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 font-bold text-[14px] text-white hover:brightness-110 active:scale-[0.97]"
-            style={{
-              background: `linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 80%, black))`,
-              boxShadow: '0 4px 16px rgba(var(--color-primary-rgb), 0.3)',
-            }}
-            onClick={(e) => { e.stopPropagation(); navigate(watchLink); }}
+            onClick={(e) => { e.stopPropagation(); if (trailerKey) setShowTrailer(true); }}
+            disabled={trailerLoading || !trailerKey}
+            title={trailerLoading ? 'Loading trailer…' : trailerKey ? 'Watch Trailer' : 'No trailer available'}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all border ${
+              trailerKey
+                ? 'bg-white/[0.06] text-white/60 border-white/[0.06] hover:bg-white/[0.12] hover:text-white hover:border-white/[0.12] cursor-pointer'
+                : 'bg-white/[0.03] text-white/20 border-white/[0.04] cursor-not-allowed'
+            }`}
           >
-            <Play size={16} fill="currentColor" />
-            {primaryActionLabel}
+            {trailerLoading
+              ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <Clapperboard size={16} />
+            }
           </button>
           <div onClick={(e) => e.stopPropagation()}>
             <WatchlistButton
@@ -227,6 +261,17 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
           </div>
         </div>
       </div>
+
+      {/* Trailer Modal */}
+      <AnimatePresence>
+        {showTrailer && trailerKey && (
+          <TrailerModal
+            videoKey={trailerKey}
+            title={title}
+            onClose={() => setShowTrailer(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>,
     document.body
   );
@@ -265,7 +310,7 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
         const rowWidth = rowRect?.width ?? window.innerWidth;
         onHoverPopout({ movie, rect: cardRef.current.getBoundingClientRect(), rowLeft, rowWidth, onDelete, aspect });
       }
-    }, 350);
+    }, 120);
   };
 
   const handleMouseLeave = () => {
