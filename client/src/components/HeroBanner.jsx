@@ -5,7 +5,6 @@ import {
   Play, Share2,
   ChevronLeft, ChevronRight, Check, Film, X
 } from 'lucide-react';
-import { fetchMovieDetail } from '../api';
 import WatchlistButton from './WatchlistButton';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -245,52 +244,58 @@ export default function HeroBanner({ heroMovies }) {
               transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
               className="w-full md:w-[85%] lg:w-[75%] xl:w-[70%] min-w-0"
             >
-              <motion.h1 
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.05, ease: [0.25, 1, 0.5, 1] }}
-                className="w-full whitespace-normal break-words text-[clamp(1.75rem,3.5vw,2.75rem)] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/50 mb-1 pb-2 leading-[1.1] drop-shadow-sm font-display tracking-tight"
-              >
-                {heroMovie.title || heroMovie.name || 'Untitled'}
-              </motion.h1>
-
-              {((heroMovie.release_date || heroMovie.first_air_date) || heroMovie.vote_average > 0) && (
-                <motion.div 
+              <div className="h-[90px] sm:h-[110px] flex flex-col justify-end mb-3 sm:mb-4">
+                <motion.h1 
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 1, 0.5, 1] }}
-                  className="inline-flex items-center gap-3 mb-7 bg-black/30 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-xl"
+                  transition={{ duration: 0.5, delay: 0.05, ease: [0.25, 1, 0.5, 1] }}
+                  className="w-full whitespace-normal break-words text-[clamp(1.75rem,3.5vw,2.75rem)] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/50 leading-[1.1] pb-2 drop-shadow-sm font-display tracking-tight line-clamp-2"
                 >
-                  {(heroMovie.release_date || heroMovie.first_air_date) && (
-                    <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
-                      {(heroMovie.release_date || heroMovie.first_air_date).substring(0, 4)}
-                    </span>
-                  )}
-                  
-                  {heroMovie.vote_average > 0 && (
-                    <>
-                      <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
-                      <div className="flex items-center gap-1.5 text-[14px] font-bold text-white">
-                        <span className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-[#0d253f] text-[9px] font-black px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-sm">
-                          TMDB
-                        </span>
-                        <span>{Number(heroMovie.vote_average).toFixed(1)}</span>
-                      </div>
-                    </>
-                  )}
-                </motion.div>
-              )}
+                  {heroMovie.title || heroMovie.name || 'Untitled'}
+                </motion.h1>
+              </div>
 
-              {heroMovie.overview && (
-                <motion.p
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
-                  className="text-[14px] sm:text-[15px] text-white/80 mb-7 max-w-2xl font-medium leading-relaxed drop-shadow-md border-l-[3px] border-white/20 pl-4 sm:pl-5 line-clamp-4 sm:line-clamp-none"
-                >
-                  {heroMovie.overview}
-                </motion.p>
-              )}
+              <div className="h-[40px] flex flex-col justify-start mb-4">
+                {((heroMovie.release_date || heroMovie.first_air_date) || heroMovie.vote_average > 0) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 1, 0.5, 1] }}
+                    className="inline-flex items-center gap-3 bg-black/30 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 shadow-xl self-start"
+                  >
+                    {(heroMovie.release_date || heroMovie.first_air_date) && (
+                      <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
+                        {(heroMovie.release_date || heroMovie.first_air_date).substring(0, 4)}
+                      </span>
+                    )}
+                    
+                    {heroMovie.vote_average > 0 && (
+                      <>
+                        <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
+                        <div className="flex items-center gap-1.5 text-[14px] font-bold text-white">
+                          <span className="bg-gradient-to-r from-[#90cea1] to-[#01b4e4] text-[#0d253f] text-[9px] font-black px-1.5 py-0.5 rounded-sm tracking-widest uppercase shadow-sm">
+                            TMDB
+                          </span>
+                          <span>{Number(heroMovie.vote_average).toFixed(1)}</span>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+
+              <div className="h-[75px] sm:h-[85px] flex flex-col justify-start mb-6">
+                {heroMovie.overview && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.15, ease: [0.25, 1, 0.5, 1] }}
+                    className="text-[14px] sm:text-[15px] text-white/80 max-w-2xl font-medium leading-relaxed drop-shadow-md border-l-[3px] border-white/20 pl-4 sm:pl-5 line-clamp-3"
+                  >
+                    {heroMovie.overview}
+                  </motion.p>
+                )}
+              </div>
 
               <motion.div 
                 initial={{ opacity: 0, y: 15 }}

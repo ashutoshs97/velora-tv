@@ -60,8 +60,6 @@ export default function ReleaseCalendar() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setItems([]);
 
     const fetchers = {
       airing:   fetchOnAirTV,
@@ -111,7 +109,13 @@ export default function ReleaseCalendar() {
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
+              onClick={() => {
+                if (activeTab !== key) {
+                  setLoading(true);
+                  setItems([]);
+                  setActiveTab(key);
+                }
+              }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors duration-200 ${
                 activeTab === key
                   ? 'bg-prime-blue text-white'

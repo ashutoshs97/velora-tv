@@ -18,7 +18,7 @@ export function triggerHaptic(type = 'light') {
       default:
         navigator.vibrate(10);
     }
-  } catch (error) {
+  } catch {
     // Ignore errors for devices without vibration hardware
   }
 }

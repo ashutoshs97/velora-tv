@@ -81,7 +81,7 @@ function CarouselCard({ movie, rank, usePoster = false }) {
               loading="lazy"
               width={usePoster ? 185 : 500}
               height={usePoster ? 278 : 281}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              className="w-full h-full object-cover transition-transform duration-700 ease-out"
               onError={() => setImgError(true)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f16] via-[#0a0f16]/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
@@ -214,15 +214,10 @@ export default function CarouselRow({
 
   return (
     <section className="relative">
-      <div className="flex items-center gap-3 mb-4 px-1">
-        <h2 className="text-xl sm:text-2xl font-bold font-display text-white tracking-tight">
+      <div className="flex items-center mb-5 px-1">
+        <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
           {title}
         </h2>
-        {badge && (
-          <span className="text-prime-blue text-xs font-bold px-2 py-0.5 bg-prime-blue/10 border border-prime-blue/20 rounded">
-            {badge}
-          </span>
-        )}
       </div>
 
       <div className="relative group/row">

@@ -305,7 +305,7 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
         <img
           src={imageSrc}
           alt={title}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-[800ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
           onError={() => setImgError(true)}
           loading="lazy"
           draggable={false}
@@ -427,15 +427,10 @@ export default function PrimeCarouselRow({ title, badge, movies, loading, titleL
 
       {/* Row Title */}
       {title && (
-        <div className="flex items-end justify-between mb-3 pr-4 sm:pr-0">
-          <div className="flex items-center gap-3">
-            <h2 className="section-title text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center">
+        <div className="flex items-end justify-between mb-5 pr-4 sm:pr-0">
+          <div className="flex items-center">
+            <h2 className="section-title text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               {title}
-              {badge && (
-                <span className="ml-3 text-prime-blue text-xs font-bold px-2 py-0.5 bg-prime-blue/10 border border-prime-blue/20 rounded">
-                  {badge}
-                </span>
-              )}
             </h2>
           </div>
         </div>

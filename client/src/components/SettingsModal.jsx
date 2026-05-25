@@ -10,7 +10,7 @@ import {
 import { useSettings } from '../contexts/SettingsContext';
 import { searchMovies } from '../api';
 import { getHistory } from '../utils/watchHistory';
-import { getWatchlist, addToWatchlist } from '../utils/watchlist';
+import { addToWatchlist } from '../utils/watchlist';
 
 const THEMES = [
   { id: 'blue',   name: 'Velora Blue',  color: '#2563eb' },
@@ -293,7 +293,6 @@ function DataTab({ s }) {
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState(null);
   const [progress, setProgress] = useState(null); // { done, total } | null
-  const fileRef = useRef(null);
   const lbFileRef = useRef(null);
   const csvFileRef = useRef(null);
 

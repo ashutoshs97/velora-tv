@@ -35,15 +35,20 @@ export default function AmbientBackground({ posterPath }) {
         const sampleSize = 12;
         let r = 0, g = 0, b = 0, count = 0;
 
-        for (let dx = -sampleSize; dx <= sampleSize; dx += 4) {
-          for (let dy = -sampleSize; dy <= sampleSize; dy += 4) {
-            // Make sure we don't sample outside canvas bounds
-            const px = Math.min(Math.max(cx + dx, 0), img.width - 1);
-            const py = Math.min(Math.max(cy + dy, 0), img.height - 1);
-            const data = ctx.getImageData(px, py, 1, 1).data;
-            r += data[0];
-            g += data[1];
-            b += data[2];
+        const startX = Math.max(cx - sampleSize, 0);
+        const startY = Math.max(cy - sampleSize, 0);
+        const endX = Math.min(cx + sampleSize, img.width - 1);
+        const endY = Math.min(cy + sampleSize, img.height - 1);
+        const width = endX - startX + 1;
+        const height = endY - startY + 1;
+
+        if (width > 0 && height > 0) {
+          const imageData = ctx.getImageData(startX, startY, width, height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
             count++;
           }
         }

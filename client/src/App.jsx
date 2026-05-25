@@ -1,6 +1,6 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
-import { useEffect, useState, useCallback, Suspense, lazy } from 'react';
+import { useState, useCallback, Suspense, lazy } from 'react';
 import { useSettings } from './contexts/SettingsContext';
 import { init } from '@noriginmedia/norigin-spatial-navigation';
 

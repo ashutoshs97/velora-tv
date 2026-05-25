@@ -41,18 +41,26 @@ function getHistoryType(item) {
 export default function Shows() {
   const [trending, setTrending] = useState([]);
   const [topRated, setTopRated] = useState([]);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => {
+    try {
+      const data = getHistory();
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  });
   const [onAir, setOnAir] = useState([]);
   const [genreShows, setGenreShows] = useState([]);
   const [moodShows, setMoodShows] = useState([]);
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
-  const [becauseTitle, setBecauseTitle] = useState('');
 
   const [loadingTrending, setLoadingTrending] = useState(true);
   const [loadingTopRated, setLoadingTopRated] = useState(true);
   const [loadingOnAir, setLoadingOnAir] = useState(true);
-  const [loadingGenre, setLoadingGenre] = useState(false);
-  const [loadingMood, setLoadingMood] = useState(false);
+  const [loadingGenre, setLoadingGenre] = useState(true);
+  const [loadingMood, setLoadingMood] = useState(true);
+
+  const becauseTitle = history?.[0]?.title || history?.[0]?.name || 'your last watch';
 
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
   const [selectedMood, setSelectedMood] = useState(MOODS[0]);
@@ -96,14 +104,12 @@ export default function Shows() {
     };
 
     loadAll();
-    loadHistory();
 
     return () => { cancelled = true; };
   }, [loadHistory]);
 
   useEffect(() => {
     let cancelled = false;
-    setLoadingGenre(true);
     fetchByGenre(selectedGenre.id, 'tv')
       .then(res => {
         if (!cancelled) setGenreShows(res.data?.results || []);
@@ -119,7 +125,6 @@ export default function Shows() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoadingMood(true);
     fetchByMood(selectedMood.key)
       .then(res => {
         if (!cancelled) setMoodShows(res.data?.results || []);
@@ -140,7 +145,6 @@ export default function Shows() {
     if (!latest?.tmdbId) return;
 
     const safeType = getHistoryType(latest);
-    setBecauseTitle(latest.title || latest.name || 'your last watch');
 
     fetchSimilar(latest.tmdbId, safeType)
       .then(res => {
@@ -217,23 +221,28 @@ export default function Shows() {
 
         {/* browse by genre */}
         <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
-          <div className="flex items-center gap-3 mb-5 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <div className="flex items-center mb-5 px-1">
+            <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               Browse by Genre
             </h2>
           </div>
           <div
-            className="flex gap-2 mb-6 overflow-x-auto pb-2"
+            className="flex gap-2.5 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {GENRES.map((g) => (
               <button
                 key={g.id}
-                onClick={() => setSelectedGenre(g)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                onClick={() => {
+                  if (selectedGenre.id !== g.id) {
+                    setLoadingGenre(true);
+                    setSelectedGenre(g);
+                  }
+                }}
+                className={`flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold tracking-wide transition-all duration-200 ${
                   selectedGenre.id === g.id
-                    ? 'bg-prime-blue text-white'
-                    : 'bg-white/5 text-prime-subtext hover:text-white'
+                    ? 'text-white bg-prime-blue/20 border border-prime-blue/30'
+                    : 'text-prime-subtext border border-transparent hover:text-white hover:bg-white/5'
                 }`}
               >
                 {g.label}
@@ -249,23 +258,28 @@ export default function Shows() {
 
         {/* browse by mood */}
         <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.6s' }}>
-          <div className="flex items-center gap-3 mb-5 px-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <div className="flex items-center mb-5 px-1">
+            <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               Browse by Mood
             </h2>
           </div>
           <div
-            className="flex gap-2 mb-6 overflow-x-auto pb-2"
+            className="flex gap-2.5 mb-6 overflow-x-auto pb-4 pt-1 px-1 -mx-1"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {MOODS.map((m) => (
               <button
                 key={m.key}
-                onClick={() => setSelectedMood(m)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 ${
+                onClick={() => {
+                  if (selectedMood.key !== m.key) {
+                    setLoadingMood(true);
+                    setSelectedMood(m);
+                  }
+                }}
+                className={`flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold tracking-wide transition-all duration-200 ${
                   selectedMood.key === m.key
-                    ? 'bg-prime-blue text-white'
-                    : 'bg-white/5 text-prime-subtext hover:text-white'
+                    ? 'text-white bg-prime-blue/20 border border-prime-blue/30'
+                    : 'text-prime-subtext border border-transparent hover:text-white hover:bg-white/5'
                 }`}
               >
                 {m.label}

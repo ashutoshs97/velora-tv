@@ -18,8 +18,6 @@ export default function Person() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setLoading(true);
-    setError(false);
     fetchPerson(id)
       .then(res => {
         setPerson(res.data);

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, Star, Share2, ListVideo, Play as PlayIcon,
+  ArrowLeft, Share2, Play as PlayIcon,
   Check, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
@@ -32,6 +32,7 @@ export default function Watch() {
   const type = getSafeType(searchParams.get('type'));
   const urlSeason = Number(searchParams.get('s')) || null;
   const urlEpisode = Number(searchParams.get('e')) || null;
+  
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,7 +41,6 @@ export default function Watch() {
   const [episode, setEpisode] = useState(1);
   const [seasonDetails, setSeasonDetails] = useState(null);
   const [seasonLoading, setSeasonLoading] = useState(false);
-  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
   const [copied, setCopied] = useState(false);
   const [similar, setSimilar] = useState([]);
@@ -48,7 +48,66 @@ export default function Watch() {
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
   const [canScrollEpisodesLeft, setCanScrollEpisodesLeft] = useState(false);
   const [canScrollEpisodesRight, setCanScrollEpisodesRight] = useState(false);
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const episodeRailRef = useRef(null);
+  const seasonsCache = useRef({});
+
+  const cast = useMemo(() => movie?.credits?.cast?.slice(0, 15) || [], [movie]);
+  const genres = useMemo(() => movie?.genres?.map(g => g.name).join(', ') || '', [movie]);
+  const runtime = useMemo(() => {
+    if (type === 'tv') {
+      let min = movie?.episode_run_time?.[0];
+      if (!min && seasonDetails?.episodes?.length > 0) {
+        const runtimes = seasonDetails.episodes.map(e => e.runtime).filter(Boolean);
+        if (runtimes.length > 0) {
+          min = Math.round(runtimes.reduce((a, b) => a + b, 0) / runtimes.length);
+        }
+      }
+      if (!min) return null;
+      return `Avg. ${min}m/ep`;
+    }
+    const min = movie?.runtime;
+    if (!min) return null;
+    return min >= 60 ? `${Math.floor(min / 60)}h ${min % 60}m` : `${min}m`;
+  }, [movie, type, seasonDetails]);
+  const year = useMemo(
+    () => (movie?.release_date || movie?.first_air_date)?.substring(0, 4) || '',
+    [movie]
+  );
+  const directorName = useMemo(
+    () => movie?.credits?.crew?.find(c => c.job === 'Director')?.name
+      || movie?.created_by?.[0]?.name
+      || 'Unknown',
+    [movie]
+  );
+  const trailerKey = useMemo(() => {
+    const key = movie?.videos?.results?.find(
+      v => v.type === 'Trailer' && v.site === 'YouTube'
+    )?.key || movie?.videos?.results?.[0]?.key;
+    return typeof key === 'string' && key.trim().length > 0 ? key : null;
+  }, [movie]);
+  const seasons = useMemo(
+    () => movie?.seasons?.filter(s => s.season_number > 0) || [],
+    [movie]
+  );
+  const activeSeason = useMemo(
+    () => seasons.find(s => s.season_number === season),
+    [seasons, season]
+  );
+  const episodes = useMemo(() => {
+    if (seasonDetails?.episodes?.length) return seasonDetails.episodes;
+    const count = activeSeason?.episode_count || 1;
+    return Array.from({ length: count }, (_, i) => ({
+      id: `fallback-${season}-${i + 1}`,
+      episode_number: i + 1,
+      name: `Episode ${i + 1}`,
+      overview: '',
+      still_path: null,
+    }));
+  }, [activeSeason, season, seasonDetails]);
+
+
+
 
   // load movie details
   useEffect(() => {
@@ -98,13 +157,47 @@ export default function Watch() {
     return () => { cancelled = true; };
   }, [id, type, urlSeason, urlEpisode]);
 
+  // load season details (episodes list) with caching & pre-fetching
   useEffect(() => {
     if (type !== 'tv' || !id || !season) return;
+    
+    const cacheKey = `${id}-${season}`;
+    const cachedData = seasonsCache.current[cacheKey];
+    
+    if (cachedData) {
+      setSeasonDetails(cachedData);
+      setSeasonLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setSeasonLoading(true);
+    setSeasonDetails(null); // Clear previous episodes immediately to prevent flashes
+
     fetchTVSeason(id, season)
       .then(res => {
-        if (!cancelled) setSeasonDetails(res.data || null);
+        if (cancelled) return;
+        const data = res.data || null;
+        if (data) {
+          seasonsCache.current[cacheKey] = data;
+          setSeasonDetails(data);
+          
+          // Pre-fetch next season to cache if available
+          const currentSeasonIdx = seasons.findIndex(s => s.season_number === season);
+          if (currentSeasonIdx !== -1 && currentSeasonIdx < seasons.length - 1) {
+            const nextSeasonNum = seasons[currentSeasonIdx + 1].season_number;
+            const nextCacheKey = `${id}-${nextSeasonNum}`;
+            if (!seasonsCache.current[nextCacheKey]) {
+              fetchTVSeason(id, nextSeasonNum)
+                .then(nextRes => {
+                  if (nextRes.data) {
+                    seasonsCache.current[nextCacheKey] = nextRes.data;
+                  }
+                })
+                .catch(() => {});
+            }
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setSeasonDetails(null);
@@ -112,8 +205,9 @@ export default function Watch() {
       .finally(() => {
         if (!cancelled) setSeasonLoading(false);
       });
+      
     return () => { cancelled = true; };
-  }, [id, type, season]);
+  }, [id, type, season, seasons]);
 
   // cold start warning
   useEffect(() => {
@@ -167,49 +261,6 @@ export default function Watch() {
       setTimeout(() => setCopied(false), 2500);
     }
   }, [id, type, movie]);
-
-  const cast = useMemo(() => movie?.credits?.cast?.slice(0, 15) || [], [movie]);
-  const genres = useMemo(() => movie?.genres?.map(g => g.name).join(', ') || '', [movie]);
-  const runtime = useMemo(() => {
-    const min = movie?.runtime || movie?.episode_run_time?.[0];
-    if (!min) return null;
-    return `${Math.floor(min / 60)}h ${min % 60}m`;
-  }, [movie]);
-  const year = useMemo(
-    () => (movie?.release_date || movie?.first_air_date)?.substring(0, 4) || '',
-    [movie]
-  );
-  const directorName = useMemo(
-    () => movie?.credits?.crew?.find(c => c.job === 'Director')?.name
-      || movie?.created_by?.[0]?.name
-      || 'Unknown',
-    [movie]
-  );
-  const trailerKey = useMemo(() => {
-    const key = movie?.videos?.results?.find(
-      v => v.type === 'Trailer' && v.site === 'YouTube'
-    )?.key || movie?.videos?.results?.[0]?.key;
-    return typeof key === 'string' && key.trim().length > 0 ? key : null;
-  }, [movie]);
-  const seasons = useMemo(
-    () => movie?.seasons?.filter(s => s.season_number > 0) || [],
-    [movie]
-  );
-  const activeSeason = useMemo(
-    () => seasons.find(s => s.season_number === season),
-    [seasons, season]
-  );
-  const episodes = useMemo(() => {
-    if (seasonDetails?.episodes?.length) return seasonDetails.episodes;
-    const count = activeSeason?.episode_count || 1;
-    return Array.from({ length: count }, (_, i) => ({
-      id: `fallback-${season}-${i + 1}`,
-      episode_number: i + 1,
-      name: `Episode ${i + 1}`,
-      overview: '',
-      still_path: null,
-    }));
-  }, [activeSeason, season, seasonDetails]);
 
   const recordEpisodeHistory = useCallback((nextSeason, nextEpisode) => {
     if (!movie) return;
@@ -360,11 +411,9 @@ export default function Watch() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="min-h-screen bg-black flex flex-col"
+      className="min-h-screen bg-[#080E14] flex flex-col relative overflow-hidden"
     >
-      <div className="relative">
-        <AmbientBackground posterPath={movie?.poster_path} />
-      </div>
+      <AmbientBackground posterPath={movie?.poster_path} />
 
       {showTrailer && trailerKey && (
         <TrailerModal
@@ -375,23 +424,23 @@ export default function Watch() {
       )}
 
       {/* player area */}
-      <div className="w-full relative z-30 pt-24 pb-8 bg-black">
+      <div className="w-full relative z-30 pt-24 pb-8 bg-transparent">
         <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-8">
           <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
 
           {type === 'tv' && seasons.length > 0 && (
             <div className="mt-8 overflow-visible rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/40">
               <div className="flex flex-col gap-4 border-b border-white/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-shrink-0">
                   <span className="text-[15px] font-bold text-white tracking-tight">
-                    {activeSeason?.name || `Season ${season}`}
+                    Episodes
                   </span>
                   <span className="text-[13px] text-white/40 font-medium">
                     {episodes.length} Episode{episodes.length !== 1 ? 's' : ''}
                   </span>
                 </div>
 
-                <div className="relative w-full sm:w-auto">
+                <div className="relative w-full sm:w-auto mt-3 sm:mt-0">
                   <button
                     type="button"
                     onClick={() => setSeasonMenuOpen(open => !open)}
@@ -463,9 +512,13 @@ export default function Watch() {
                   </button>
                 )}
 
-                <div
+                <motion.div
+                  key={season}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                   ref={episodeRailRef}
-                  className="hide-scrollbar flex snap-x gap-2.5 overflow-x-auto scroll-smooth pb-1 lg:px-3"
+                  className="hide-scrollbar flex gap-3 overflow-x-auto scroll-smooth pb-2 lg:px-3"
                 >
                   {seasonLoading && !seasonDetails ? (
                     Array.from({ length: 6 }, (_, i) => (
@@ -485,7 +538,7 @@ export default function Watch() {
                         type="button"
                         data-episode-number={ep.episode_number}
                         onClick={() => handleEpisodeChange(ep.episode_number)}
-                        className={`group relative w-[235px] flex-shrink-0 snap-start overflow-hidden rounded-lg border text-left transition-all duration-300 ${
+                        className={`group relative w-[235px] flex-shrink-0 overflow-hidden rounded-xl border text-left transition-colors duration-300 ${
                           isActive
                             ? 'border-prime-blue bg-prime-blue/10 shadow-[0_0_15px_rgba(1,180,228,0.3)]'
                             : 'border-white/10 bg-black/25 hover:border-white/25 hover:bg-white/5'
@@ -496,7 +549,7 @@ export default function Watch() {
                             <img
                               src={imageSrc}
                               alt={ep.name || `Episode ${ep.episode_number}`}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              className="h-full w-full object-cover"
                               loading="lazy"
                             />
                           ) : (
@@ -525,7 +578,7 @@ export default function Watch() {
                       </button>
                     );
                   })}
-                </div>
+                </motion.div>
               </div>
             </div>
           )}
@@ -533,7 +586,7 @@ export default function Watch() {
       </div>
 
       {/* details area */}
-      <div className="flex-1 bg-prime-bg relative z-10">
+      <div className="flex-1 bg-transparent relative z-10">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-10">
           
           {/* header */}
@@ -555,15 +608,6 @@ export default function Watch() {
                     <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
                     <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
                       {runtime}
-                    </span>
-                  </>
-                )}
-                
-                {type === 'tv' && movie.number_of_seasons && (
-                  <>
-                    <div className="w-[4px] h-[4px] rounded-full bg-white/30" />
-                    <span className="text-[13px] font-bold text-white/90 tracking-widest uppercase">
-                      {movie.number_of_seasons} Season{movie.number_of_seasons !== 1 ? 's' : ''}
                     </span>
                   </>
                 )}

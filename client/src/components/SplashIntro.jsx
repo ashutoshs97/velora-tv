@@ -18,11 +18,11 @@ export default function SplashIntro({ onDone }) {
 
     const wipeTimer = setTimeout(() => {
       if (!cancelled) setPhase('wipe');
-    }, 1300);
+    }, 800);
 
     const doneTimer = setTimeout(() => {
       if (!cancelled) handleDone();
-    }, 2700);
+    }, 1500);
 
     return () => {
       cancelled = true;
@@ -76,25 +76,25 @@ export default function SplashIntro({ onDone }) {
         </div>
 
         {/* icon + wordmark */}
-        <div className="flex items-center gap-5 relative">
+        <div className="flex items-center justify-center gap-3 sm:gap-5 relative w-full px-4">
           <img
             src="/velora-icon.svg"
             alt="Velora"
-            width={60}
-            height={60}
+            className="w-10 sm:w-[60px] h-10 sm:h-[60px] object-contain flex-shrink-0"
             onError={(e) => { e.target.style.display = 'none'; }}
           />
           <span
             style={{
               fontFamily: '"Clash Display", system-ui, sans-serif',
               fontWeight: 900,
-              fontSize: 'clamp(3.8rem, 11vw, 7rem)',
-              letterSpacing: '0.28em',
+              fontSize: 'clamp(2.5rem, 8vw, 6rem)',
+              letterSpacing: '0.2em',
               lineHeight: 1,
               background: 'linear-gradient(170deg, #f0f4ff 0%, #c2d5ff 25%, #ffffff 50%, #a8c4f8 75%, #e8efff 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
+              paddingRight: '0.05em',
             }}
           >
             VELORA
@@ -102,22 +102,23 @@ export default function SplashIntro({ onDone }) {
         </div>
 
         {/* tagline */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px' }}>
-          <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, transparent, rgba(140,170,255,0.4))' }} />
+        <div className="flex items-center gap-[10px] sm:gap-[14px] mt-2">
+          <div className="w-6 sm:w-10 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(140,170,255,0.4))' }} />
           <p
             style={{
               fontFamily: '"Clash Display", system-ui, sans-serif',
-              fontSize: '0.55rem',
-              letterSpacing: '0.6em',
+              fontSize: 'clamp(0.45rem, 2vw, 0.55rem)',
+              letterSpacing: '0.4em',
               color: 'rgba(160,190,255,0.45)',
               textTransform: 'uppercase',
               fontWeight: 900,
               margin: 0,
+              paddingLeft: '0.4em',
             }}
           >
             Stream Anything
           </p>
-          <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, rgba(140,170,255,0.4), transparent)' }} />
+          <div className="w-6 sm:w-10 h-[1px]" style={{ background: 'linear-gradient(90deg, rgba(140,170,255,0.4), transparent)' }} />
         </div>
       </motion.div>
     </>
