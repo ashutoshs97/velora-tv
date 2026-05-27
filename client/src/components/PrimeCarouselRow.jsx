@@ -7,6 +7,7 @@ import WatchlistButton from './WatchlistButton';
 import TrailerModal from './TrailerModal';
 import { getTmdbImage } from '../utils/tmdbImages';
 import { fetchMovieDetail, fetchTVDetail } from '../api';
+import { clientCache } from '../utils/clientCache';
 
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='281' viewBox='0 0 500 281'%3E%3Crect width='500' height='281' fill='%23181818'/%3E%3C/svg%3E`;
 
@@ -60,12 +61,23 @@ export function HoverPopout({ popout, onClose, navigate, primaryActionLabel = "P
       if (!id) return;
       setTrailerLoading(true);
       try {
+        const cacheKey = `trailer_${mediaType}_${id}`;
+        const cachedKey = clientCache.get(cacheKey);
+        if (cachedKey !== undefined && cachedKey !== null) {
+          setTrailerKey(cachedKey === 'none' ? null : cachedKey);
+          setTrailerLoading(false);
+          return;
+        }
+
         const fetcher = mediaType === 'tv' ? fetchTVDetail : fetchMovieDetail;
         const res = await fetcher(id);
         if (cancelled) return;
         const videos = res.data?.videos?.results || [];
         const key = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key || videos[0]?.key;
-        setTrailerKey(typeof key === 'string' && key.trim().length > 0 ? key : null);
+        const finalKey = typeof key === 'string' && key.trim().length > 0 ? key : null;
+        
+        clientCache.set(cacheKey, finalKey || 'none');
+        setTrailerKey(finalKey);
       } catch {
         if (!cancelled) setTrailerKey(null);
       } finally {

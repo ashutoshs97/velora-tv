@@ -168,7 +168,15 @@ export const getMovieDetails = asyncHandler(async (req, res) => {
   res.json({ ...detail.value, credits: creditsData });
 });
 
+let authorsChoiceCache = null;
+let authorsChoiceCacheTime = 0;
+
 export const getAuthorsChoice = asyncHandler(async (req, res) => {
+  if (authorsChoiceCache && Date.now() - authorsChoiceCacheTime < 12 * 60 * 60 * 1000) {
+    setCacheHeaders(res, 600);
+    return res.json({ results: authorsChoiceCache });
+  }
+
   const promises = AUTHORS_CHOICE_TITLES.map(async (title) => {
     try {
       const searchData = await tmdbFetch('/search/multi', { query: title });
@@ -193,11 +201,21 @@ export const getAuthorsChoice = asyncHandler(async (req, res) => {
   });
 
   const results = (await Promise.all(promises)).filter(Boolean);
+  authorsChoiceCache = results;
+  authorsChoiceCacheTime = Date.now();
   setCacheHeaders(res, 600);
   res.json({ results });
 });
 
+let crimeDocsCache = null;
+let crimeDocsCacheTime = 0;
+
 export const getCrimeDocs = asyncHandler(async (req, res) => {
+  if (crimeDocsCache && Date.now() - crimeDocsCacheTime < 12 * 60 * 60 * 1000) {
+    setCacheHeaders(res, 600);
+    return res.json({ results: crimeDocsCache });
+  }
+
   const promises = CRIME_DOCS_TITLES.map(async (title) => {
     try {
       const searchData = await tmdbFetch('/search/multi', { query: title });
@@ -222,6 +240,8 @@ export const getCrimeDocs = asyncHandler(async (req, res) => {
   });
 
   const results = (await Promise.all(promises)).filter(Boolean);
+  crimeDocsCache = results;
+  crimeDocsCacheTime = Date.now();
   setCacheHeaders(res, 600);
   res.json({ results });
 });

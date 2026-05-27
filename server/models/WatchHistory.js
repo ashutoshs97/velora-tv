@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const watchHistorySchema = new mongoose.Schema(
   {
     tmdbId: { type: Number, required: true },
+    type: { type: String, default: 'movie' },
     title: { type: String, required: true },
     posterPath: { type: String },
     backdropPath: { type: String },

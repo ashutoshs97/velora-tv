@@ -43,8 +43,6 @@ export default function Watch() {
   const [similar, setSimilar] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
-  const [canScrollEpisodesLeft, setCanScrollEpisodesLeft] = useState(false);
-  const [canScrollEpisodesRight, setCanScrollEpisodesRight] = useState(false);
   const [seasonMenuOpen, setSeasonMenuOpen] = useState(false);
   const episodeRailRef = useRef(null);
   const seasonsCache = useRef({});
@@ -281,16 +279,8 @@ export default function Watch() {
 
     const card = rail.querySelector(`[data-episode-number="${Number(episodeNumber)}"]`);
     if (!card) return;
-
-    const railRect = rail.getBoundingClientRect();
-    const cardRect = card.getBoundingClientRect();
-    const paddingLeft = Number.parseFloat(window.getComputedStyle(rail).paddingLeft) || 0;
-    const nextLeft = rail.scrollLeft + cardRect.left - railRect.left - paddingLeft;
-
-    rail.scrollTo({
-      left: Math.max(0, nextLeft),
-      behavior,
-    });
+    
+    card.scrollIntoView({ behavior, block: 'nearest', inline: 'start' });
   }, []);
 
   const handleEpisodeChange = useCallback((newEpisode) => {
@@ -299,13 +289,6 @@ export default function Watch() {
     requestAnimationFrame(() => alignEpisodeToStart(newEpisode));
   }, [alignEpisodeToStart, recordEpisodeHistory, season]);
 
-  const checkEpisodeScroll = useCallback(() => {
-    const rail = episodeRailRef.current;
-    if (!rail) return;
-    setCanScrollEpisodesLeft(rail.scrollLeft > 24);
-    setCanScrollEpisodesRight(rail.scrollLeft + rail.clientWidth < rail.scrollWidth - 24);
-  }, []);
-
   const handleSeasonChange = useCallback((newSeason) => {
     setSeason(newSeason);
     setEpisode(1);
@@ -313,53 +296,18 @@ export default function Watch() {
     recordEpisodeHistory(newSeason, 1);
     requestAnimationFrame(() => {
       if (episodeRailRef.current) {
-        episodeRailRef.current.scrollLeft = 0;
-        checkEpisodeScroll();
+        episodeRailRef.current.scrollTo(0, 0);
       }
     });
-  }, [checkEpisodeScroll, recordEpisodeHistory]);
+  }, [recordEpisodeHistory]);
 
   useEffect(() => {
     if (type !== 'tv' || seasonLoading) return;
     const frame = requestAnimationFrame(() => {
       alignEpisodeToStart(episode, 'auto');
-      checkEpisodeScroll();
     });
     return () => cancelAnimationFrame(frame);
-  }, [alignEpisodeToStart, checkEpisodeScroll, episode, episodes.length, seasonLoading, type]);
-
-  useEffect(() => {
-    const rail = episodeRailRef.current;
-    if (!rail || type !== 'tv') return undefined;
-    checkEpisodeScroll();
-    rail.addEventListener('scroll', checkEpisodeScroll, { passive: true });
-    window.addEventListener('resize', checkEpisodeScroll);
-    return () => {
-      rail.removeEventListener('scroll', checkEpisodeScroll);
-      window.removeEventListener('resize', checkEpisodeScroll);
-    };
-  }, [checkEpisodeScroll, episodes.length, type]);
-
-  const scrollEpisodes = useCallback((direction) => {
-    const rail = episodeRailRef.current;
-    if (!rail) return;
-    
-    const amount = Math.min(rail.clientWidth * 0.85, 900);
-    let nextLeft = rail.scrollLeft + direction * amount;
-    
-    if (direction === 1) {
-      const maxScroll = rail.scrollWidth - rail.clientWidth;
-      if (maxScroll - nextLeft < amount * 0.5) nextLeft = maxScroll;
-    } else {
-      if (nextLeft < amount * 0.5) nextLeft = 0;
-    }
-
-    rail.scrollTo({
-      left: nextLeft,
-      behavior: 'smooth',
-    });
-    requestAnimationFrame(checkEpisodeScroll);
-  }, [checkEpisodeScroll]);
+  }, [alignEpisodeToStart, episode, episodes.length, seasonLoading, type]);
 
   if (loading) {
     return (
@@ -422,168 +370,156 @@ export default function Watch() {
 
       {/* player area */}
       <div className="w-full relative z-30 pt-24 pb-8 bg-transparent">
-        <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-8">
-          <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
-
-          {type === 'tv' && seasons.length > 0 && (
-            <div className="mt-8 overflow-visible rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/40">
-              <div className="flex flex-col gap-4 border-b border-white/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-[15px] font-bold text-white tracking-tight">
-                    Episodes
-                  </span>
-                  <span className="text-[13px] text-white/40 font-medium">
-                    {episodes.length} Episode{episodes.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                <div className="relative w-full sm:w-auto mt-3 sm:mt-0">
-                  <button
-                    type="button"
-                    onClick={() => setSeasonMenuOpen(open => !open)}
-                    className="flex w-full items-center justify-between gap-3 rounded-full bg-white/[0.06] hover:bg-white/[0.1] backdrop-blur-md px-4 py-2.5 text-left text-[13px] font-semibold text-white/90 transition-all duration-200 border border-white/[0.08] hover:border-white/[0.15] sm:w-auto sm:min-w-[180px]"
-                    aria-haspopup="listbox"
-                    aria-expanded={seasonMenuOpen}
-                  >
-                    <span className="truncate">{activeSeason?.name || `Season ${season}`}</span>
-                    <ChevronDown
-                      size={15}
-                      className={`flex-shrink-0 text-white/50 transition-transform duration-300 ${seasonMenuOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {seasonMenuOpen && (
-                    <div
-                      className="absolute right-0 z-40 mt-2 flex max-h-80 w-full min-w-[220px] flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1923]/95 backdrop-blur-2xl shadow-2xl shadow-black/70 sm:w-64"
-                      role="listbox"
-                    >
-                      <div className="custom-scrollbar overflow-y-auto max-h-[calc(20rem-2px)] p-2 pr-1.5">
-                        {seasons.map(s => (
-                          <button
-                            key={s.id || s.season_number}
-                            type="button"
-                            onClick={() => handleSeasonChange(s.season_number)}
-                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${
-                              s.season_number === season
-                                ? 'bg-prime-blue/15 text-white'
-                                : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
-                            }`}
-                            role="option"
-                            aria-selected={s.season_number === season}
-                          >
-                            <span className="min-w-0">
-                              <span className="block truncate text-[13px] font-semibold">{s.name || `Season ${s.season_number}`}</span>
-                              <span className="text-[11px] font-medium text-white/35">
-                                {s.episode_count || 0} episodes
-                              </span>
-                            </span>
-                            {s.season_number === season && (
-                              <Check size={14} className="flex-shrink-0 text-prime-blue" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="relative p-3">
-                {canScrollEpisodesLeft && (
-                  <button
-                    type="button"
-                    onClick={() => scrollEpisodes(-1)}
-                    title="Previous episodes"
-                    className="absolute bottom-4 left-0 top-3 z-20 hidden w-10 items-center justify-center rounded-r-xl bg-gradient-to-r from-black/24 via-black/10 to-transparent text-white shadow-[5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all hover:from-white/12 hover:via-white/6 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-prime-blue/60 lg:flex"
-                  >
-                    <ChevronLeft size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
-                  </button>
-                )}
-                {canScrollEpisodesRight && (
-                  <button
-                    type="button"
-                    onClick={() => scrollEpisodes(1)}
-                    title="Next episodes"
-                    className="absolute bottom-4 right-0 top-3 z-20 hidden w-10 items-center justify-center rounded-l-xl bg-gradient-to-l from-black/24 via-black/10 to-transparent text-white shadow-[-5px_0_14px_rgba(0,0,0,0.12)] backdrop-blur-[1px] transition-all hover:from-white/12 hover:via-white/6 hover:to-transparent focus:outline-none focus:ring-2 focus:ring-prime-blue/60 lg:flex"
-                  >
-                    <ChevronRight size={26} strokeWidth={2.4} className="drop-shadow-[0_2px_5px_rgba(0,0,0,0.45)]" />
-                  </button>
-                )}
-
-                <motion.div
-                  key={season}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  ref={episodeRailRef}
-                  className="hide-scrollbar flex gap-3 overflow-x-auto scroll-smooth pb-2 lg:px-3"
-                >
-                  {seasonLoading && !seasonDetails ? (
-                    Array.from({ length: 6 }, (_, i) => (
-                      <div key={`episode-skeleton-${i}`} className="skeleton h-40 w-[235px] flex-shrink-0 rounded-lg" />
-                    ))
-                  ) : episodes.map(ep => {
-                    const isActive = Number(ep.episode_number) === Number(episode);
-                    const imagePath = ep.still_path || activeSeason?.poster_path || movie.backdrop_path;
-                    const imgData = ep.still_path
-                      ? getTmdbImage(ep.still_path, 'still', 'w300')
-                      : imagePath
-                        ? getTmdbImage(imagePath, 'backdrop', 'w780')
-                        : { src: null, srcSet: undefined };
-                    const imageSrc = imgData.src;
-                    const imgSrcSet = imgData.srcSet;
-                    return (
-                      <button
-                        key={ep.id || ep.episode_number}
-                        type="button"
-                        data-episode-number={ep.episode_number}
-                        onClick={() => handleEpisodeChange(ep.episode_number)}
-                        className={`group relative w-[235px] flex-shrink-0 overflow-hidden rounded-xl border text-left transition-colors duration-300 ${
-                          isActive
-                            ? 'border-prime-blue bg-prime-blue/10 shadow-[0_0_15px_rgba(1,180,228,0.3)]'
-                            : 'border-white/10 bg-black/25 hover:border-white/25 hover:bg-white/5'
-                        }`}
-                      >
-                        <div className="relative aspect-video overflow-hidden bg-prime-surface">
-                          {imageSrc ? (
-                            <img
-                              src={imageSrc}
-                              srcSet={imgSrcSet}
-                              sizes="(max-width: 640px) 235px, 235px"
-                              alt={ep.name || `Episode ${ep.episode_number}`}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-[#111D28] text-sm font-bold text-prime-subtext">
-                              Episode {ep.episode_number}
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                          <span className="absolute bottom-2 left-2 rounded-md bg-black/75 px-2 py-1 text-[11px] font-black uppercase tracking-wide text-white">
-                            E{ep.episode_number}
-                          </span>
-                          {isActive && (
-                            <span className="absolute right-2 top-2 rounded-full bg-prime-blue px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
-                              Now
-                            </span>
-                          )}
-                        </div>
-                        <div className="min-h-[84px] p-3">
-                          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white">
-                            {ep.name || `Episode ${ep.episode_number}`}
-                          </h3>
-                          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-prime-subtext">
-                            {ep.overview || ep.air_date || 'Episode details from TMDB.'}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              </div>
+        <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-10 xl:px-14">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            
+            {/* Player Container */}
+            <div className={`w-full ${type === 'tv' && seasons.length > 0 ? 'lg:w-[70%] xl:w-[75%]' : ''} flex-shrink-0 flex flex-col`}>
+              <MultiSourceAggregator tmdbId={id} type={type} season={season} episode={episode} />
             </div>
-          )}
+
+            {/* Episode List Container */}
+            {type === 'tv' && seasons.length > 0 && (
+              <div className="w-full lg:w-[30%] xl:w-[25%] flex-shrink-0">
+                <div className="overflow-visible rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/40 lg:max-h-[min(800px,calc(100vh-120px))] flex flex-col">
+                  <div className="flex flex-col gap-4 border-b border-white/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-start lg:gap-3">
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="text-[15px] font-bold text-white tracking-tight">
+                        Episodes
+                      </span>
+                      <span className="text-[13px] text-white/40 font-medium">
+                        {episodes.length} Episode{episodes.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="relative w-full sm:w-auto mt-3 sm:mt-0 lg:mt-0 lg:w-full">
+                      <button
+                        type="button"
+                        onClick={() => setSeasonMenuOpen(open => !open)}
+                        className="flex w-full items-center justify-between gap-3 rounded-full bg-white/[0.06] hover:bg-white/[0.1] backdrop-blur-md px-4 py-2.5 text-left text-[13px] font-semibold text-white/90 transition-all duration-200 border border-white/[0.08] hover:border-white/[0.15] sm:w-auto sm:min-w-[180px] lg:w-full"
+                        aria-haspopup="listbox"
+                        aria-expanded={seasonMenuOpen}
+                      >
+                        <span className="truncate">{activeSeason?.name || `Season ${season}`}</span>
+                        <ChevronDown
+                          size={15}
+                          className={`flex-shrink-0 text-white/50 transition-transform duration-300 ${seasonMenuOpen ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                      {seasonMenuOpen && (
+                        <div
+                          className="absolute left-0 right-0 z-40 mt-2 flex max-h-80 w-full min-w-[220px] flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0F1923]/95 backdrop-blur-2xl shadow-2xl shadow-black/70 sm:w-64 lg:w-full"
+                          role="listbox"
+                        >
+                          <div className="custom-scrollbar overflow-y-auto max-h-[calc(20rem-2px)] p-2 pr-1.5">
+                            {seasons.map(s => (
+                              <button
+                                key={s.id || s.season_number}
+                                type="button"
+                                onClick={() => handleSeasonChange(s.season_number)}
+                                className={`flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${
+                                  s.season_number === season
+                                    ? 'bg-prime-blue/15 text-white'
+                                    : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                                }`}
+                                role="option"
+                                aria-selected={s.season_number === season}
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate text-[13px] font-semibold">{s.name || `Season ${s.season_number}`}</span>
+                                  <span className="text-[11px] font-medium text-white/35">
+                                    {s.episode_count || 0} episodes
+                                  </span>
+                                </span>
+                                {s.season_number === season && (
+                                  <Check size={14} className="flex-shrink-0 text-prime-blue" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative p-0 flex-1 overflow-hidden flex flex-col">
+                    <motion.div
+                      key={season}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                      ref={episodeRailRef}
+                      className="custom-scrollbar flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto snap-x lg:snap-y snap-mandatory p-3 lg:p-4 lg:pt-5 pb-2 lg:scroll-pt-5"
+                    >
+                      {seasonLoading && !seasonDetails ? (
+                        Array.from({ length: 6 }, (_, i) => (
+                          <div key={`episode-skeleton-${i}`} className="skeleton h-40 w-[235px] lg:w-full lg:h-[120px] flex-shrink-0 rounded-lg snap-start" />
+                        ))
+                      ) : episodes.map(ep => {
+                        const isActive = Number(ep.episode_number) === Number(episode);
+                        const imagePath = ep.still_path || activeSeason?.poster_path || movie.backdrop_path;
+                        const imgData = ep.still_path
+                          ? getTmdbImage(ep.still_path, 'still', 'w300')
+                          : imagePath
+                            ? getTmdbImage(imagePath, 'backdrop', 'w780')
+                            : { src: null, srcSet: undefined };
+                        const imageSrc = imgData.src;
+                        const imgSrcSet = imgData.srcSet;
+                        return (
+                          <button
+                            key={ep.id || ep.episode_number}
+                            type="button"
+                            data-episode-number={ep.episode_number}
+                            onClick={() => handleEpisodeChange(ep.episode_number)}
+                            className={`group relative w-[235px] lg:w-full flex-shrink-0 flex flex-col lg:flex-row overflow-hidden rounded-xl border text-left transition-colors duration-300 snap-start ${
+                              isActive
+                                ? 'border-prime-blue bg-prime-blue/10 shadow-[0_0_15px_rgba(1,180,228,0.3)]'
+                                : 'border-white/10 bg-black/25 hover:border-white/25 hover:bg-white/5'
+                            }`}
+                          >
+                            <div className="relative aspect-video w-full lg:w-36 xl:w-40 flex-shrink-0 overflow-hidden bg-prime-surface">
+                              {imageSrc ? (
+                                <img
+                                  src={imageSrc}
+                                  srcSet={imgSrcSet}
+                                  sizes="(max-width: 1024px) 235px, 160px"
+                                  alt={ep.name || `Episode ${ep.episode_number}`}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-[#111D28] text-sm font-bold text-prime-subtext">
+                                  Episode {ep.episode_number}
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                              <span className="absolute bottom-2 left-2 rounded-md bg-black/75 px-2 py-1 text-[11px] font-black uppercase tracking-wide text-white">
+                                E{ep.episode_number}
+                              </span>
+                              {isActive && (
+                                <span className="absolute right-2 top-2 rounded-full bg-prime-blue px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                                  Now
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-h-[84px] p-3 lg:p-3 flex-1 flex flex-col justify-center">
+                              <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white">
+                                {ep.name || `Episode ${ep.episode_number}`}
+                              </h3>
+                              <p className="mt-1.5 line-clamp-2 lg:line-clamp-3 text-[11px] leading-relaxed text-white/50">
+                                {ep.overview || ep.air_date || 'Episode details from TMDB.'}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

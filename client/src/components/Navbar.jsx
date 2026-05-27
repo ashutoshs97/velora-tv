@@ -237,9 +237,6 @@ export default function Navbar() {
               <span className="text-lg font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
                 ELORA
               </span>
-              <span className="text-[10px] font-bold tracking-widest text-prime-blue/80 uppercase -ml-2 -mt-3 select-none">
-                BETA
-              </span>
             </Link>
           </div>
 
@@ -345,9 +342,6 @@ export default function Navbar() {
               <span className="text-base font-bold tracking-[0.25em] text-white/90 uppercase font-display select-none">
                 ELORA
               </span>
-              <span className="text-[9px] font-bold tracking-widest text-prime-blue/80 uppercase -ml-1.5 -mt-2.5 select-none">
-                BETA
-              </span>
             </Link>
           </div>
           <button
@@ -362,7 +356,7 @@ export default function Navbar() {
 
         {/* mobile dropdown */}
         {menuOpen && (
-          <div className="mobile-menu-panel mx-3 mb-3 overflow-hidden rounded-2xl border border-white/10">
+          <div className="mobile-menu-panel mx-3 mb-3 max-h-[calc(100vh-80px)] overflow-y-auto rounded-2xl border border-white/10">
             {/* search form */}
             <form onSubmit={handleSearch} className="p-4 border-b border-white/5 bg-black/20">
               <div className="flex gap-2">

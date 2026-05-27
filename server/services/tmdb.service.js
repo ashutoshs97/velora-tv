@@ -9,8 +9,8 @@ if (!API_KEY) {
 
 // In-memory cache
 const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000;
-const CACHE_MAX = 100;
+const CACHE_TTL = 15 * 60 * 1000;
+const CACHE_MAX = 2000;
 
 function getCached(key) {
   const entry = cache.get(key);
