@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Play, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -157,7 +157,7 @@ function CarouselSkeleton({ usePoster, count = 8 }) {
   );
 }
 
-export default function CarouselRow({
+const CarouselRow = memo(function CarouselRow({
   title,
   badge,
   movies = [],
@@ -292,4 +292,6 @@ export default function CarouselRow({
       </div>
     </section>
   );
-}
+});
+
+export default CarouselRow;

@@ -42,6 +42,7 @@ export default function MultiSourceAggregator({
   const [usingMirror, setUsingMirror] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [allFailed, setAllFailed] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const loadTimerRef = useRef(null);
   const ios = isIOS();
   const providerCount = providers.length;
@@ -137,6 +138,16 @@ export default function MultiSourceAggregator({
   // cleanup on unmount
   useEffect(() => {
     return () => clearTimeout(loadTimerRef.current);
+  }, []);
+
+  // defer iframe load on mobile to prioritize React rendering (PageSpeed optimization)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      const timer = setTimeout(() => setIsReady(true), 150);
+      return () => clearTimeout(timer);
+    } else {
+      setIsReady(true);
+    }
   }, []);
 
   const switchServer = useCallback((idx) => {
@@ -243,10 +254,11 @@ export default function MultiSourceAggregator({
         )}
 
         {/* iframe */}
-        {src && (
+        {src && isReady && (
           <iframe
             key={iframeKey}
             src={src}
+            referrerPolicy="no-referrer"
             title={`${currentServer?.name}`}
             allowFullScreen
             allow="autoplay; fullscreen *; picture-in-picture; encrypted-media; gyroscope; accelerometer; web-share"

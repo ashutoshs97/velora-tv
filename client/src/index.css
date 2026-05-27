@@ -167,7 +167,9 @@
 .player-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
   background: #000;
   border-radius: 0.75rem;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.8);
@@ -226,6 +228,18 @@
 img[loading="lazy"] {
   opacity: 0;
   transition: opacity 0.4s ease;
+}
+
+/* Optimize performance on mobile devices */
+@media (max-width: 768px) {
+  .backdrop-blur-xl, 
+  .backdrop-blur-lg, 
+  .backdrop-blur-md, 
+  .backdrop-blur-sm, 
+  .backdrop-blur {
+    backdrop-filter: none !important;
+    background-color: rgba(10, 15, 22, 0.95) !important;
+  }
 }
 
 img[loading="lazy"].loaded,

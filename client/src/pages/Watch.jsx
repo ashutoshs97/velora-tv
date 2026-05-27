@@ -484,7 +484,7 @@ export default function Watch() {
                                   srcSet={imgSrcSet}
                                   sizes="(max-width: 1024px) 235px, 160px"
                                   alt={ep.name || `Episode ${ep.episode_number}`}
-                                  className="h-full w-full object-cover"
+                                  className="absolute inset-0 h-full w-full object-cover"
                                   loading="lazy"
                                   decoding="async"
                                 />
