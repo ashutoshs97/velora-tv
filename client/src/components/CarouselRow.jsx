@@ -58,9 +58,10 @@ function CarouselCard({ movie, rank, usePoster = false }) {
   };
   const rating = formatRating(rawRating);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const tmdbImg = usePoster 
-    ? getTmdbImage(movie.poster_path, 'poster', 'w185')
-    : getTmdbImage(movie.backdrop_path, 'backdrop', 'w500');
+    ? getTmdbImage(movie.poster_path, 'poster', isMobile ? 'w92' : 'w185')
+    : getTmdbImage(movie.backdrop_path, 'backdrop', isMobile ? 'w300' : 'w500');
 
   const hasImage = usePoster ? !!movie.poster_path : !!movie.backdrop_path;
 
@@ -80,7 +81,7 @@ function CarouselCard({ movie, rank, usePoster = false }) {
     <div className={`carousel-card relative flex-shrink-0 transition-all duration-300 hover:z-50 ${
       usePoster ? 'w-36 sm:w-44 md:w-48' : 'w-60 sm:w-72 md:w-80'
     } ${rank ? 'ml-6 sm:ml-8' : ''}`}>
-      <Link to={watchLink} className="block relative cursor-pointer group rounded-2xl focus:outline-none transition-all duration-500 hover:-translate-y-2">
+      <Link to={watchLink} className="block relative cursor-pointer group rounded-2xl focus:outline-none transition-all duration-500 lg:hover:-translate-y-2">
         <div className="relative">
           {rank && <RankBadge rank={rank} />}
           <div className={`relative overflow-hidden rounded-2xl bg-[#0F1923] transition-all duration-500 ${

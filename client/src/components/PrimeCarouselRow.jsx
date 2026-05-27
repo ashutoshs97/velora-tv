@@ -21,10 +21,11 @@ function getMediaType(movie) {
 function getImageData(movie, usePoster = false) {
   const backdrop = movie.backdrop_path || movie.backdropPath;
   const poster = movie.poster_path || movie.posterPath;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   
-  if (usePoster && poster) return getTmdbImage(poster, 'poster', 'w342');
-  if (backdrop) return getTmdbImage(backdrop, 'backdrop', 'w780');
-  if (poster) return getTmdbImage(poster, 'poster', 'w342');
+  if (usePoster && poster) return getTmdbImage(poster, 'poster', isMobile ? 'w154' : 'w342');
+  if (backdrop) return getTmdbImage(backdrop, 'backdrop', isMobile ? 'w300' : 'w780');
+  if (poster) return getTmdbImage(poster, 'poster', isMobile ? 'w154' : 'w342');
   return { src: PLACEHOLDER, srcSet: undefined };
 }
 
@@ -315,6 +316,8 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
   const year = movie.year || (movie.release_date || movie.first_air_date || '').substring(0, 4);
 
   const handleMouseEnter = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) return;
+    
     timerRef.current = setTimeout(() => {
       if (cardRef.current) {
         const rowRect = rowRef?.current?.getBoundingClientRect();
@@ -393,6 +396,21 @@ export function PrimeCard({ movie, onHoverPopout, rowRef, onDelete, rank, aspect
               <span className="text-white/50 text-[10px] font-medium transition-colors duration-700 group-hover:text-white/70">{year}</span>
             )}
           </div>
+        )}
+        
+        {/* Mobile Delete Button for Continue Watching */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete(movie.tmdbId || movie.id);
+            }}
+            className="absolute top-2 right-2 md:hidden z-30 bg-black/60 backdrop-blur-md p-1.5 rounded-full text-white/80 hover:text-white hover:bg-black/80 transition-colors shadow-lg border border-white/10"
+            aria-label="Remove from Continue Watching"
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
         )}
       </div>
     </div>

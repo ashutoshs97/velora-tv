@@ -369,7 +369,7 @@ export default function Watch() {
       )}
 
       {/* player area */}
-      <div className="w-full relative z-30 pt-24 pb-8 bg-transparent">
+      <div className="w-full relative z-30 pt-24 pb-2 sm:pb-8 bg-transparent">
         <div className="max-w-[1600px] mx-auto w-full px-4 lg:px-10 xl:px-14">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             
@@ -525,10 +525,10 @@ export default function Watch() {
 
       {/* details area */}
       <div className="flex-1 bg-transparent relative z-10">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 py-10">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-2 pb-10 sm:py-10">
           
           {/* header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 mt-6 lg:mt-0">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 mt-2 sm:mt-6 lg:mt-0">
             <div className="min-w-0 flex-1">
               <h1 className="max-w-[min(100%,50rem)] whitespace-normal break-words text-balance text-[clamp(2rem,4vw,3.5rem)] font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/60 mb-4 leading-tight drop-shadow-sm font-display tracking-tight">
                 {movie.title || movie.name}

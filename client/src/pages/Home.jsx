@@ -203,9 +203,11 @@ export default function Home() {
 
       {/* content */}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 -mt-16 relative z-20 space-y-14">
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-          <RecentlyWatched history={history} onRefresh={loadHistory} />
-        </div>
+        {history && history.length > 0 && (
+          <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <RecentlyWatched history={history} onRefresh={loadHistory} />
+          </div>
+        )}
         <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
           <CarouselRow
             title="Top 10 Movies"

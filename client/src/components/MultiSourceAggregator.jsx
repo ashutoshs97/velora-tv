@@ -314,16 +314,7 @@ export default function MultiSourceAggregator({
           </div>
         )}
 
-        {ios && (
-          <div className="mb-3 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex gap-2 items-start">
-            <AlertCircle size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="text-blue-400/80 text-xs leading-relaxed">
-              <strong className="text-blue-400">iOS Tip:</strong> Use{' '}
-              <strong className="text-blue-300">Server 4</strong> for
-              the best playback on Apple devices.
-            </p>
-          </div>
-        )}
+
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {providers.map((server, idx) => {
@@ -373,10 +364,18 @@ export default function MultiSourceAggregator({
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400/80 rounded-l-xl" />
         <AlertCircle size={16} className="flex-shrink-0 mt-0.5 text-yellow-400 ml-1" />
         <span className="leading-relaxed">
-          <strong className="text-white tracking-wide">Ad-Blocker Recommended:</strong>{' '}
-          Third-party servers may show ads. We recommend{' '}
-          <strong className="text-white">uBlock Origin</strong>. Servers auto-switch through all
-          available routes before stopping.
+          {(typeof window !== 'undefined' && window.innerWidth < 768 && activeServer === 0) ? (
+            <>
+              <strong className="text-white tracking-wide">Server 1 Not Loading?</strong>{' '}
+              You might need to temporarily disable your ad-blocker or tracking prevention on your mobile browser. 
+              (Note: Server 1 is completely ad-free, but some blockers falsely prevent the player from loading).
+            </>
+          ) : (
+            <>
+              <strong className="text-white tracking-wide">Auto-Switching:</strong>{' '}
+              Servers auto-switch through all available routes if one fails to load.
+            </>
+          )}
         </span>
         <button
           onClick={tryNext}
@@ -388,22 +387,24 @@ export default function MultiSourceAggregator({
       </div>
 
       {/* volume note */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-prime-subtext">
-        <Volume2 size={14} className="flex-shrink-0 text-white/40" />
-        <span>
-          Use your <strong className="text-white">system volume</strong> or browser tab volume to adjust audio.
-          For louder audio, try the{' '}
-          <a
-            href="https://chrome.google.com/webstore/detail/volume-master/jghecgabfgfdldnmbfkhmffcabddioke"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-prime-blue hover:text-white transition-colors underline"
-          >
-            Volume Master
-          </a>
-          {' '}extension.
-        </span>
-      </div>
+      {typeof window !== 'undefined' && window.innerWidth >= 768 && !!window.chrome && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-xs text-prime-subtext">
+          <Volume2 size={14} className="flex-shrink-0 text-white/40" />
+          <span>
+            Use your <strong className="text-white">system volume</strong> or browser tab volume to adjust audio.
+            For louder audio, try the{' '}
+            <a
+              href="https://chrome.google.com/webstore/detail/volume-master/jghecgabfgfdldnmbfkhmffcabddioke"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-prime-blue hover:text-white transition-colors underline"
+            >
+              Volume Master
+            </a>
+            {' '}extension.
+          </span>
+        </div>
+      )}
 
     </div>
   );
