@@ -8,6 +8,7 @@ import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
 import { getHistory } from '../utils/watchHistory';
+import { apiCache } from '../utils/apiCache';
 
 const GENRES = [
   { id: 10759, label: 'Action & Adventure' },
@@ -39,8 +40,8 @@ function getHistoryType(item) {
 }
 
 export default function Shows() {
-  const [trending, setTrending] = useState([]);
-  const [topRated, setTopRated] = useState([]);
+  const [trending, setTrending] = useState(() => apiCache.get('tv_trending') || []);
+  const [topRated, setTopRated] = useState(() => apiCache.get('tv_top_rated') || []);
   const [history, setHistory] = useState(() => {
     try {
       const data = getHistory();
@@ -49,16 +50,16 @@ export default function Shows() {
       return [];
     }
   });
-  const [onAir, setOnAir] = useState([]);
-  const [genreShows, setGenreShows] = useState([]);
-  const [moodShows, setMoodShows] = useState([]);
+  const [onAir, setOnAir] = useState(() => apiCache.get('tv_on_air') || []);
+  const [genreShows, setGenreShows] = useState(() => apiCache.get(`shows_genre_${GENRES[0].id}`) || []);
+  const [moodShows, setMoodShows] = useState(() => apiCache.get(`shows_mood_${MOODS[0].key}`) || []);
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
 
-  const [loadingTrending, setLoadingTrending] = useState(true);
-  const [loadingTopRated, setLoadingTopRated] = useState(true);
-  const [loadingOnAir, setLoadingOnAir] = useState(true);
-  const [loadingGenre, setLoadingGenre] = useState(true);
-  const [loadingMood, setLoadingMood] = useState(true);
+  const [loadingTrending, setLoadingTrending] = useState(() => !apiCache.has('tv_trending'));
+  const [loadingTopRated, setLoadingTopRated] = useState(() => !apiCache.has('tv_top_rated'));
+  const [loadingOnAir, setLoadingOnAir] = useState(() => !apiCache.has('tv_on_air'));
+  const [loadingGenre, setLoadingGenre] = useState(() => !apiCache.has(`shows_genre_${GENRES[0].id}`));
+  const [loadingMood, setLoadingMood] = useState(() => !apiCache.has(`shows_mood_${MOODS[0].key}`));
 
   const becauseTitle = history?.[0]?.title || history?.[0]?.name || 'your last watch';
 
@@ -72,11 +73,18 @@ export default function Shows() {
   useEffect(() => {
     let cancelled = false;
 
+    const fetchOrCache = async (key, promiseFactory) => {
+      if (apiCache.has(key)) return { data: { results: apiCache.get(key) } };
+      const res = await promiseFactory();
+      if (res.data?.results) apiCache.set(key, res.data.results);
+      return res;
+    };
+
     const loadAll = async () => {
       const results = await Promise.allSettled([
-        fetchTrendingTV(),
-        fetchTopRatedTV(),
-        fetchOnAirTV()
+        fetchOrCache('tv_trending', fetchTrendingTV),
+        fetchOrCache('tv_top_rated', fetchTopRatedTV),
+        fetchOrCache('tv_on_air', fetchOnAirTV)
       ]);
 
       if (cancelled) return;
@@ -110,9 +118,20 @@ export default function Shows() {
 
   useEffect(() => {
     let cancelled = false;
+    const key = `shows_genre_${selectedGenre.id}`;
+    if (apiCache.has(key)) {
+      setGenreShows(apiCache.get(key));
+      setLoadingGenre(false);
+      return;
+    }
+    setLoadingGenre(true);
     fetchByGenre(selectedGenre.id, 'tv')
       .then(res => {
-        if (!cancelled) setGenreShows(res.data?.results || []);
+        if (!cancelled) {
+          const data = res.data?.results || [];
+          apiCache.set(key, data);
+          setGenreShows(data);
+        }
       })
       .catch(() => {
         if (!cancelled) setGenreShows([]);
@@ -125,9 +144,20 @@ export default function Shows() {
 
   useEffect(() => {
     let cancelled = false;
+    const key = `shows_mood_${selectedMood.key}`;
+    if (apiCache.has(key)) {
+      setMoodShows(apiCache.get(key));
+      setLoadingMood(false);
+      return;
+    }
+    setLoadingMood(true);
     fetchByMood(selectedMood.key)
       .then(res => {
-        if (!cancelled) setMoodShows(res.data?.results || []);
+        if (!cancelled) {
+          const data = res.data?.results || [];
+          apiCache.set(key, data);
+          setMoodShows(data);
+        }
       })
       .catch(() => {
         if (!cancelled) setMoodShows([]);
@@ -159,10 +189,6 @@ export default function Shows() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 pb-4">
@@ -176,11 +202,11 @@ export default function Shows() {
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 mt-8">
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+        <div>
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+        <div>
           <CarouselRow
             title="Trending Series"
             badge="Popular"
@@ -191,7 +217,7 @@ export default function Shows() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+        <div>
           <PrimeCarouselRow
             title="Critically Acclaimed"
             badge="Top Rated"
@@ -200,7 +226,7 @@ export default function Shows() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+        <div>
           <PrimeCarouselRow
             title="Currently Airing"
             badge="On Air"
@@ -210,7 +236,7 @@ export default function Shows() {
         </div>
 
         {becauseYouWatched.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+          <div>
             <CarouselRow
               title={`Because You Watched "${becauseTitle}"`}
               movies={becauseYouWatched}
@@ -220,7 +246,7 @@ export default function Shows() {
         )}
 
         {/* browse by genre */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+        <div>
           <div className="flex items-center mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               Browse by Genre
@@ -257,7 +283,7 @@ export default function Shows() {
         </div>
 
         {/* browse by mood */}
-        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.6s' }}>
+        <div className="mb-24">
           <div className="flex items-center mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               Browse by Mood

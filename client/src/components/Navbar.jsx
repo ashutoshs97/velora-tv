@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchSurprise } from '../api';
 import { Search, X, Menu, Home, ArrowLeft, Settings, Dices, Calendar as CalIcon, Loader2, Clock, Bookmark } from 'lucide-react';
 import SettingsModal from './SettingsModal';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
 import FocusableLink from './FocusableLink';
 import FocusableButton from './FocusableButton';
@@ -27,6 +27,19 @@ const NAV_LINKS = [
 
 const MAX_QUERY_LENGTH = 150;
 
+const RollText = ({ text, active }) => (
+  <div className="relative overflow-hidden h-[1.4em] flex flex-col justify-start">
+    <div className="transition-transform duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] group-hover:-translate-y-1/2">
+      <span className={`block h-[1.4em] flex items-center ${active ? 'text-white' : 'text-white/70'}`}>
+        {text}
+      </span>
+      <span className="block h-[1.4em] flex items-center text-white">
+        {text}
+      </span>
+    </div>
+  </div>
+);
+
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,21 +49,24 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [scrollDir, setScrollDir] = useState('up');
   const [searchFocused, setSearchFocused] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const [hintVisible, setHintVisible] = useState(true);
   const [surprising, setSurprising] = useState(false);
+  const [hoveredNav, setHoveredNav] = useState(null);
+  
   const [, setRecentSearches] = useState(() => {
     try { return JSON.parse(localStorage.getItem('velora_recent_searches') || '[]'); }
     catch { return []; }
   });
 
-  // removed /anime from root paths since anime is disabled
   const isRootPath = ['/', '/movies', '/shows'].includes(location.pathname);
 
   const inputRef = useRef(null);
   const hintTimerRef = useRef(null);
   const scrollTimerRef = useRef(null);
+  const lastScrollY = useRef(0);
 
   // close menu on route change
   useEffect(() => {
@@ -62,9 +78,18 @@ export default function Navbar() {
     const onScroll = () => {
       if (scrollTimerRef.current) return;
       scrollTimerRef.current = setTimeout(() => {
-        setScrolled(window.scrollY > 20);
+        const currentScrollY = window.scrollY;
+        setScrolled(currentScrollY > 20);
+        
+        if (currentScrollY > lastScrollY.current + 12) {
+          setScrollDir('down');
+        } else if (currentScrollY < lastScrollY.current - 12 || currentScrollY <= 20) {
+          setScrollDir('up');
+        }
+        
+        lastScrollY.current = currentScrollY <= 0 ? 0 : currentScrollY;
         scrollTimerRef.current = null;
-      }, 80);
+      }, 50);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
@@ -128,7 +153,6 @@ export default function Navbar() {
     e.preventDefault();
     const trimmed = query.trim();
     if (trimmed) {
-      // Save to recent searches
       if (searchHistoryEnabled) {
         setRecentSearches(prev => {
           const updated = [trimmed, ...prev.filter(s => s !== trimmed)].slice(0, 8);
@@ -156,55 +180,6 @@ export default function Navbar() {
   return (
     <>
       <style>{`
-        @keyframes betaShimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        .beta-pill {
-          background: linear-gradient(
-            90deg,
-            rgba(251,191,36,0.08),
-            rgba(251,191,36,0.18) 40%,
-            rgba(251,191,36,0.08)
-          );
-          background-size: 200% auto;
-          animation: betaShimmer 3s linear infinite;
-        }
-        .nav-underline {
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-        }
-        .nav-link:hover .nav-underline { transform: scaleX(1); }
-        .hint-fade { transition: opacity 0.3s ease; }
-        .nav-pill-bg {
-          position: relative;
-          overflow: hidden;
-          background: rgba(12, 19, 27, 0.88);
-          border: 1px solid rgba(255,255,255,0.10);
-          box-shadow:
-            0 18px 44px rgba(0,0,0,0.42),
-            inset 0 1px 0 rgba(255,255,255,0.08);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-        }
-        .nav-pill-bg::before {
-          content: '';
-          position: absolute;
-          left: 10px;
-          right: 10px;
-          top: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.24), transparent);
-          opacity: 0.75;
-          pointer-events: none;
-        }
-        .nav-active-pill {
-          box-shadow:
-            0 10px 26px rgba(0,0,0,0.26),
-            0 0 0 1px rgba(255,255,255,0.14),
-            inset 0 1px 0 rgba(255,255,255,0.85);
-        }
         .mobile-menu-panel {
           background: rgba(15,25,35,0.88);
           backdrop-filter: blur(20px);
@@ -216,11 +191,15 @@ export default function Navbar() {
       `}</style>
 
       {/* desktop header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] pt-6 pointer-events-none hidden md:block transition-all duration-500">
+      <header className={`fixed top-0 left-0 right-0 z-[100] pt-6 pointer-events-none hidden md:block transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] ${
+        scrollDir === 'down' && scrolled ? '-translate-y-[150%]' : 'translate-y-0'
+      }`}>
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between">
-
-          {/* logo */}
-          <div className="pointer-events-auto transition-transform duration-500 hover:scale-105 flex items-center gap-2">
+          
+          {/* logo - fades out when scrolled to reduce overlap */}
+          <div className={`pointer-events-auto transition-all duration-700 ease-out flex items-center gap-2 ${
+            scrolled ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0 hover:scale-105'
+          }`}>
             {!isRootPath && (
               <button
                 onClick={() => navigate(-1)}
@@ -240,76 +219,76 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* navigation pill */}
+          {/* Center Navigation Pill */}
           <nav
-            className={`pointer-events-auto transition-all duration-500 ease-out max-w-fit rounded-full select-none nav-pill-bg ${
+            className={`pointer-events-auto flex items-center p-2 rounded-[28px] transition-all duration-500 ease-out border border-white/10 ${
               scrolled
-                ? 'border-white/15 shadow-2xl shadow-black/50'
-                : 'border-white/5 shadow-lg'
+                ? 'bg-[#0a0a0a]/90 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.6)]'
+                : 'bg-[#121212]/80 backdrop-blur-xl shadow-2xl'
             }`}
+            onMouseLeave={() => setHoveredNav(null)}
           >
-            <div className="flex items-center px-3 py-2 gap-2 sm:gap-5">
-              {/* nav links */}
-              <div className="flex items-center gap-1 sm:gap-2">
-                {NAV_LINKS.map(({ to, label, icon: Icon }) => {
-                  const active = isActive(to);
-                  if (active) {
-                    return (
-                      <FocusableLink
-                        key={to}
-                        to={to}
-                        className="nav-active-pill flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-full font-bold text-[15px] transition-transform hover:scale-[1.03]"
-                      >
-                        {Icon && <Icon size={18} strokeWidth={2.5} />}
-                        <span>{label}</span>
-                      </FocusableLink>
-                    );
-                  }
-                  return (
-                    <FocusableLink
-                      key={to}
-                      to={to}
-                      className="nav-link relative px-4 py-2.5 text-[15px] font-semibold rounded-full transition-all duration-200 text-prime-subtext hover:text-white hover:bg-white/[0.08]"
-                    >
-                      {label}
-                    </FocusableLink>
-                  );
-                })}
-              </div>
+            {/* Center: Nav Links */}
+            <div className="flex items-center gap-1 relative px-3">
+              {NAV_LINKS.map(({ to, label }) => {
+                const active = isActive(to);
+                const showPill = hoveredNav ? hoveredNav === to : active;
+                
+                return (
+                  <FocusableLink
+                    key={to}
+                    to={to}
+                    className="relative group px-5 py-2.5 rounded-full text-[15px] font-semibold transition-colors z-10"
+                    onMouseEnter={() => setHoveredNav(to)}
+                  >
+                    {showPill && (
+                      <motion.div
+                        layoutId="nav-pill"
+                        className="absolute inset-0 bg-white/[0.08] rounded-full -z-10"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <RollText text={label} active={active} />
+                  </FocusableLink>
+                );
+              })}
+            </div>
 
-              {/* search + settings */}
-              <div className="flex items-center">
-                <FocusableLink
-                  to="/search"
-                  onClick={() => setMenuOpen(false)}
-                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/[0.08]"
-                  aria-label="Search"
-                >
-                  <Search size={18} className="translate-y-[1px]" />
-                </FocusableLink>
-                <FocusableButton
-                  onClick={() => setSettingsOpen(true)}
-                  className="p-2.5 rounded-full transition-colors flex-shrink-0 text-white/70 hover:text-white hover:bg-white/[0.08]"
-                  aria-label="Open settings"
-                >
-                  <Settings size={18} className="translate-y-[1px]" />
-                </FocusableButton>
-              </div>
+            <div className="w-px h-6 bg-white/10 mx-3" />
 
-              <div className="w-px h-6 bg-white/15 mx-1 hidden sm:block" />
+            {/* Right side: Search, Settings, Surprise */}
+            <div className="flex items-center gap-2 mr-1">
+              <FocusableLink
+                to="/search"
+                className="p-2.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Search"
+              >
+                <Search size={18} />
+              </FocusableLink>
+              <FocusableButton
+                onClick={() => setSettingsOpen(true)}
+                className="p-2.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors mr-3"
+                aria-label="Settings"
+              >
+                <Settings size={18} />
+              </FocusableButton>
 
+              {/* Gradient Border Surprise Button */}
               <FocusableButton
                 onClick={handleSurprise}
                 disabled={surprising}
                 title="Surprise Me!"
-                className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/40 hover:to-pink-500/40 border border-purple-500/30 rounded-full text-white font-bold transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-[0_0_15px_rgba(168,85,247,0.2)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                className="relative p-[2px] rounded-full group overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-shadow duration-300"
               >
-                {surprising ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <Dices size={18} />
-                )}
-                <span>Surprise</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-purple-500 to-orange-400 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative bg-[#151515] px-5 py-2 rounded-full flex items-center gap-2 text-white font-semibold transition-transform group-active:scale-[0.98]">
+                  {surprising ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Dices size={18} className="group-hover:rotate-12 transition-transform duration-300" />
+                  )}
+                  <span>Surprise Me</span>
+                </div>
               </FocusableButton>
             </div>
           </nav>

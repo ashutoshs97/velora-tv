@@ -7,7 +7,9 @@ import {
 import CarouselRow from '../components/CarouselRow';
 import PrimeCarouselRow from '../components/PrimeCarouselRow';
 import RecentlyWatched from '../components/RecentlyWatched';
+import HeroBanner from '../components/HeroBanner';
 import { getHistory } from '../utils/watchHistory';
+import { apiCache } from '../utils/apiCache';
 
 const GENRES = [
   { id: 28, label: 'Action' }, { id: 35, label: 'Comedy' },
@@ -86,8 +88,8 @@ function getHistoryType(item) {
 }
 
 export default function Movies() {
-  const [trending, setTrending] = useState([]);
-  const [topRated, setTopRated] = useState([]);
+  const [trending, setTrending] = useState(() => apiCache.get('movies_trending') || []);
+  const [topRated, setTopRated] = useState(() => apiCache.get('movies_top_rated') || []);
   const [history, setHistory] = useState(() => {
     try {
       const data = getHistory();
@@ -96,16 +98,23 @@ export default function Movies() {
       return [];
     }
   });
-  const [newReleases, setNewReleases] = useState([]);
-  const [genreMovies, setGenreMovies] = useState([]);
-  const [moodMovies, setMoodMovies] = useState([]);
+  const [newReleases, setNewReleases] = useState(() => apiCache.get('movies_new_releases') || []);
+  const [genreMovies, setGenreMovies] = useState(() => apiCache.get(`movies_genre_${GENRES[0].id}`) || []);
+  const [moodMovies, setMoodMovies] = useState(() => apiCache.get(`movies_mood_${MOODS[0].key}`) || []);
   const [becauseYouWatched, setBecauseYouWatched] = useState([]);
 
-  const [loadingTrending, setLoadingTrending] = useState(true);
-  const [loadingTopRated, setLoadingTopRated] = useState(true);
-  const [loadingNew, setLoadingNew] = useState(true);
-  const [loadingGenre, setLoadingGenre] = useState(true);
-  const [loadingMood, setLoadingMood] = useState(true);
+  const [heroMovies, setHeroMovies] = useState(() => {
+    const movies = apiCache.get('movies_trending');
+    if (!movies) return [];
+    const candidates = movies.filter(m => m.backdrop_path && m.vote_average > 6.5).slice(0, 7);
+    return candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5);
+  });
+
+  const [loadingTrending, setLoadingTrending] = useState(() => !apiCache.has('movies_trending'));
+  const [loadingTopRated, setLoadingTopRated] = useState(() => !apiCache.has('movies_top_rated'));
+  const [loadingNew, setLoadingNew] = useState(() => !apiCache.has('movies_new_releases'));
+  const [loadingGenre, setLoadingGenre] = useState(() => !apiCache.has(`movies_genre_${GENRES[0].id}`));
+  const [loadingMood, setLoadingMood] = useState(() => !apiCache.has(`movies_mood_${MOODS[0].key}`));
 
   const becauseTitle = history?.[0]?.title || history?.[0]?.name || 'your last watch';
 
@@ -124,17 +133,27 @@ export default function Movies() {
   useEffect(() => {
     let cancelled = false;
 
+    const fetchOrCache = async (key, promiseFactory) => {
+      if (apiCache.has(key)) return { data: { results: apiCache.get(key) } };
+      const res = await promiseFactory();
+      if (res.data?.results) apiCache.set(key, res.data.results);
+      return res;
+    };
+
     const loadAll = async () => {
       const results = await Promise.allSettled([
-        fetchTrending(),
-        fetchTopRated(),
-        fetchNewReleases()
+        fetchOrCache('movies_trending', fetchTrending),
+        fetchOrCache('movies_top_rated', fetchTopRated),
+        fetchOrCache('movies_new_releases', fetchNewReleases)
       ]);
 
       if (cancelled) return;
 
       if (results[0].status === 'fulfilled') {
-        setTrending(results[0].value.data?.results || []);
+        const data = results[0].value.data?.results || [];
+        setTrending(data);
+        const candidates = data.filter(m => m.backdrop_path && m.vote_average > 6.5).slice(0, 7);
+        setHeroMovies(candidates.length ? candidates : data.filter(m => m.backdrop_path).slice(0, 5));
       } else {
         setTrending([]);
       }
@@ -162,9 +181,20 @@ export default function Movies() {
 
   useEffect(() => {
     let cancelled = false;
+    const key = `movies_genre_${selectedGenre.id}`;
+    if (apiCache.has(key)) {
+      setGenreMovies(apiCache.get(key));
+      setLoadingGenre(false);
+      return;
+    }
+    setLoadingGenre(true);
     fetchByGenre(selectedGenre.id)
       .then(res => {
-        if (!cancelled) setGenreMovies(res.data?.results || []);
+        if (!cancelled) {
+          const data = res.data?.results || [];
+          apiCache.set(key, data);
+          setGenreMovies(data);
+        }
       })
       .catch(() => {
         if (!cancelled) setGenreMovies([]);
@@ -177,9 +207,20 @@ export default function Movies() {
 
   useEffect(() => {
     let cancelled = false;
+    const key = `movies_mood_${selectedMood.key}`;
+    if (apiCache.has(key)) {
+      setMoodMovies(apiCache.get(key));
+      setLoadingMood(false);
+      return;
+    }
+    setLoadingMood(true);
     fetchByMood(selectedMood.key)
       .then(res => {
-        if (!cancelled) setMoodMovies(res.data?.results || []);
+        if (!cancelled) {
+          const data = res.data?.results || [];
+          apiCache.set(key, data);
+          setMoodMovies(data);
+        }
       })
       .catch(() => {
         if (!cancelled) setMoodMovies([]);
@@ -211,10 +252,6 @@ export default function Movies() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
       className="min-h-screen pb-16"
     >
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-32 pb-4">
@@ -229,11 +266,11 @@ export default function Movies() {
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 space-y-14 mt-8">
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+        <div>
           <RecentlyWatched history={history} onRefresh={loadHistory} />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
+        <div>
           <CarouselRow
             title="Top 10 Movies"
             badge="Trending"
@@ -244,7 +281,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
+        <div>
           <PrimeCarouselRow
             title="A24 Films"
             badge="Studio"
@@ -252,7 +289,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.35s' }}>
+        <div>
           <PrimeCarouselRow
             title="Neon Films"
             badge="Studio"
@@ -260,7 +297,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.4s' }}>
+        <div>
           <PrimeCarouselRow
             title="Iranian Cinema"
             badge="World Cinema"
@@ -268,7 +305,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.45s' }}>
+        <div>
           <PrimeCarouselRow
             title="Focus Features"
             badge="Studio"
@@ -276,7 +313,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.5s' }}>
+        <div>
           <PrimeCarouselRow
             title="Critically Acclaimed"
             badge="Top Rated"
@@ -285,7 +322,7 @@ export default function Movies() {
           />
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '0.55s' }}>
+        <div>
           <PrimeCarouselRow
             title="Fresh Drops"
             badge="New This Month"
@@ -295,7 +332,7 @@ export default function Movies() {
         </div>
 
         {becauseYouWatched.length > 0 && (
-          <div className="animate-fade-up" style={{ animationDelay: '0.6s' }}>
+          <div>
             <CarouselRow
               title={`Because You Watched "${becauseTitle}"`}
               movies={becauseYouWatched}
@@ -305,7 +342,7 @@ export default function Movies() {
         )}
 
         {/* Browse by Genre */}
-        <div className="animate-fade-up" style={{ animationDelay: '0.65s' }}>
+        <div>
           <div className="flex items-center mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               Browse by Genre
@@ -342,7 +379,7 @@ export default function Movies() {
         </div>
 
         {/* Browse by Mood */}
-        <div className="mb-24 animate-fade-up" style={{ animationDelay: '0.7s' }}>
+        <div className="mb-24">
           <div className="flex items-center mb-5 px-1">
             <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 flex items-center">
               Browse by Mood
