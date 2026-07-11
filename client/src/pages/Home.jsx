@@ -63,21 +63,9 @@ export default function Home() {
 
   const [heroMovies, setHeroMovies] = useState(() => {
     const movies = apiCache.get('movies_trending');
-    
-    const satlujSlide = {
-      id: 'satluj-custom',
-      title: 'Satluj',
-      overview: 'Satluj now available to stream in 4k.',
-      customBackdrop: 'https://images.unsplash.com/photo-1585863212001-f92500bf8a78?q=80&w=2672&auto=format&fit=crop', // Placeholder majestic nature/river backdrop
-      customDriveId: '12cDIChdHn4HGI6d0J-OKEFtdKSaE9MLL',
-      isCustomSlide: true
-    };
-
-    if (!movies) return [satlujSlide];
+    if (!movies) return [];
     const candidates = movies.filter(m => m.backdrop_path && m.vote_average > 6.5).slice(0, 7);
-    const standardHeroes = candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5);
-    
-    return [satlujSlide, ...standardHeroes];
+    return candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5);
   });
 
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
@@ -115,22 +103,12 @@ export default function Home() {
 
       if (cancelled) return;
 
+      // Trending
       if (results[0].status === 'fulfilled') {
         const movies = results[0].value.data?.results || [];
         setTrending(movies);
-        
-        const satlujSlide = {
-          id: 'satluj-custom',
-          title: 'Satluj',
-          overview: 'Satluj now available to stream in 4k.',
-          customBackdrop: 'https://images.unsplash.com/photo-1585863212001-f92500bf8a78?q=80&w=2672&auto=format&fit=crop',
-          customDriveId: '12cDIChdHn4HGI6d0J-OKEFtdKSaE9MLL',
-          isCustomSlide: true
-        };
-
         const candidates = movies.filter(m => m.backdrop_path && m.vote_average > 6.5).slice(0, 7);
-        const standardHeroes = candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5);
-        setHeroMovies([satlujSlide, ...standardHeroes]);
+        setHeroMovies(candidates.length ? candidates : movies.filter(m => m.backdrop_path).slice(0, 5));
       } else {
         setTrending([]);
       }
